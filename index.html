@@ -534,7 +534,7 @@ function renderHome() {
               <div><i class="fas fa-location-dot" style="width:16px;opacity:.7"></i> ${escHtml(nextTraining.location||'Ort folgt')}</div>
             </div>
             ${nextTraining.notes ? `<div style="margin-top:10px;font-size:12px;opacity:.6;border-top:1px solid rgba(255,255,255,.15);padding-top:8px;font-style:italic">${escHtml(nextTraining.notes)}</div>` : ''}
-            <button onclick="event.stopPropagation();addToCalendar('FC Niksar Training','${nextTraining.date}','${nextTraining.time||'17:00'}','${escHtml(nextTraining.location||'')}',90)" style="margin-top:12px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.9);border:1.5px solid rgba(255,255,255,.25);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;justify-content:center">
+            <button onclick="event.stopPropagation();calBtn(this)" data-title="FC Niksar Training" data-date="${nextTraining.date||''}" data-time="${nextTraining.time||'17:00'}" data-loc="${(nextTraining.location||'').replace(/"/g,'&quot;')}" data-dur="90" style="margin-top:12px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.9);border:1.5px solid rgba(255,255,255,.25);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;justify-content:center">
               <i class="fas fa-calendar-plus"></i> Zum Kalender hinzufügen
             </button>
           </div>
@@ -591,7 +591,7 @@ function renderHome() {
                 ${extra>0?`<div style="width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff">+${extra}</div>`:''}
               </div>
             </div>` : ''}
-            <button onclick="event.stopPropagation();addToCalendar('FC Niksar vs. '+${JSON.stringify(nextGame.opponent||'?')},'${nextGame.date}','${nextGame.time||'10:00'}','${escHtml(nextGame.location||'')}',120)" style="margin-top:12px;background:rgba(0,0,0,.1);color:rgba(0,0,0,.7);border:1.5px solid rgba(0,0,0,.15);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;justify-content:center">
+            <button onclick="event.stopPropagation();calBtn(this)" data-title="FC Niksar vs. ${(nextGame.opponent||'').replace(/"/g,'&quot;')}" data-date="${nextGame.date||''}" data-time="${nextGame.time||'10:00'}" data-loc="${(nextGame.location||'').replace(/"/g,'&quot;')}" data-dur="120" style="margin-top:12px;background:rgba(0,0,0,.1);color:rgba(0,0,0,.7);border:1.5px solid rgba(0,0,0,.15);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;justify-content:center">
               <i class="fas fa-calendar-plus"></i> Zum Kalender hinzufügen
             </button>
           </div>
@@ -627,7 +627,7 @@ function renderHome() {
           </div>
           <div style="font-size:12px;color:#9CA3AF;margin-top:2px">${fmt(x.date)} · ${x.time||'?'} Uhr · ${escHtml(x.location||'')}</div>
         </div>
-        <button onclick="event.stopPropagation();addToCalendar(${isT?`'FC Niksar Training'`:`'FC Niksar vs. '+escHtml(x.opponent||'?')`},'${x.date||""}','${x.time||""}','${x.location||""}',${isT?90:120})" style="background:none;border:none;color:#9CA3AF;cursor:pointer;padding:4px;font-size:14px;flex-shrink:0" title="Zum Kalender">
+        <button onclick="event.stopPropagation();calBtn(this)" data-title="${isT?'FC Niksar Training':'FC Niksar vs. '+(x.opponent||'').replace(/\"/g,'')}" data-date="${x.date||''}" data-time="${x.time||''}" data-loc="${(x.location||'').replace(/"/g,'')}" data-dur="${isT?90:120}" style="background:none;border:none;color:#9CA3AF;cursor:pointer;padding:4px;font-size:14px;flex-shrink:0" title="Zum Kalender">
           <i class="fas fa-calendar-plus"></i>
         </button>
         ${stDot ? `<div style="width:10px;height:10px;border-radius:50%;background:${stDot};flex-shrink:0"></div>` : ''}
@@ -653,6 +653,9 @@ function setRsvp(tid, pid, status) {
 }
 
 // ---- KALENDER EXPORT ----
+function calBtn(el) {
+  addToCalendar(el.dataset.title, el.dataset.date, el.dataset.time, el.dataset.loc, parseInt(el.dataset.dur)||90);
+}
 function addToCalendar(title, dateStr, timeStr, location, durationMin) {
   if(!dateStr) return;
   const pad = n => String(n).padStart(2,'0');
