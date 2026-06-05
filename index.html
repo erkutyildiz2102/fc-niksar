@@ -578,8 +578,13 @@ function renderHome() {
 
   // ── RSVP SECTION ──
   const rsvpList = STATE.trainings
-    .filter(t => parseSortDate(t.date, t.time) >= todayMs)
-    .sort((a,b) => new Date(a.date) - new Date(b.date)).slice(0,3);
+    .filter(t => {
+      const st = t.attendances?.[pid];
+      return parseSortDate(t.date, t.time) >= todayMs && (st === 'open' || !st);
+    })
+    .sort((a,b) => new Date(a.date) - new Date(b.date)).slice(0, 3);
+
+  const upcomingTrainings = STATE.trainings.filter(t => parseSortDate(t.date, t.time) >= todayMs);
 
   if(rsvpList.length) {
     html += `<div>
@@ -623,91 +628,99 @@ function renderHome() {
       </div>`;
     });
     html += `</div></div>`;
+  } else if(pid && upcomingTrainings.length > 0) {
+    html += `<div style="background:#D1FAE5;border:1.5px solid #34D399;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">✅</span>
+      <span style="font-size:13px;font-weight:700;color:#065F46">Alle Rückmeldungen erledigt!</span>
+    </div>`;
   }
 
-  // ── EVENT SLIDER (Training + Spiele horizontal wischbar) ──
-  const sliderEvents = upcoming.slice(0, 5); // max 5 Karten
-  if(sliderEvents.length > 0) {
-    const slideCount = sliderEvents.length;
-    html += `<div style="margin:0 -16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 16px;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="width:28px;height:28px;border-radius:8px;background:#E0E7FF;display:flex;align-items:center;justify-content:center"><i class="fas fa-calendar-days" style="color:#4F46E5;font-size:13px"></i></div>
-          <span style="font-size:13px;font-weight:800;color:#1F2937">Nächste Termine</span>
-        </div>
-        ${slideCount > 1 ? `<span style="font-size:11px;color:#9CA3AF;font-weight:600">← wischen →</span>` : ''}
-      </div>
-      <div class="event-slider" id="eventSlider">`;
+  // ── EVENT CARDS (stacked) ──
+  function renderEventCard(x) {
+    const isT = x.type === 'training';
+    const cd  = countdown(x.sortDate);
+    const bg  = isT ? 'linear-gradient(135deg,#0A2540 0%,#1e4d8c 100%)' : 'linear-gradient(135deg,#B45309 0%,#F59E0B 100%)';
+    const textCol = isT ? '#fff' : '#1F2937';
+    const subCol  = isT ? 'rgba(255,255,255,.8)' : 'rgba(0,0,0,.65)';
 
-    sliderEvents.forEach((x, idx) => {
-      const isT = x.type === 'training';
-      const cd  = countdown(x.sortDate);
-      const bg  = isT ? 'linear-gradient(135deg,#0A2540 0%,#1e4d8c 100%)' : 'linear-gradient(135deg,#B45309 0%,#F59E0B 100%)';
-      const textCol = isT ? '#fff' : '#1F2937';
-      const subCol  = isT ? 'rgba(255,255,255,.8)' : 'rgba(0,0,0,.65)';
-
-      // Game-specific: squad + child badge
-      let gameExtras = '';
-      if(!isT) {
-        const squadKeys  = Object.keys(x.squad||{}).filter(k=>x.squad[k]);
-        const squadSet   = squadKeys.length > 0;
-        const inSquad    = pid && squadKeys.includes(pid);
-        const squadPlayers = STATE.players.filter(p=>squadKeys.includes(p.id)).slice(0,6);
-        const extra = squadKeys.length - squadPlayers.length;
-        if(pid) {
-          if(!squadSet)    gameExtras += `<div style="background:rgba(0,0,0,.15);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;margin-top:10px;color:${textCol}">Kader wird noch bekannt gegeben</div>`;
-          else if(inSquad) gameExtras += `<div style="background:rgba(16,185,129,.3);border:1.5px solid rgba(16,185,129,.6);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:800;margin-top:10px;color:#fff">✅ Dein Kind spielt mit!</div>`;
-          else             gameExtras += `<div style="background:rgba(239,68,68,.25);border:1.5px solid rgba(239,68,68,.45);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:800;margin-top:10px;color:#fff">❌ Diesmal nicht nominiert</div>`;
-        }
-        if(squadSet) gameExtras += `<div style="display:flex;gap:3px;margin-top:10px;flex-wrap:wrap">
-          ${squadPlayers.map(p=>`<div style="position:relative">
-            <div style="width:30px;height:30px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.6)">
-              ${p.photo?`<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;background:#0A2540;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700">${(p.name||'?')[0].toUpperCase()}</div>`}
-            </div>
-            <div style="position:absolute;bottom:-1px;right:-2px;background:#0A2540;color:#fff;font-size:7px;font-weight:800;padding:1px 3px;border-radius:4px">${p.number||'?'}</div>
-          </div>`).join('')}
-          ${extra>0?`<div style="width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">+${extra}</div>`:''}
-        </div>`;
-        if(x.result) gameExtras += `<div style="margin-top:8px;background:rgba(0,0,0,.15);display:inline-block;padding:3px 12px;border-radius:6px;font-size:18px;font-weight:900;color:${textCol}">${escHtml(x.result)}</div>`;
-      }
-
-      html += `<div class="event-slide">
-        <div style="background:${bg};padding:16px;height:100%;box-sizing:border-box;min-height:180px">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:10px;font-weight:700;color:${isT?'rgba(255,255,255,.6)':'rgba(0,0,0,.45)'};text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">
-                ${isT ? '🏃 Training' : '⚽ Spiel'} ${isNew(x.createdAt)?'<span style="background:#EF4444;color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:4px">NEU</span>':''}
-              </div>
-              <div style="font-size:17px;font-weight:900;color:${textCol};line-height:1.15;margin-bottom:8px">${isT ? fmtFull(x.date) : 'vs. '+escHtml(x.opponent||'?')}</div>
-              <div style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:${subCol}">
-                <div>${dateBox(x.date, isT).replace(/flex-shrink:0/,'display:inline-block')}</div>
-                <div><i class="fas fa-clock" style="width:14px;opacity:.7"></i> ${x.time||'?'} Uhr</div>
-                <div><i class="fas fa-location-dot" style="width:14px;opacity:.7"></i> ${escHtml(x.location||'Ort folgt')}</div>
-              </div>
-              ${!isT ? gameExtras : (x.notes?`<div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,.6);font-style:italic">${escHtml(x.notes)}</div>`:'')}
-              <button onclick="event.stopPropagation();calBtn(this)" data-title="${isT?'FC Niksar Training':'FC Niksar vs. '+(x.opponent||'').replace(/\"/g,'')}" data-date="${x.date||''}" data-time="${x.time||''}" data-loc="${(x.location||'').replace(/"/g,'')}" data-dur="${isT?90:120}" style="margin-top:12px;background:rgba(255,255,255,.12);color:${isT?'rgba(255,255,255,.85)':'rgba(0,0,0,.6)'};border:1.5px solid ${isT?'rgba(255,255,255,.2)':'rgba(0,0,0,.12)'};border-radius:8px;padding:7px 10px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px">
-                <i class="fas fa-calendar-plus"></i> Zum Kalender
-              </button>
-            </div>
-            <div style="background:${isT?'rgba(255,255,255,.15)':'rgba(0,0,0,.15)'};border-radius:12px;padding:8px 10px;text-align:center;flex-shrink:0;min-width:50px;border:1.5px solid ${isT?'rgba(255,255,255,.2)':'rgba(0,0,0,.1)'}">
-              <div style="font-size:${typeof cd.n==='number'?'24':'13'}px;font-weight:900;line-height:1;color:${textCol}">${cd.n}</div>
-              ${cd.u?`<div style="font-size:8px;font-weight:700;opacity:.65;margin-top:3px;letter-spacing:.06em;color:${textCol}">${cd.u}</div>`:''}
-            </div>
-          </div>
-        </div>
-      </div>`;
-    });
-
-    // Dot indicators
-    html += `</div>`;
-    if(slideCount > 1) {
-      html += `<div id="sliderDots" style="display:flex;justify-content:center;gap:6px;margin-top:8px;padding:0 16px">
-        ${sliderEvents.map((_,i)=>`<div class="sdot" data-idx="${i}" style="width:${i===0?'20':'8'}px;height:8px;border-radius:4px;background:${i===0?'#0A2540':'#D1D5DB'};transition:all .3s;cursor:pointer" onclick="scrollToSlide(${i})"></div>`).join('')}
-      </div>`;
+    // RSVP badge for training
+    let rsvpBadge = '';
+    if(isT && pid) {
+      const st = x.attendances?.[pid];
+      if(st === 'yes')       rsvpBadge = `<div style="margin-top:8px;display:inline-block;background:rgba(16,185,129,.3);border:1.5px solid rgba(16,185,129,.6);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:#fff">Zugesagt ✓</div>`;
+      else if(st === 'no')   rsvpBadge = `<div style="margin-top:8px;display:inline-block;background:rgba(239,68,68,.25);border:1.5px solid rgba(239,68,68,.45);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:#fff">Abgesagt ✗</div>`;
+      else                   rsvpBadge = `<div style="margin-top:8px;display:inline-block;background:rgba(245,158,11,.25);border:1.5px solid rgba(245,158,11,.5);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:#fff">Noch nicht geantwortet</div>`;
     }
-    html += `</div>`;
-  } else if(upcoming.length === 0) {
-    html += ''; // handled by empty state below
+
+    // Game-specific: squad + child badge
+    let gameExtras = '';
+    if(!isT) {
+      const squadKeys    = Object.keys(x.squad||{}).filter(k=>x.squad[k]);
+      const squadSet     = squadKeys.length > 0;
+      const inSquad      = pid && squadKeys.includes(pid);
+      const squadPlayers = STATE.players.filter(p=>squadKeys.includes(p.id)).slice(0,6);
+      const extra        = squadKeys.length - squadPlayers.length;
+      if(pid) {
+        if(!squadSet)    gameExtras += `<div style="background:rgba(0,0,0,.15);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;margin-top:10px;color:${textCol}">Kader wird noch bekannt gegeben</div>`;
+        else if(inSquad) gameExtras += `<div style="background:rgba(16,185,129,.3);border:1.5px solid rgba(16,185,129,.6);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:800;margin-top:10px;color:#fff">✅ Dein Kind spielt mit!</div>`;
+        else             gameExtras += `<div style="background:rgba(239,68,68,.25);border:1.5px solid rgba(239,68,68,.45);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:800;margin-top:10px;color:#fff">❌ Diesmal nicht nominiert</div>`;
+      }
+      if(squadSet) gameExtras += `<div style="display:flex;gap:3px;margin-top:10px;flex-wrap:wrap">
+        ${squadPlayers.map(p=>`<div style="position:relative">
+          <div style="width:30px;height:30px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.6)">
+            ${p.photo?`<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;background:#0A2540;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700">${(p.name||'?')[0].toUpperCase()}</div>`}
+          </div>
+          <div style="position:absolute;bottom:-1px;right:-2px;background:#0A2540;color:#fff;font-size:7px;font-weight:800;padding:1px 3px;border-radius:4px">${p.number||'?'}</div>
+        </div>`).join('')}
+        ${extra>0?`<div style="width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">+${extra}</div>`:''}
+      </div>`;
+      if(x.result) gameExtras += `<div style="margin-top:8px;background:rgba(0,0,0,.15);display:inline-block;padding:3px 12px;border-radius:6px;font-size:18px;font-weight:900;color:${textCol}">${escHtml(x.result)}</div>`;
+    }
+
+    return `<div style="background:${bg};padding:16px;border-radius:18px;overflow:hidden">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:10px;font-weight:700;color:${isT?'rgba(255,255,255,.6)':'rgba(0,0,0,.45)'};text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">
+            ${isT ? '🏃 Training' : '⚽ Spiel'} ${isNew(x.createdAt)?'<span style="background:#EF4444;color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:4px">NEU</span>':''}
+          </div>
+          <div style="font-size:17px;font-weight:900;color:${textCol};line-height:1.15;margin-bottom:8px">${isT ? fmtFull(x.date) : 'vs. '+escHtml(x.opponent||'?')}</div>
+          <div style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:${subCol}">
+            <div>${dateBox(x.date, isT).replace(/flex-shrink:0/,'display:inline-block')}</div>
+            <div><i class="fas fa-clock" style="width:14px;opacity:.7"></i> ${x.time||'?'} Uhr</div>
+            <div><i class="fas fa-location-dot" style="width:14px;opacity:.7"></i> ${escHtml(x.location||'Ort folgt')}</div>
+          </div>
+          ${isT ? rsvpBadge : gameExtras}
+          ${isT && x.notes ? `<div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,.6);font-style:italic">${escHtml(x.notes)}</div>` : ''}
+          <button onclick="event.stopPropagation();calBtn(this)" data-title="${isT?'FC Niksar Training':'FC Niksar vs. '+(x.opponent||'').replace(/\"/g,'')}" data-date="${x.date||''}" data-time="${x.time||''}" data-loc="${(x.location||'').replace(/"/g,'')}" data-dur="${isT?90:120}" style="margin-top:12px;background:rgba(255,255,255,.12);color:${isT?'rgba(255,255,255,.85)':'rgba(0,0,0,.6)'};border:1.5px solid ${isT?'rgba(255,255,255,.2)':'rgba(0,0,0,.12)'};border-radius:8px;padding:7px 10px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px">
+            <i class="fas fa-calendar-plus"></i> Zum Kalender
+          </button>
+        </div>
+        <div style="background:${isT?'rgba(255,255,255,.15)':'rgba(0,0,0,.15)'};border-radius:12px;padding:8px 10px;text-align:center;flex-shrink:0;min-width:50px;border:1.5px solid ${isT?'rgba(255,255,255,.2)':'rgba(0,0,0,.1)'}">
+          <div style="font-size:${typeof cd.n==='number'?'24':'13'}px;font-weight:900;line-height:1;color:${textCol}">${cd.n}</div>
+          ${cd.u?`<div style="font-size:8px;font-weight:700;opacity:.65;margin-top:3px;letter-spacing:.06em;color:${textCol}">${cd.u}</div>`:''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  if(nextTraining) {
+    html += `<div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="width:28px;height:28px;border-radius:8px;background:#EEF2FF;display:flex;align-items:center;justify-content:center"><i class="fas fa-running" style="color:#4F46E5;font-size:13px"></i></div>
+        <span style="font-size:13px;font-weight:800;color:#1F2937">Nächstes Training</span>
+      </div>
+      ${renderEventCard(nextTraining)}
+    </div>`;
+  }
+
+  if(nextGame) {
+    html += `<div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="width:28px;height:28px;border-radius:8px;background:#FEF3C7;display:flex;align-items:center;justify-content:center"><i class="fas fa-futbol" style="color:#D97706;font-size:13px"></i></div>
+        <span style="font-size:13px;font-weight:800;color:#1F2937">Nächstes Spiel</span>
+      </div>
+      ${renderEventCard(nextGame)}
+    </div>`;
   }
 
   // ── UPCOMING LIST ──
@@ -752,18 +765,6 @@ function renderHome() {
 
   html += `</div></div>`;
   page.innerHTML = html;
-  // Slider-Dots nach Rendering verknüpfen
-  const slider = document.getElementById('eventSlider');
-  if(slider) {
-    slider.addEventListener('scroll', () => {
-      const w = (slider.children[0]?.offsetWidth || 1) + 12;
-      const idx = Math.round(slider.scrollLeft / w);
-      document.querySelectorAll('.sdot').forEach((d,i) => {
-        d.style.width = i===idx ? '20px' : '8px';
-        d.style.background = i===idx ? '#0A2540' : '#D1D5DB';
-      });
-    }, {passive:true});
-  }
 }
 
 function setRsvp(tid, pid, status) {
@@ -771,41 +772,7 @@ function setRsvp(tid, pid, status) {
 }
 
 // ---- KALENDER EXPORT ----
-function scrollToSlide(idx) {
-  const slider = document.getElementById('eventSlider');
-  if(!slider) return;
-  const slide = slider.children[idx];
-  if(slide) slide.scrollIntoView({behavior:'smooth', block:'nearest', inline:'start'});
-}
 
-// Dot-Update beim Wischen
-document.addEventListener('scroll', () => {
-  const slider = document.getElementById('eventSlider');
-  if(!slider) return;
-  const slideW = slider.children[0]?.offsetWidth + 12 || 1;
-  const idx = Math.round(slider.scrollLeft / slideW);
-  document.querySelectorAll('.sdot').forEach((d, i) => {
-    d.style.width = i === idx ? '20px' : '8px';
-    d.style.background = i === idx ? '#0A2540' : '#D1D5DB';
-  });
-}, {passive: true, capture: false});
-
-// Slider scroll listener (auf dem Slider selbst)
-document.addEventListener('DOMContentLoaded', () => {
-  document.addEventListener('scroll', updateDots, {passive:true});
-});
-function updateDots() {
-  const slider = document.getElementById('eventSlider');
-  if(!slider) return;
-  slider.addEventListener('scroll', () => {
-    const w = (slider.children[0]?.offsetWidth || 1) + 12;
-    const idx = Math.round(slider.scrollLeft / w);
-    document.querySelectorAll('.sdot').forEach((d,i)=>{
-      d.style.width = i===idx?'20px':'8px';
-      d.style.background = i===idx?'#0A2540':'#D1D5DB';
-    });
-  }, {passive:true});
-}
 
 function calBtn(el) {
   addToCalendar(el.dataset.title, el.dataset.date, el.dataset.time, el.dataset.loc, parseInt(el.dataset.dur)||90);
@@ -1337,36 +1304,32 @@ function removeFromSquad(gid, pid){ db.ref('/games/'+gid+'/squad/'+pid).remove()
 
 // ---- STATISTIK TAB ----
 function renderStatistikTab(c) {
-  const totalT  = STATE.trainings.length;
-  const totalG  = STATE.games.length;
-  const totalP  = STATE.players.length;
+  const totalT = STATE.trainings.length;
+  const totalG = STATE.games.length;
+  const totalP = STATE.players.length;
   if(!totalP) { c.innerHTML = `<div style="text-align:center;padding:40px;color:#9CA3AF"><div style="font-size:40px;margin-bottom:8px">📊</div><div>Noch keine Spieler</div></div>`; return; }
 
-  // Per-player stats
+  // Per-player RSVP-based stats
   const stats = STATE.players.map(p => {
-    const trainingWas  = STATE.trainings.filter(t => t.actual?.[p.id] === true).length;
-    const trainingPct  = totalT ? Math.round(trainingWas / totalT * 100) : 0;
+    const yesCount = STATE.trainings.filter(t => t.attendances?.[p.id] === 'yes').length;
+    const noCount  = STATE.trainings.filter(t => t.attendances?.[p.id] === 'no').length;
     const gamesInSquad = STATE.games.filter(g => Object.keys(g.squad||{}).filter(k=>g.squad[k]).includes(p.id));
-    return { ...p, trainingWas, trainingPct, gamesInSquad };
-  }).sort((a,b) => b.trainingPct - a.trainingPct);
+    const avgPctP = totalT ? Math.round(yesCount / totalT * 100) : 0;
+    return { ...p, yesCount, noCount, gamesInSquad, avgPctP };
+  }).sort((a,b) => b.yesCount - a.yesCount);
 
-  const avgPct = Math.round(stats.reduce((s,p)=>s+p.trainingPct,0)/totalP);
-
-  // Helper: color based on %
-  const pctColor = pct => pct >= 75 ? '#10B981' : pct >= 50 ? '#F59E0B' : pct >= 25 ? '#F97316' : '#EF4444';
-  const pctBg    = pct => pct >= 75 ? '#D1FAE5' : pct >= 50 ? '#FEF3C7' : pct >= 25 ? '#FFEDD5' : '#FEE2E2';
-  const pctTxt   = pct => pct >= 75 ? '#065F46' : pct >= 50 ? '#92400E' : pct >= 25 ? '#9A3412' : '#991B1B';
+  const avgPct = Math.round(stats.reduce((s,p)=>s+p.avgPctP,0)/totalP);
 
   // ── TEAM OVERVIEW ──
   let html = `
     <div style="background:linear-gradient(135deg,#0A2540,#1e3a5c);border-radius:16px;padding:16px;margin-bottom:14px;color:#fff">
       <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Team Übersicht</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
         ${[
-          [totalP,   'Spieler',   'fas fa-users'],
-          [totalT,   'Trainings', 'fas fa-running'],
-          [totalG,   'Spiele',    'fas fa-futbol'],
-          [avgPct+'%','Ø Beteil.','fas fa-chart-bar']
+          [totalP,      'Spieler',   'fas fa-users'],
+          [totalT,      'Trainings', 'fas fa-running'],
+          [totalG,      'Spiele',    'fas fa-futbol'],
+          [avgPct+'%',  'Ø Zusagen', 'fas fa-check']
         ].map(([v,l,ic])=>`
           <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:10px 6px;text-align:center">
             <i class="${ic}" style="font-size:14px;opacity:.6;display:block;margin-bottom:4px"></i>
@@ -1374,39 +1337,13 @@ function renderStatistikTab(c) {
             <div style="font-size:9px;opacity:.6;margin-top:2px;text-transform:uppercase;letter-spacing:.04em">${l}</div>
           </div>`).join('')}
       </div>
-      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Anwesenheit Ranking</div>
-      ${stats.map((p,i) => `
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <div style="font-size:11px;color:rgba(255,255,255,.5);width:16px;text-align:right;flex-shrink:0">${i+1}</div>
-          <div style="width:24px;height:24px;border-radius:50%;overflow:hidden;flex-shrink:0">
-            ${p.photo?`<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">${(p.name||'?')[0].toUpperCase()}</div>`}
-          </div>
-          <div style="font-size:11px;color:rgba(255,255,255,.85);width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0">${escHtml(p.name||'')}</div>
-          <div style="flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.12)">
-            <div style="height:100%;border-radius:4px;background:${p.trainingPct>=75?'#4ADE80':p.trainingPct>=50?'#FCD34D':'#F87171'};width:${p.trainingPct}%;transition:width .6s ease"></div>
-          </div>
-          <div style="font-size:11px;font-weight:800;color:#fff;width:30px;text-align:right;flex-shrink:0">${p.trainingPct}%</div>
-        </div>`).join('')}
     </div>`;
 
   // ── PLAYER DETAIL CARDS ──
   html += stats.map(p => {
-    const tc = pctColor(p.trainingPct);
-    const gcPct = totalG ? Math.round(p.gamesInSquad.length / totalG * 100) : 0;
-    const gc = pctColor(gcPct);
-
-    // Training dots (alle Trainings)
-    const dots = STATE.trainings.map(t => {
-      const was = t.actual?.[p.id];
-      const rsvp = t.attendances?.[p.id];
-      const col = was===true ? '#10B981' : was===false ? '#EF4444' : rsvp==='yes' ? '#93C5FD' : '#E5E7EB';
-      const label = was===true?'War da':was===false?'Fehlte':rsvp==='yes'?'Zugesagt':'Offen';
-      return `<div title="${fmt(t.date)}: ${label}" style="width:14px;height:14px;border-radius:4px;background:${col};flex-shrink:0"></div>`;
-    }).join('');
-
     return `<div class="card" style="padding:14px;margin-bottom:10px">
       <!-- Player header -->
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #F3F4F6">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #F3F4F6">
         <div style="position:relative;flex-shrink:0">
           <div style="width:52px;height:52px;border-radius:50%;overflow:hidden;border:2px solid #E5E7EB">
             ${p.photo?`<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;background:#0A2540;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff">${(p.name||'?')[0].toUpperCase()}</div>`}
@@ -1415,58 +1352,31 @@ function renderStatistikTab(c) {
         </div>
         <div style="flex:1;min-width:0">
           <div style="font-size:16px;font-weight:800;color:#1F2937">${escHtml(p.name||'')}</div>
-          <div style="font-size:12px;color:#9CA3AF;margin-top:2px">Rückennummer #${p.number||'?'}</div>
-        </div>
-        <!-- Overall badge -->
-        <div style="text-align:center;flex-shrink:0;background:${pctBg(p.trainingPct)};border-radius:12px;padding:8px 12px">
-          <div style="font-size:20px;font-weight:900;color:${pctTxt(p.trainingPct)}">${p.trainingPct}%</div>
-          <div style="font-size:9px;color:${pctTxt(p.trainingPct)};font-weight:700;opacity:.8">Training</div>
+          <div style="font-size:12px;color:#9CA3AF;margin-top:2px">#${p.number||'?'}</div>
         </div>
       </div>
 
-      <!-- TRAINING ATTENDANCE -->
-      <div style="margin-bottom:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <div style="display:flex;align-items:center;gap:6px">
-            <i class="fas fa-running" style="color:#0A2540;font-size:13px"></i>
-            <span style="font-size:13px;font-weight:700;color:#1F2937">Training</span>
-          </div>
-          <span style="font-size:13px;font-weight:800;color:${tc}">${p.trainingWas} von ${totalT} Trainings</span>
-        </div>
-        <div style="height:10px;border-radius:5px;background:#F3F4F6;overflow:hidden;margin-bottom:8px">
-          <div style="height:100%;border-radius:5px;background:${tc};width:${p.trainingPct}%;transition:width .6s"></div>
-        </div>
-        <!-- Training dots: jedes Training ein Kästchen -->
-        ${totalT > 0 ? `
-        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">
-          ${dots}
-        </div>
-        <div style="display:flex;gap:12px;margin-top:6px;font-size:10px;color:#9CA3AF;font-weight:600">
-          <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#10B981;margin-right:3px;vertical-align:middle"></span>War da</span>
-          <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#EF4444;margin-right:3px;vertical-align:middle"></span>Fehlte</span>
-          <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#E5E7EB;margin-right:3px;vertical-align:middle"></span>Offen</span>
-        </div>` : '<div style="font-size:12px;color:#D1D5DB">Noch keine Trainings</div>'}
+      <!-- TRAINING RSVP -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:13px;color:#6B7280;width:130px;flex-shrink:0">🏃 Training</span>
+        <span style="font-size:13px;font-weight:700;color:#065F46;background:#D1FAE5;padding:3px 10px;border-radius:20px">✅ ${p.yesCount} Zusagen</span>
+        <span style="font-size:13px;font-weight:700;color:#991B1B;background:#FEE2E2;padding:3px 10px;border-radius:20px">❌ ${p.noCount} Absagen</span>
       </div>
 
       <!-- SPIELE -->
-      <div style="padding-top:12px;border-top:1px solid #F3F4F6">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="display:flex;align-items:center;gap:6px">
-            <i class="fas fa-futbol" style="color:#0A2540;font-size:13px"></i>
-            <span style="font-size:13px;font-weight:700;color:#1F2937">Spiele im Kader</span>
-          </div>
-          <span style="font-size:13px;font-weight:800;color:${gc}">${p.gamesInSquad.length} von ${totalG} Spielen</span>
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <span style="font-size:13px;color:#6B7280;width:130px;flex-shrink:0;padding-top:2px">⚽ Spiele im Kader</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:#1F2937;margin-bottom:6px">${p.gamesInSquad.length} von ${totalG} Spielen</div>
+          ${p.gamesInSquad.length > 0
+            ? `<div style="display:flex;flex-wrap:wrap;gap:5px">
+                ${p.gamesInSquad.map(g=>`
+                  <div style="background:#EEF2FF;border-radius:8px;padding:4px 8px;font-size:11px;font-weight:600;color:#3730A3;display:inline-flex;align-items:center;gap:4px">
+                    ${escHtml(g.opponent||'?')}${g.result?` · <span style="font-weight:800;color:#0A2540">${escHtml(g.result)}</span>`:''}
+                  </div>`).join('')}
+              </div>`
+            : `<div style="font-size:12px;color:#D1D5DB;font-style:italic">Noch kein Spiel im Kader</div>`}
         </div>
-        ${p.gamesInSquad.length > 0
-          ? `<div style="display:flex;flex-wrap:wrap;gap:6px">
-              ${p.gamesInSquad.map(g=>`
-                <div style="background:#EEF2FF;border-radius:8px;padding:5px 10px;display:flex;align-items:center;gap:5px">
-                  <i class="fas fa-futbol" style="font-size:10px;color:#4F46E5"></i>
-                  <span style="font-size:12px;font-weight:600;color:#3730A3">${escHtml(g.opponent||'?')}</span>
-                  ${g.result?`<span style="font-size:11px;font-weight:800;color:#0A2540;background:#C7D2FE;padding:1px 6px;border-radius:4px">${escHtml(g.result)}</span>`:''}
-                </div>`).join('')}
-            </div>`
-          : `<div style="font-size:12px;color:#D1D5DB;font-style:italic">Noch bei keinem Spiel im Kader</div>`}
       </div>
     </div>`;
   }).join('');
