@@ -595,7 +595,12 @@ function renderHome() {
 
   // ── STATUS BANNER (sofort sichtbar ohne scrollen) ──
   const openRsvp     = pid ? upcomingTrainings.filter(t => { const s = t.attendances?.[pid]; return !s || s === 'open'; }).length : 0;
-  const newTrainings = upcomingTrainings.filter(t => isNew(t.createdAt));
+  const newTrainings = upcomingTrainings.filter(t => {
+    if(!isNew(t.createdAt)) return false;
+    if(!pid) return true;
+    const s = window._localAtt?.[t.id+'_'+pid] ?? t.attendances?.[pid];
+    return !s || s === 'open'; // NEU nur wenn noch nicht beantwortet
+  });
   const newGames     = upcomingGames.filter(g => isNew(g.createdAt));
 
   // Zeige Banner für offene RSVPs UND neue Einträge
