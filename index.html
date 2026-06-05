@@ -111,6 +111,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <div id="app">
+
+  <!-- ═══ HEADER ═══ -->
+  <header style="background:#0A2540;padding:max(14px,env(safe-area-inset-top)) 16px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:90">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+        <img id="headerLogoImg" src="" style="display:none;width:100%;height:100%;object-fit:cover">
+        <span id="headerLogoEmoji" style="font-size:22px">⚽</span>
+      </div>
+      <div>
+        <div style="color:#fff;font-weight:900;font-size:17px;letter-spacing:.04em;line-height:1.1">FC NIKSAR</div>
+        <div style="color:#93c5fd;font-size:11px;font-weight:600;letter-spacing:.04em">F1 · U9 · Saison 26/27</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div id="trainerHeaderTag" style="display:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:.03em">⚡ Trainer</div>
+      <button id="profileHeaderBtn" onclick="editProfile()" title="Mein Profil" style="width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.15);cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;flex-shrink:0">
+        <div id="profileHeaderContent">👤</div>
+      </button>
+    </div>
+  </header>
+
   <div id="homePage" class="page active"></div>
   <div id="chatPage"></div>
   <div id="galeriePage" class="page"></div>
@@ -148,7 +169,14 @@ const escHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
 const fmt = d => { try { return new Date(d).toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'}); } catch(e){ return d; }};
 const fmtFull = d => { try { return new Date(d).toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long'}); } catch(e){ return d; }};
 const isNew = ts => ts && (Date.now() - ts) < 172800000;
-const countdown = ms => { const diff = ms - Date.now(); if(diff<=0) return 'Jetzt'; const d=Math.floor(diff/86400000); const h=Math.floor((diff%86400000)/3600000); return d>0 ? d+'T '+h+'h' : h+'h'; };
+const countdown = ms => {
+  const diff = ms - Date.now();
+  if(diff <= 0) return {n:'Heute', u:''};
+  const d = Math.floor(diff/86400000);
+  if(d === 0) return {n:'Heute', u:''};
+  if(d === 1) return {n:'Morgen', u:''};
+  return {n:d, u:'Tage'};
+};
 
 // ---- State ----
 const STATE = { players:[], trainings:[], games:[], chat:[], photos:[], config:{} };
@@ -198,9 +226,9 @@ function initListeners() {
 }
 
 function onDataChange() {
+  updateHeader();
   if(currentPage==='home') renderHome();
   if(currentPage==='trainer') renderTrainer();
-  // update setup player grid if visible
   if(document.getElementById('profileSetup').style.display !== 'none') renderSetupPlayers();
 }
 
@@ -211,9 +239,31 @@ function updateChatBadge() {
 }
 
 function applyLogo(logo) {
+  // Splash
   const sl = document.getElementById('splashLogo');
   const sp = document.getElementById('splashLogoPlaceholder');
   if(logo && sl && sp){ sl.src = logo; sl.style.display=''; sp.style.display='none'; }
+  // Header
+  const hi = document.getElementById('headerLogoImg');
+  const he = document.getElementById('headerLogoEmoji');
+  if(logo && hi && he){ hi.src = logo; hi.style.display=''; he.style.display='none'; }
+}
+
+function updateHeader() {
+  // Trainer tag
+  const tag = document.getElementById('trainerHeaderTag');
+  if(tag) tag.style.display = trainerLoggedIn ? '' : 'none';
+  // Profile avatar
+  const btn = document.getElementById('profileHeaderContent');
+  if(!btn) return;
+  const profile = getProfile();
+  if(!profile) { btn.innerHTML = '👤'; return; }
+  const player = STATE.players.find(p => p.id === profile.playerId);
+  if(player?.photo) {
+    btn.innerHTML = `<img src="${player.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  } else {
+    btn.innerHTML = `<span style="font-weight:800;font-size:14px">${(profile.name||'?')[0].toUpperCase()}</span>`;
+  }
 }
 
 // ---- Init ----
@@ -271,6 +321,7 @@ function saveProfile() {
 
 function showApp() {
   document.getElementById('app').style.display = 'flex';
+  updateHeader();
   renderHome();
 }
 
@@ -369,39 +420,72 @@ function renderHome() {
 
   // Next Training card
   if(nextTraining) {
-    html += `<div class="card-dark" style="padding:16px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div>
-          <div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Nächstes Training</div>
-          <div style="font-size:20px;font-weight:800;margin-top:4px">${fmtFull(nextTraining.date)}</div>
-          <div style="font-size:14px;opacity:.8;margin-top:4px"><i class="fa fa-clock"></i> ${nextTraining.time||'?'} Uhr</div>
-          <div style="font-size:14px;opacity:.8;margin-top:2px"><i class="fa fa-location-dot"></i> ${escHtml(nextTraining.location||'?')}</div>
+    const cd = countdown(nextTraining.sortDate);
+    html += `<div class="card-dark" style="padding:18px 16px">
+      <div style="font-size:10px;font-weight:700;opacity:.6;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">🏃 Nächstes Training</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:19px;font-weight:800;line-height:1.2;margin-bottom:8px">${fmtFull(nextTraining.date)}</div>
+          <div style="font-size:13px;opacity:.8;display:flex;flex-direction:column;gap:3px">
+            <div><i class="fa fa-clock" style="width:16px"></i> ${nextTraining.time||'?'} Uhr</div>
+            <div><i class="fa fa-location-dot" style="width:16px"></i> ${escHtml(nextTraining.location||'Ort folgt')}</div>
+          </div>
+          ${nextTraining.notes ? `<div style="margin-top:10px;font-size:12px;opacity:.65;border-top:1px solid rgba(255,255,255,.15);padding-top:8px">${escHtml(nextTraining.notes)}</div>` : ''}
         </div>
-        <div class="countdown-bubble">${countdown(nextTraining.sortDate)}</div>
+        <div style="background:rgba(255,255,255,.18);border-radius:14px;padding:10px 12px;text-align:center;flex-shrink:0;min-width:56px">
+          <div style="font-size:${typeof cd.n==='number'?'26':'15'}px;font-weight:900;line-height:1">${cd.n}</div>
+          ${cd.u ? `<div style="font-size:9px;font-weight:700;opacity:.8;margin-top:2px;text-transform:uppercase">${cd.u}</div>` : ''}
+        </div>
       </div>
-      ${nextTraining.notes ? `<div style="margin-top:10px;font-size:13px;opacity:.7;border-top:1px solid rgba(255,255,255,.15);padding-top:8px">${escHtml(nextTraining.notes)}</div>` : ''}
     </div>`;
   }
 
   // Next Game card
   if(nextGame) {
+    const cd = countdown(nextGame.sortDate);
     const squadKeys = Object.keys(nextGame.squad || {}).filter(k => nextGame.squad[k]);
     const squadSet = squadKeys.length > 0;
     const inSquad = pid && squadKeys.includes(pid);
-    let squadBadge = `<div style="background:rgba(0,0,0,.15);border-radius:8px;padding:6px 10px;font-size:13px;margin-top:10px">🕐 Kader wird noch bekannt gegeben</div>`;
-    if(squadSet && inSquad) squadBadge = `<div style="background:rgba(16,185,129,.3);border-radius:8px;padding:6px 10px;font-size:13px;margin-top:10px;font-weight:600">✅ Dein Kind spielt mit!</div>`;
-    if(squadSet && !inSquad) squadBadge = `<div style="background:rgba(239,68,68,.3);border-radius:8px;padding:6px 10px;font-size:13px;margin-top:10px;font-weight:600">❌ Diesmal nicht nominiert</div>`;
-    html += `<div class="card-amber" style="padding:16px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div>
-          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:rgba(0,0,0,.6)">Nächstes Spiel</div>
-          <div style="font-size:20px;font-weight:800;margin-top:4px;color:#1f2937">vs. ${escHtml(nextGame.opponent||'?')}</div>
-          <div style="font-size:13px;color:rgba(0,0,0,.7);margin-top:4px"><i class="fa fa-clock"></i> ${nextGame.time||'?'} · <i class="fa fa-location-dot"></i> ${escHtml(nextGame.location||'?')}</div>
-          ${nextGame.result ? `<div style="font-size:18px;font-weight:800;margin-top:6px;color:#1f2937">Ergebnis: ${escHtml(nextGame.result)}</div>` : ''}
-        </div>
-        <div style="background:rgba(0,0,0,.15);border-radius:10px;padding:4px 10px;font-size:12px;font-weight:700">${countdown(nextGame.sortDate)}</div>
+    // Squad avatars
+    const squadPlayers = STATE.players.filter(p => squadKeys.includes(p.id)).slice(0,6);
+    const extraCount = squadKeys.length - squadPlayers.length;
+    const avatarRow = squadSet ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.1)">
+      <div style="font-size:10px;font-weight:700;color:rgba(0,0,0,.5);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">👕 Kader (${squadKeys.length})</div>
+      <div style="display:flex;gap:4px;align-items:center">
+        ${squadPlayers.map(p=>`<div style="position:relative" title="${escHtml(p.name||'')}">
+          <div style="width:32px;height:32px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.6)">
+            ${p.photo?`<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;background:#0A2540;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">${(p.name||'?')[0].toUpperCase()}</div>`}
+          </div>
+          <div style="position:absolute;bottom:-2px;right:-2px;background:#0A2540;color:#fff;font-size:8px;font-weight:800;padding:1px 3px;border-radius:4px">${p.number||'?'}</div>
+        </div>`).join('')}
+        ${extraCount>0?`<div style="width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">+${extraCount}</div>`:''}
       </div>
-      ${pid ? squadBadge : ''}
+    </div>` : '';
+    let childBadge = '';
+    if(pid) {
+      if(!squadSet) childBadge = `<div style="background:rgba(0,0,0,.12);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600;margin-top:10px">🕐 Kader wird noch bekannt gegeben</div>`;
+      else if(inSquad) childBadge = `<div style="background:rgba(16,185,129,.25);border:1.5px solid rgba(16,185,129,.5);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;margin-top:10px;color:#064E3B">✅ Dein Kind spielt mit!</div>`;
+      else childBadge = `<div style="background:rgba(239,68,68,.18);border:1.5px solid rgba(239,68,68,.4);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;margin-top:10px;color:#7F1D1D">❌ Diesmal nicht nominiert</div>`;
+    }
+    html += `<div class="card-amber" style="padding:18px 16px">
+      <div style="font-size:10px;font-weight:700;color:rgba(0,0,0,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">⚽ Nächstes Spiel</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:19px;font-weight:900;color:#1f2937;line-height:1.1;margin-bottom:6px">vs. ${escHtml(nextGame.opponent||'?')}</div>
+          <div style="font-size:13px;color:rgba(0,0,0,.65);display:flex;flex-direction:column;gap:3px">
+            <div><i class="fa fa-calendar" style="width:16px"></i> ${fmtFull(nextGame.date)}</div>
+            <div><i class="fa fa-clock" style="width:16px"></i> ${nextGame.time||'?'} Uhr</div>
+            <div><i class="fa fa-location-dot" style="width:16px"></i> ${escHtml(nextGame.location||'Ort folgt')}</div>
+          </div>
+          ${nextGame.result ? `<div style="font-size:20px;font-weight:900;margin-top:8px;color:#1f2937;background:rgba(0,0,0,.1);display:inline-block;padding:4px 12px;border-radius:8px">${escHtml(nextGame.result)}</div>` : ''}
+          ${childBadge}
+          ${avatarRow}
+        </div>
+        <div style="background:rgba(0,0,0,.15);border-radius:14px;padding:10px 12px;text-align:center;flex-shrink:0;min-width:56px">
+          <div style="font-size:${typeof cd.n==='number'?'26':'15'}px;font-weight:900;line-height:1;color:#1f2937">${cd.n}</div>
+          ${cd.u ? `<div style="font-size:9px;font-weight:700;opacity:.6;margin-top:2px;text-transform:uppercase;color:#1f2937">${cd.u}</div>` : ''}
+        </div>
+      </div>
     </div>`;
   }
 
@@ -444,10 +528,6 @@ function renderChat() {
   if(!page) return;
   const myName = chatName;
   page.innerHTML = `
-    <div style="background:#0A2540;padding:14px 16px;color:#fff;display:flex;align-items:center;gap:10px;flex-shrink:0">
-      <i class="fa fa-comments" style="font-size:18px"></i>
-      <span style="font-size:17px;font-weight:700">Team Chat</span>
-    </div>
     <div id="chatMessages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
       ${STATE.chat.map(m => {
         const mine = myName && m.author === myName;
@@ -580,7 +660,7 @@ function renderPinScreen(page) {
         update();
         if(pinVal.length >= 4 || k==='✓') {
           const pin = STATE.config.trainerPin || '1920';
-          if(pinVal === pin){ trainerLoggedIn=true; LSset('trainerLoggedIn','true'); renderTrainer(); }
+          if(pinVal === pin){ trainerLoggedIn=true; LSset('trainerLoggedIn','true'); updateHeader(); renderTrainer(); }
           else { document.getElementById('pinError').textContent='Falscher PIN'; pinVal=''; update(); }
         }
         return;
@@ -591,7 +671,7 @@ function renderPinScreen(page) {
   });
 }
 
-function trainerLogout(){ trainerLoggedIn=false; LSset('trainerLoggedIn','false'); renderTrainer(); }
+function trainerLogout(){ trainerLoggedIn=false; LSset('trainerLoggedIn','false'); updateHeader(); renderTrainer(); }
 
 function renderTrainerTab() {
   const c = document.getElementById('trainerContent');
