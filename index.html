@@ -85,14 +85,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div style="opacity:.7;margin-top:8px;font-size:14px">Verbinde...</div>
 </div>
 
-<div id="splash">
-  <img id="splashLogo" style="width:110px;height:110px;border-radius:50%;object-fit:cover;display:none">
-  <div id="splashLogoPlaceholder" style="width:110px;height:110px;border-radius:50%;background:#0A2540;display:flex;align-items:center;justify-content:center">
-    <span style="font-size:56px">⚽</span>
+<div id="splash" style="justify-content:space-between;padding:60px 32px 52px">
+  <!-- Logo area -->
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <img id="splashLogo" style="width:160px;height:160px;object-fit:contain;display:none;border-radius:12px">
+    <div id="splashLogoPlaceholder" style="width:140px;height:140px;border-radius:50%;background:#0A2540;display:flex;align-items:center;justify-content:center">
+      <span style="font-size:72px">⚽</span>
+    </div>
+    <div style="margin-top:24px;font-size:32px;font-weight:900;color:#0A2540;letter-spacing:3px;text-align:center">FC NIKSAR</div>
+    <div style="font-size:15px;color:#6B7280;margin-top:8px;font-weight:600;letter-spacing:1px">F1 · U9 · Saison 26/27</div>
   </div>
-  <div style="margin-top:24px;font-size:30px;font-weight:900;color:#0A2540;letter-spacing:2px">FC NIKSAR</div>
-  <div style="font-size:16px;color:#6B7280;margin-top:6px;font-weight:600">F1 · U9 · Saison 26/27</div>
-  <div style="margin-top:48px;font-size:13px;color:#D1D5DB">Tippe irgendwo um fortzufahren</div>
+  <!-- Start button -->
+  <button onclick="afterSplash()" style="width:100%;max-width:320px;background:#0A2540;color:#fff;border:none;border-radius:16px;padding:18px 24px;font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:.03em">
+    <span>Zur App</span>
+    <i class="fas fa-arrow-right"></i>
+  </button>
 </div>
 
 <div id="profileSetup" style="display:none">
