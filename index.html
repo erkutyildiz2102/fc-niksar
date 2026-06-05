@@ -470,9 +470,9 @@ function renderHome() {
     rsvpList.forEach(t => {
       const st = t.attendances?.[pid] || 'open';
       const stCfg = {
-        yes:  {label:'Zugesagt',   bg:'#D1FAE5', col:'#065F46', border:'#34D399', icon:'fa-check-circle'},
-        no:   {label:'Abgesagt',   bg:'#FEE2E2', col:'#991B1B', border:'#F87171', icon:'fa-times-circle'},
-        open: {label:'Noch offen', bg:'#FEF3C7', col:'#92400E', border:'#FCD34D', icon:'fa-question-circle'}
+        yes:  {label:'Zugesagt',   bg:'#D1FAE5', col:'#065F46', border:'#34D399'},
+        no:   {label:'Abgesagt',   bg:'#FEE2E2', col:'#991B1B', border:'#F87171'},
+        open: {label:'Noch offen', bg:'#FEF3C7', col:'#92400E', border:'#FCD34D'}
       }[st];
       html += `<div class="card" style="border-left:4px solid ${stCfg.border};overflow:visible">
         <div style="padding:12px 14px">
@@ -485,15 +485,15 @@ function renderHome() {
                 ${t.location ? ` · <i class="fas fa-location-dot" style="width:13px"></i> ${escHtml(t.location)}` : ''}
               </div>
             </div>
-            <div style="background:${stCfg.bg};color:${stCfg.col};font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0">
-              <i class="fas ${stCfg.icon}" style="margin-right:3px"></i>${stCfg.label}
+            <div style="background:${stCfg.bg};color:${stCfg.col};font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;border:1px solid ${stCfg.border}">
+              ${stCfg.label}
             </div>
           </div>
           ${pid
             ? `<div style="display:flex;gap:6px">
-                <button onclick="setRsvp('${t.id}','${pid}','yes')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='yes'?'#10B981':'#E5E7EB'};background:${st==='yes'?'#D1FAE5':'#fff'};color:${st==='yes'?'#065F46':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer">✅ Zusagen</button>
-                <button onclick="setRsvp('${t.id}','${pid}','open')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='open'?'#F59E0B':'#E5E7EB'};background:${st==='open'?'#FEF3C7':'#fff'};color:${st==='open'?'#92400E':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer">🕐 Offen</button>
-                <button onclick="setRsvp('${t.id}','${pid}','no')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='no'?'#EF4444':'#E5E7EB'};background:${st==='no'?'#FEE2E2':'#fff'};color:${st==='no'?'#991B1B':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer">❌ Absagen</button>
+                <button onclick="setRsvp('${t.id}','${pid}','yes')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='yes'?'#10B981':'#E5E7EB'};background:${st==='yes'?'#D1FAE5':'#fff'};color:${st==='yes'?'#065F46':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer">Zusagen</button>
+                <button onclick="setRsvp('${t.id}','${pid}','open')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='open'?'#F59E0B':'#E5E7EB'};background:${st==='open'?'#FEF3C7':'#fff'};color:${st==='open'?'#92400E':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer">Offen</button>
+                <button onclick="setRsvp('${t.id}','${pid}','no')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='no'?'#EF4444':'#E5E7EB'};background:${st==='no'?'#FEE2E2':'#fff'};color:${st==='no'?'#991B1B':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer">Absagen</button>
               </div>`
             : `<div onclick="editProfile()" style="background:#FEF3C7;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;color:#92400E;cursor:pointer;text-align:center">
                 ⚠️ Kind noch nicht zugeordnet — <u>Profil bearbeiten</u>
@@ -1201,7 +1201,12 @@ function exportData() {
 // ---- MODAL ----
 function showModal(html) {
   document.getElementById('modalContainer').innerHTML =
-    `<div class="modal-overlay" onclick="closeModalBg(event)"><div class="modal-sheet">${html}</div></div>`;
+    `<div class="modal-overlay" onclick="closeModalBg(event)">
+      <div class="modal-sheet" style="position:relative">
+        <button onclick="closeModal()" style="position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;border:none;background:#F3F4F6;color:#6B7280;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;z-index:10;flex-shrink:0">✕</button>
+        ${html}
+      </div>
+    </div>`;
 }
 function closeModal(){ document.getElementById('modalContainer').innerHTML = ''; }
 function closeModalBg(e){ if(e.target.classList.contains('modal-overlay')) closeModal(); }
