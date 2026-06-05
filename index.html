@@ -280,11 +280,23 @@ function updateHeader() {
 // ---- Init ----
 window.addEventListener('load', () => {
   initListeners();
+  const hasProfile = !!getProfile();
+  // Returning user with profile → skip splash entirely, show app fast
+  // New user → show splash briefly so they can read, then auto-advance
+  const splashDelay = hasProfile ? 0 : 400;
+  const autoAdvance = hasProfile ? 1200 : 2200;
+
   setTimeout(() => {
     document.getElementById('loadingOverlay').style.display = 'none';
-    document.getElementById('splash').style.display = 'flex';
-  }, 1800);
-  document.getElementById('splash').addEventListener('click', afterSplash);
+    if(splashDelay === 0) {
+      // Returning user: go straight to app (skip splash)
+      afterSplash();
+    } else {
+      document.getElementById('splash').style.display = 'flex';
+      document.getElementById('splash').addEventListener('click', afterSplash, {once:true});
+      setTimeout(afterSplash, autoAdvance);
+    }
+  }, hasProfile ? 600 : 1800);
   requestNotifPermission();
 });
 
