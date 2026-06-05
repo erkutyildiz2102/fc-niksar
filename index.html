@@ -186,7 +186,7 @@ const toArr = val => Object.entries(val || {}).map(([id, v]) => ({ ...v, id }));
 const escHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const fmt = d => { try { return new Date(d).toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'}); } catch(e){ return d; }};
 const fmtFull = d => { try { return new Date(d).toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long'}); } catch(e){ return d; }};
-const isNew = ts => ts && (Date.now() - ts) < 172800000;
+const isNew = ts => ts && (Date.now() - ts) < 7200000; // 2 Stunden
 const countdown = ms => {
   const diff = ms - Date.now();
   if(diff <= 0) return {n:'Heute', u:''};
