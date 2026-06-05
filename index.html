@@ -637,7 +637,8 @@ function renderHome() {
       <div class="event-slider" id="sliderTraining">`;
 
     upcomingTrainings.forEach(t => {
-      const st = pid ? (t.attendances?.[pid] || 'open') : null;
+      const localVal = window._localAtt?.[t.id + '_' + pid];
+      const st = pid ? (localVal ?? t.attendances?.[pid] ?? 'open') : null;
       const inEditMode = window._rsvpEdit?.[t.id];
       const showButtons = !pid ? false : (st === 'open' || !st || inEditMode);
 
@@ -826,9 +827,17 @@ function renderHome() {
 }
 
 function setRsvpHome(tid, pid, status) {
+  // Optimistic local update → UI reagiert sofort
   window._rsvpEdit = window._rsvpEdit || {};
   delete window._rsvpEdit[tid];
-  db.ref('/trainings/' + tid + '/attendances/' + pid).set(status);
+  window._localAtt = window._localAtt || {};
+  window._localAtt[tid + '_' + pid] = status;
+  renderHome(); // sofortiger Neuaufbau mit lokalem Wert
+  // Firebase schreiben (im Hintergrund)
+  db.ref('/trainings/' + tid + '/attendances/' + pid).set(status).then(() => {
+    // Firebase bestätigt → lokalen Override entfernen
+    if (window._localAtt) delete window._localAtt[tid + '_' + pid];
+  });
 }
 
 function setRsvp(tid, pid, status) {
