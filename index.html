@@ -199,15 +199,30 @@ let chatName = LS('chatName') || '';
 let lastChatRead = parseInt(LS('lastChatRead') || '0');
 
 // ---- PWA Manifest ----
-const manifest = {
-  name:'FC Niksar U9', short_name:'FC Niksar', theme_color:'#0A2540',
-  background_color:'#ffffff', display:'standalone', start_url:'./',
-  icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Ccircle cx='96' cy='96' r='96' fill='%230A2540'/%3E%3Ctext x='96' y='130' text-anchor='middle' font-size='100'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E",sizes:'192x192',type:'image/svg+xml'}]
-};
-const mLink = document.createElement('link');
-mLink.rel = 'manifest';
-mLink.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:'application/json'}));
-document.head.appendChild(mLink);
+const DEFAULT_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Ccircle cx='96' cy='96' r='96' fill='%230A2540'/%3E%3Ctext x='96' y='130' text-anchor='middle' font-size='100'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E";
+
+function setPWAManifest(iconSrc) {
+  const m = {
+    name:'FC Niksar F1/U9', short_name:'FC Niksar', theme_color:'#0A2540',
+    background_color:'#0A2540', display:'standalone', start_url:'./',
+    icons:[
+      {src: iconSrc, sizes:'192x192', type:'image/png', purpose:'any maskable'},
+      {src: iconSrc, sizes:'512x512', type:'image/png', purpose:'any maskable'}
+    ]
+  };
+  // Remove old manifest link
+  document.querySelectorAll('link[rel="manifest"]').forEach(l => l.remove());
+  const link = document.createElement('link');
+  link.rel = 'manifest';
+  link.href = URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/manifest+json'}));
+  document.head.appendChild(link);
+  // Update apple-touch-icon
+  let ai = document.querySelector('link[rel="apple-touch-icon"]');
+  if(!ai){ ai = document.createElement('link'); ai.rel='apple-touch-icon'; document.head.appendChild(ai); }
+  ai.href = iconSrc;
+}
+
+setPWAManifest(DEFAULT_ICON);
 
 // ---- Service Worker ----
 // App-Version – bei jeder Änderung hochzählen → erzwingt Update
@@ -298,14 +313,17 @@ function updateChatBadge() {
 }
 
 function applyLogo(logo) {
+  if(!logo) return;
   // Splash
   const sl = document.getElementById('splashLogo');
   const sp = document.getElementById('splashLogoPlaceholder');
-  if(logo && sl && sp){ sl.src = logo; sl.style.display=''; sp.style.display='none'; }
+  if(sl && sp){ sl.src = logo; sl.style.display=''; sp.style.display='none'; }
   // Header
   const hi = document.getElementById('headerLogoImg');
   const he = document.getElementById('headerLogoEmoji');
-  if(logo && hi && he){ hi.src = logo; hi.style.display=''; he.style.display='none'; }
+  if(hi && he){ hi.src = logo; hi.style.display=''; he.style.display='none'; }
+  // PWA App-Icon (Homescreen)
+  setPWAManifest(logo);
 }
 
 function updateHeader() {
