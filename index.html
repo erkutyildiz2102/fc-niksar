@@ -151,12 +151,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </header>
 
   <div id="homePage" class="page active"></div>
+  <div id="terminePage" class="page"></div>
   <div id="chatPage"></div>
   <div id="galeriePage" class="page"></div>
   <div id="trainerPage" class="page" style="padding:0;gap:0"></div>
 
   <nav id="bottomNav">
     <button class="nav-btn active" data-page="home" onclick="switchPage('home')"><i class="fa fa-home"></i><span>Start</span></button>
+    <button class="nav-btn" data-page="termine" onclick="switchPage('termine')"><i class="fas fa-calendar-days"></i><span>Termine</span></button>
     <button class="nav-btn" data-page="chat" onclick="switchPage('chat')"><i class="fa fa-comments"></i><span>Chat</span><span id="chatBadge" class="badge" style="display:none">0</span></button>
     <button class="nav-btn" data-page="galerie" onclick="switchPage('galerie')"><i class="fa fa-images"></i><span>Galerie</span></button>
     <button class="nav-btn" data-page="trainer" onclick="switchPage('trainer')"><i class="fa fa-whistle"></i><span>Trainer</span></button>
@@ -345,6 +347,7 @@ function initListeners() {
 function onDataChange() {
   updateHeader();
   if(currentPage==='home') renderHome();
+  if(currentPage==='termine') renderTermine();
   if(currentPage==='trainer') renderTrainer();
   if(document.getElementById('profileSetup').style.display !== 'none') renderSetupPlayers();
 }
@@ -472,6 +475,7 @@ function switchPage(page) {
   if(el) el.classList.add('active');
   document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
   if(page === 'home') renderHome();
+  else if(page === 'termine') renderTermine();
   else if(page === 'chat') {
     lastChatRead = Date.now();
     LSset('lastChatRead', String(lastChatRead));
@@ -793,45 +797,6 @@ function renderHome() {
     html += `</div>`;
   }
 
-  // ── UPCOMING LIST ──
-  if(upcoming.length > 0) {
-    html += `<div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <div style="width:28px;height:28px;border-radius:8px;background:#F3F4F6;display:flex;align-items:center;justify-content:center"><i class="fas fa-calendar-days" style="color:#6B7280;font-size:13px"></i></div>
-        <span style="font-size:13px;font-weight:800;color:#1F2937">Alle Termine</span>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px">`;
-    upcoming.slice(0,10).forEach(x => {
-      const isT = x.type==='training';
-      const st = pid ? (x.attendances?.[pid]||null) : null;
-      const stDot = st==='yes'?'#10B981':st==='no'?'#EF4444':st==='open'?'#F59E0B':null;
-      html += `<div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:12px">
-        <div style="width:42px;height:42px;border-radius:12px;background:${isT?'#EEF2FF':'#FEF3C7'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <i class="${isT?'fas fa-running':'fas fa-futbol'}" style="color:${isT?'#4F46E5':'#D97706'};font-size:16px"></i>
-        </div>
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:14px;color:#1F2937;display:flex;align-items:center;gap:6px">
-            ${isT?'Training':'vs. '+escHtml(x.opponent||'?')}
-            ${isNew(x.createdAt)?'<span style="background:#EF4444;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px">NEU</span>':''}
-          </div>
-          <div style="font-size:12px;color:#9CA3AF;margin-top:2px">${fmt(x.date)} · ${x.time||'?'} Uhr · ${escHtml(x.location||'')}</div>
-        </div>
-        <button onclick="event.stopPropagation();calBtn(this)" data-title="${isT?'FC Niksar Training':'FC Niksar vs. '+(x.opponent||'').replace(/\"/g,'')}" data-date="${x.date||''}" data-time="${x.time||''}" data-loc="${(x.location||'').replace(/"/g,'')}" data-dur="${isT?90:120}" style="background:none;border:none;color:#9CA3AF;cursor:pointer;padding:4px;font-size:14px;flex-shrink:0" title="Zum Kalender">
-          <i class="fas fa-calendar-plus"></i>
-        </button>
-        ${stDot ? `<div style="width:10px;height:10px;border-radius:50%;background:${stDot};flex-shrink:0"></div>` : ''}
-      </div>`;
-    });
-    html += `</div></div>`;
-  }
-
-  if(!upcoming.length) {
-    html += `<div style="text-align:center;padding:50px 20px;color:#D1D5DB">
-      <div style="font-size:52px;margin-bottom:12px">📅</div>
-      <div style="font-weight:700;font-size:16px;color:#9CA3AF">Noch keine Termine geplant</div>
-      <div style="font-size:13px;color:#D1D5DB;margin-top:4px">Der Trainer trägt sie bald ein</div>
-    </div>`;
-  }
 
   html += `</div></div>`;
   page.innerHTML = html;
@@ -853,6 +818,151 @@ function renderHome() {
       });
     }, {passive: true});
   });
+}
+
+// ---- TERMINE / CALENDAR ----
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let selectedDay = null;
+
+function renderTermine() {
+  const page = document.getElementById('terminePage');
+  if(!page || !page.classList.contains('active')) return;
+
+  const todayDate = new Date();
+  const firstDay = new Date(calYear, calMonth, 1);
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  let startDow = firstDay.getDay();
+  startDow = startDow === 0 ? 6 : startDow - 1;
+
+  const monthName = firstDay.toLocaleDateString('de-DE', {month:'long', year:'numeric'});
+
+  const eventMap = {};
+
+  STATE.trainings.forEach(t => {
+    if(!t.date) return;
+    if(!eventMap[t.date]) eventMap[t.date] = [];
+    eventMap[t.date].push({...t, _type:'training'});
+  });
+  STATE.games.forEach(g => {
+    if(!g.date) return;
+    if(!eventMap[g.date]) eventMap[g.date] = [];
+    eventMap[g.date].push({...g, _type:'game'});
+  });
+
+  let dayCells = '';
+  const totalCells = startDow + daysInMonth;
+  const rows = Math.ceil(totalCells / 7);
+
+  for(let i = 0; i < rows * 7; i++) {
+    const dayNum = i - startDow + 1;
+    if(dayNum < 1 || dayNum > daysInMonth) {
+      dayCells += `<div></div>`;
+      continue;
+    }
+    const mm = String(calMonth + 1).padStart(2,'0');
+    const dd = String(dayNum).padStart(2,'0');
+    const dateStr = `${calYear}-${mm}-${dd}`;
+    const events = eventMap[dateStr] || [];
+    const hasTraining = events.some(e => e._type === 'training');
+    const hasGame     = events.some(e => e._type === 'game');
+    const isToday     = dayNum === todayDate.getDate() && calMonth === todayDate.getMonth() && calYear === todayDate.getFullYear();
+    const isSelected  = dateStr === selectedDay;
+    const isPast      = new Date(dateStr + 'T23:59:59') < todayDate;
+
+    let bg = 'transparent', textCol = isPast ? '#C4C4C4' : '#1F2937', border = 'none';
+    if(isToday)    { bg = '#0A2540'; textCol = '#fff'; }
+    if(isSelected && !isToday) { bg = '#EEF2FF'; border = '2px solid #0A2540'; textCol = '#0A2540'; }
+
+    const dots = `<div style="display:flex;justify-content:center;gap:2px;margin-top:2px">
+      ${hasTraining ? `<div style="width:5px;height:5px;border-radius:50%;background:#3B82F6;flex-shrink:0"></div>` : ''}
+      ${hasGame     ? `<div style="width:5px;height:5px;border-radius:50%;background:#F59E0B;flex-shrink:0"></div>` : ''}
+    </div>`;
+
+    dayCells += `<div onclick="selectDay('${dateStr}')" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:10px;cursor:${events.length?'pointer':'default'};background:${bg};border:${border};padding:2px;user-select:none">
+      <div style="font-size:14px;font-weight:${isToday||isSelected?'800':'600'};color:${textCol};line-height:1">${dayNum}</div>
+      ${dots}
+    </div>`;
+  }
+
+  let detailHtml = '';
+  if(selectedDay && eventMap[selectedDay]) {
+    const pid = getProfile()?.playerId;
+    detailHtml = eventMap[selectedDay].map(ev => {
+      const isT = ev._type === 'training';
+      const bg  = isT ? 'linear-gradient(135deg,#0A2540,#1e4d8c)' : 'linear-gradient(135deg,#B45309,#F59E0B)';
+      let extra = '';
+      if(!isT) {
+        const squadKeys = Object.keys(ev.squad||{}).filter(k=>ev.squad[k]);
+        if(pid && squadKeys.length > 0) {
+          const inSquad = squadKeys.includes(pid);
+          extra = inSquad
+            ? `<div style="margin-top:8px;background:rgba(16,185,129,.3);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#fff">✅ Dein Kind spielt mit!</div>`
+            : `<div style="margin-top:8px;background:rgba(239,68,68,.25);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#fff">❌ Diesmal nicht nominiert</div>`;
+        }
+      } else if(pid) {
+        const s = ev.attendances?.[pid];
+        extra = `<div style="margin-top:8px;display:flex;gap:6px">
+          <button onclick="setRsvp('${ev.id}','${pid}','yes')" style="flex:1;padding:8px 4px;border-radius:8px;border:2px solid ${s==='yes'?'#10B981':'rgba(255,255,255,.3)'};background:${s==='yes'?'rgba(16,185,129,.3)':'rgba(255,255,255,.1)'};color:#fff;font-size:12px;font-weight:700;cursor:pointer">Zusagen</button>
+          <button onclick="setRsvp('${ev.id}','${pid}','open')" style="flex:1;padding:8px 4px;border-radius:8px;border:2px solid ${s==='open'||!s?'#F59E0B':'rgba(255,255,255,.3)'};background:${s==='open'||!s?'rgba(245,158,11,.3)':'rgba(255,255,255,.1)'};color:#fff;font-size:12px;font-weight:700;cursor:pointer">Offen</button>
+          <button onclick="setRsvp('${ev.id}','${pid}','no')" style="flex:1;padding:8px 4px;border-radius:8px;border:2px solid ${s==='no'?'#EF4444':'rgba(255,255,255,.3)'};background:${s==='no'?'rgba(239,68,68,.3)':'rgba(255,255,255,.1)'};color:#fff;font-size:12px;font-weight:700;cursor:pointer">Absagen</button>
+        </div>`;
+      }
+      return `<div style="background:${bg};border-radius:16px;padding:14px;color:#fff;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;opacity:.6;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">${isT?'🏃 Training':'⚽ Spiel'}</div>
+        <div style="font-size:17px;font-weight:900;margin-bottom:6px">${isT ? fmtFull(ev.date) : 'vs. '+escHtml(ev.opponent||'?')}</div>
+        <div style="font-size:12px;opacity:.8;display:flex;flex-direction:column;gap:2px">
+          <div><i class="fas fa-clock" style="width:14px"></i> ${ev.time||'?'} Uhr</div>
+          <div><i class="fas fa-location-dot" style="width:14px"></i> ${escHtml(ev.location||'?')}</div>
+        </div>
+        ${ev.result?`<div style="margin-top:8px;font-size:18px;font-weight:900">Ergebnis: ${escHtml(ev.result)}</div>`:''}
+        ${extra}
+        <button onclick="calBtn(this)" data-title="${isT?'FC Niksar Training':'FC Niksar vs. '+(ev.opponent||'')}" data-date="${ev.date}" data-time="${ev.time||''}" data-loc="${(ev.location||'').replace(/"/g,'')}" data-dur="${isT?90:120}" style="margin-top:10px;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.2);border-radius:8px;padding:7px 12px;font-size:11px;font-weight:600;color:rgba(255,255,255,.85);cursor:pointer;display:inline-flex;align-items:center;gap:5px">
+          <i class="fas fa-calendar-plus"></i> Zum Kalender
+        </button>
+      </div>`;
+    }).join('');
+  } else if(selectedDay) {
+    detailHtml = `<div style="text-align:center;padding:20px;color:#9CA3AF;font-size:13px">Kein Termin an diesem Tag</div>`;
+  }
+
+  page.innerHTML = `
+    <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;background:#fff;border-bottom:1px solid #F3F4F6;position:sticky;top:0;z-index:10">
+      <button onclick="changeCalMonth(-1)" style="width:34px;height:34px;border-radius:50%;border:none;background:#F3F4F6;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center"><i class="fas fa-chevron-left" style="color:#374151;font-size:12px"></i></button>
+      <div style="font-size:15px;font-weight:800;color:#1F2937;text-transform:capitalize">${monthName}</div>
+      <button onclick="changeCalMonth(1)" style="width:34px;height:34px;border-radius:50%;border:none;background:#F3F4F6;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center"><i class="fas fa-chevron-right" style="color:#374151;font-size:12px"></i></button>
+    </div>
+
+    <div style="padding:12px 16px">
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px">
+        ${['Mo','Di','Mi','Do','Fr','Sa','So'].map(d => `<div style="text-align:center;font-size:11px;font-weight:700;color:#9CA3AF;padding:4px 0">${d}</div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">
+        ${dayCells}
+      </div>
+
+      <div style="display:flex;gap:16px;margin-top:12px;padding:10px 12px;background:#F9FAFB;border-radius:10px">
+        <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:50%;background:#3B82F6"></div><span style="font-size:12px;color:#6B7280;font-weight:600">Training</span></div>
+        <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:50%;background:#F59E0B"></div><span style="font-size:12px;color:#6B7280;font-weight:600">Spiel</span></div>
+        <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:50%;background:#0A2540"></div><span style="font-size:12px;color:#6B7280;font-weight:600">Heute</span></div>
+      </div>
+
+      ${selectedDay ? `<div style="margin-top:14px"><div style="font-size:12px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${new Date(selectedDay+'T12:00:00').toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}</div>${detailHtml}</div>` :
+      `<div style="text-align:center;padding:24px;color:#D1D5DB"><i class="fas fa-hand-pointer" style="font-size:24px;display:block;margin-bottom:8px"></i><span style="font-size:13px">Tag antippen für Details</span></div>`}
+    </div>`;
+}
+
+function selectDay(dateStr) {
+  selectedDay = selectedDay === dateStr ? null : dateStr;
+  renderTermine();
+}
+
+function changeCalMonth(delta) {
+  calMonth += delta;
+  if(calMonth < 0) { calMonth = 11; calYear--; }
+  if(calMonth > 11) { calMonth = 0; calYear++; }
+  selectedDay = null;
+  renderTermine();
 }
 
 function setRsvpHome(tid, pid, status) {
