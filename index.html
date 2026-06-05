@@ -104,8 +104,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div style="width:100%;max-width:400px">
     <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:6px">Dein Name (z.B. "Sabrina – Lukas Mama")</div>
     <input id="setupName" class="input-field" type="text" placeholder="Name eingeben..." style="margin-bottom:16px">
-    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px">Wähle dein Kind:</div>
-    <div id="setupPlayerGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:24px"></div>
+    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px">Wähle dein Kind: <span style="font-weight:400;color:#9CA3AF">(optional – kann später ergänzt werden)</span></div>
+    <div id="setupPlayerGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px"></div>
+    <div id="setupNoPlayers" style="display:none;background:#FEF3C7;border-radius:10px;padding:10px 12px;font-size:13px;color:#92400E;margin-bottom:16px">
+      ℹ️ Noch keine Spieler – der Trainer trägt sie nach dem ersten Login ein. Du kannst dein Kind später im Profil auswählen.
+    </div>
+    <div style="height:16px"></div>
     <button class="btn-primary" onclick="saveProfile()">Fertig &amp; loslegen</button>
   </div>
 </div>
@@ -296,7 +300,15 @@ function showProfileSetup() {
 
 function renderSetupPlayers() {
   const grid = document.getElementById('setupPlayerGrid');
+  const noP  = document.getElementById('setupNoPlayers');
   if(!grid) return;
+  if(!STATE.players.length) {
+    grid.style.display = 'none';
+    if(noP) noP.style.display = 'block';
+    return;
+  }
+  grid.style.display = 'grid';
+  if(noP) noP.style.display = 'none';
   grid.innerHTML = STATE.players.map(p => `
     <div class="player-chip ${selectedSetupPlayer===p.id?'selected':''}" onclick="selectSetupPlayer('${p.id}')">
       ${p.photo ? `<img src="${p.photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover">` : `<div class="avatar">${(p.name||'?')[0].toUpperCase()}</div>`}
@@ -313,8 +325,7 @@ function selectSetupPlayer(id) {
 function saveProfile() {
   const name = document.getElementById('setupName').value.trim();
   if(!name){ alert('Bitte einen Namen eingeben'); return; }
-  if(!selectedSetupPlayer){ alert('Bitte ein Kind auswählen'); return; }
-  LSset('profile', JSON.stringify({name, playerId: selectedSetupPlayer}));
+  LSset('profile', JSON.stringify({name, playerId: selectedSetupPlayer || null}));
   document.getElementById('profileSetup').style.display = 'none';
   showApp();
 }
