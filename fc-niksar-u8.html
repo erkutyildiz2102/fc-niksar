@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FC Niksar · F1/U9</title>
+<meta name="theme-color" content="#0A2540">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root{--primary:#0A2540;--accent:#fff;--amber:#F59E0B}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0F4F8;margin:0;min-height:100vh;overflow-x:hidden}
+#splash,#profileSetup{position:fixed;inset:0;background:#fff;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+#app{display:none;flex-direction:column;min-height:100vh;padding-bottom:80px}
+.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.08);overflow:hidden}
+.card-dark{background:var(--primary);color:#fff;border-radius:16px;overflow:hidden}
+.card-amber{background:var(--amber);border-radius:16px;overflow:hidden}
+#bottomNav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;padding:8px 0 calc(8px + env(safe-area-inset-bottom));display:flex;z-index:100}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:none;cursor:pointer;padding:4px;position:relative;color:#9CA3AF;font-size:11px;transition:color .2s}
+.nav-btn.active{color:var(--primary)}
+.nav-btn i{font-size:20px}
+.badge{position:absolute;top:2px;right:calc(50% - 18px);background:#EF4444;color:#fff;border-radius:9px;font-size:10px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;line-height:14px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end}
+.modal-sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:20px}
+.modal-handle{width:40px;height:4px;background:#e5e7eb;border-radius:2px;margin:0 auto 16px}
+.rsvp-btn{flex:1;padding:8px 4px;border-radius:10px;border:2px solid transparent;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:#f3f4f6;color:#374151}
+.rsvp-btn.go{background:#D1FAE5;color:#065F46;border-color:#10B981}
+.rsvp-btn.opn{background:#FEF3C7;color:#92400E;border-color:#F59E0B}
+.rsvp-btn.no{background:#FEE2E2;color:#991B1B;border-color:#EF4444}
+.player-chip{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;border-radius:12px;border:2px solid #e5e7eb;cursor:pointer;background:#f9fafb;transition:all .2s}
+.player-chip.selected{border-color:var(--primary);background:#EEF2FF}
+.avatar{background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;width:48px;height:48px;border-radius:50%}
+.avatar-lg{width:52px;height:52px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px}
+.stat-bar{height:6px;border-radius:3px;background:#e5e7eb;overflow:hidden}
+.stat-bar-fill{height:100%;border-radius:3px;background:var(--primary);transition:width .6s}
+.training-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:2px}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:260px;margin:0 auto}
+.pin-btn{padding:16px;border:2px solid #e5e7eb;border-radius:12px;background:#fff;font-size:20px;font-weight:600;cursor:pointer;transition:all .15s}
+.pin-btn:active{background:#f3f4f6;transform:scale(.96)}
+.profile-strip{background:linear-gradient(135deg,var(--primary),#1a3a5c);color:#fff;padding:16px;border-radius:16px;margin:12px 12px 0}
+#offlineBanner{display:none;position:fixed;top:0;left:0;right:0;background:#EF4444;color:#fff;text-align:center;padding:8px;font-size:13px;font-weight:600;z-index:500}
+#loadingOverlay{position:fixed;inset:0;background:var(--primary);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;color:#fff}
+.page{display:none;flex-direction:column;gap:12px;padding:12px}
+.page.active{display:flex}
+.msg-bubble{max-width:72%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.4;word-break:break-word}
+.msg-mine{background:var(--primary);color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+.msg-other{background:#fff;color:#1f2937;border-bottom-left-radius:4px;align-self:flex-start}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+.photo-thumb{aspect-ratio:1;object-fit:cover;cursor:pointer;width:100%}
+.trainer-tabs{display:flex;overflow-x:auto;gap:8px;padding:0 12px 8px;scrollbar-width:none}
+.trainer-tabs::-webkit-scrollbar{display:none}
+.ttab{padding:8px 16px;border-radius:20px;border:none;background:#e5e7eb;color:#374151;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s}
+.ttab.active{background:var(--primary);color:#fff}
+.att-btn{width:32px;height:32px;border-radius:50%;border:2px solid #e5e7eb;background:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.att-btn.yes{background:#D1FAE5;border-color:#10B981}
+.att-btn.opn{background:#FEF3C7;border-color:#F59E0B}
+.att-btn.no{background:#FEE2E2;border-color:#EF4444}
+.squad-card{position:relative;cursor:pointer;border-radius:12px;overflow:hidden;background:#fff;border:2px solid #e5e7eb;text-align:center;padding:8px}
+.squad-card.in-squad{border-color:#10B981}
+.countdown-bubble{background:rgba(255,255,255,.2);border-radius:10px;padding:4px 10px;font-size:12px;font-weight:700;display:inline-block}
+.input-field{width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:10px;font-size:15px;transition:border-color .2s;background:#fff}
+.input-field:focus{border-color:var(--primary);outline:none}
+.btn-primary{background:var(--primary);color:#fff;border:none;padding:12px 24px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;width:100%;transition:opacity .2s;display:block;text-align:center}
+.btn-primary:active{opacity:.85}
+.btn-sm{padding:6px 14px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer}
+.section-title{font-size:13px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;padding:0 4px}
+.new-tag{background:#EF4444;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px}
+#chatMessages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+#chatPage{display:none;flex-direction:column;height:calc(100vh - 80px)}
+#chatPage.active{display:flex}
+</style>
+</head>
+<body>
+
+<div id="offlineBanner"><i class="fa fa-wifi-slash"></i> Keine Verbindung – Offline-Modus</div>
+
+<div id="loadingOverlay">
+  <div style="font-size:56px;margin-bottom:16px">⚽</div>
+  <div style="font-size:22px;font-weight:800;letter-spacing:2px">FC NIKSAR</div>
+  <div style="opacity:.7;margin-top:8px;font-size:14px">Verbinde...</div>
+</div>
+
+<div id="splash">
+  <img id="splashLogo" style="width:110px;height:110px;border-radius:50%;object-fit:cover;display:none">
+  <div id="splashLogoPlaceholder" style="width:110px;height:110px;border-radius:50%;background:#0A2540;display:flex;align-items:center;justify-content:center">
+    <span style="font-size:56px">⚽</span>
+  </div>
+  <div style="margin-top:24px;font-size:30px;font-weight:900;color:#0A2540;letter-spacing:2px">FC NIKSAR</div>
+  <div style="font-size:16px;color:#6B7280;margin-top:6px;font-weight:600">F1 · U9 · Saison 26/27</div>
+  <div style="margin-top:48px;font-size:13px;color:#D1D5DB">Tippe irgendwo um fortzufahren</div>
+</div>
+
+<div id="profileSetup" style="display:none">
+  <div style="text-align:center;margin-bottom:28px">
+    <div style="font-size:40px">👋</div>
+    <div style="font-size:24px;font-weight:800;color:#0A2540;margin-top:8px">Willkommen!</div>
+    <div style="color:#6B7280;margin-top:4px">Einmalige Einrichtung – dauert nur kurz</div>
+  </div>
+  <div style="width:100%;max-width:400px">
+    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:6px">Dein Name (z.B. "Sabrina – Lukas Mama")</div>
+    <input id="setupName" class="input-field" type="text" placeholder="Name eingeben..." style="margin-bottom:16px">
+    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px">Wähle dein Kind:</div>
+    <div id="setupPlayerGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:24px"></div>
+    <button class="btn-primary" onclick="saveProfile()">Fertig &amp; loslegen</button>
+  </div>
+</div>
+
+<div id="app">
+  <div id="homePage" class="page active"></div>
+  <div id="chatPage"></div>
+  <div id="galeriePage" class="page"></div>
+  <div id="trainerPage" class="page" style="padding:0;gap:0"></div>
+
+  <nav id="bottomNav">
+    <button class="nav-btn active" data-page="home" onclick="switchPage('home')"><i class="fa fa-home"></i><span>Start</span></button>
+    <button class="nav-btn" data-page="chat" onclick="switchPage('chat')"><i class="fa fa-comments"></i><span>Chat</span><span id="chatBadge" class="badge" style="display:none">0</span></button>
+    <button class="nav-btn" data-page="galerie" onclick="switchPage('galerie')"><i class="fa fa-images"></i><span>Galerie</span></button>
+    <button class="nav-btn" data-page="trainer" onclick="switchPage('trainer')"><i class="fa fa-whistle"></i><span>Trainer</span></button>
+  </nav>
+</div>
+
+<div id="modalContainer"></div>
+
+<script>
+// ---- Firebase Init ----
+const firebaseConfig = {
+  apiKey: "AIzaSyBaPNv38qSG9tBJVOleyxtakMD6HIU9dEs",
+  authDomain: "fc-niksar.firebaseapp.com",
+  databaseURL: "https://fc-niksar-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "fc-niksar",
+  storageBucket: "fc-niksar.firebasestorage.app",
+  messagingSenderId: "798194127840",
+  appId: "1:798194127840:web:d7a5d7c0cc49994871d185"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ---- Helpers ----
+const LS = k => localStorage.getItem('fcniksar_' + k);
+const LSset = (k, v) => localStorage.setItem('fcniksar_' + k, typeof v === 'string' ? v : JSON.stringify(v));
+const toArr = val => Object.entries(val || {}).map(([id, v]) => ({ ...v, id }));
+const escHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmt = d => { try { return new Date(d).toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'}); } catch(e){ return d; }};
+const fmtFull = d => { try { return new Date(d).toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long'}); } catch(e){ return d; }};
+const isNew = ts => ts && (Date.now() - ts) < 172800000;
+const countdown = ms => { const diff = ms - Date.now(); if(diff<=0) return 'Jetzt'; const d=Math.floor(diff/86400000); const h=Math.floor((diff%86400000)/3600000); return d>0 ? d+'T '+h+'h' : h+'h'; };
+
+// ---- State ----
+const STATE = { players:[], trainings:[], games:[], chat:[], photos:[], config:{} };
+let currentPage = 'home';
+let trainerLoggedIn = LS('trainerLoggedIn') === 'true';
+let selectedSetupPlayer = null;
+let trainerTab = 'spieler';
+let chatName = LS('chatName') || '';
+let lastChatRead = parseInt(LS('lastChatRead') || '0');
+
+// ---- PWA Manifest ----
+const manifest = {
+  name:'FC Niksar U9', short_name:'FC Niksar', theme_color:'#0A2540',
+  background_color:'#ffffff', display:'standalone', start_url:'./',
+  icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Ccircle cx='96' cy='96' r='96' fill='%230A2540'/%3E%3Ctext x='96' y='130' text-anchor='middle' font-size='100'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E",sizes:'192x192',type:'image/svg+xml'}]
+};
+const mLink = document.createElement('link');
+mLink.rel = 'manifest';
+mLink.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:'application/json'}));
+document.head.appendChild(mLink);
+
+// ---- Service Worker ----
+if ('serviceWorker' in navigator) {
+  const swCode = `self.addEventListener('install',e=>e.waitUntil(caches.open('fcn-v1').then(c=>c.addAll([location.href]))));self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>new Response('Offline',{status:503})))))`;
+  navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode],{type:'application/javascript'}))).catch(()=>{});
+}
+
+// ---- Firebase Listeners ----
+function initListeners() {
+  db.ref('/players').on('value', s => { STATE.players = toArr(s.val()); onDataChange(); });
+  db.ref('/trainings').on('value', s => { STATE.trainings = toArr(s.val()); onDataChange(); });
+  db.ref('/games').on('value', s => { STATE.games = toArr(s.val()); onDataChange(); });
+  db.ref('/chat').on('value', s => {
+    STATE.chat = toArr(s.val()).sort((a,b) => (a.ts||0) - (b.ts||0));
+    renderChat();
+    updateChatBadge();
+  });
+  db.ref('/photos').on('value', s => { STATE.photos = toArr(s.val()).sort((a,b) => (b.ts||0)-(a.ts||0)); if(currentPage==='galerie') renderGalerie(); });
+  db.ref('/config').on('value', s => {
+    STATE.config = s.val() || {};
+    applyLogo(STATE.config.logo);
+    if(currentPage==='trainer') renderTrainer();
+  });
+  db.ref('.info/connected').on('value', s => {
+    document.getElementById('offlineBanner').style.display = s.val() ? 'none' : 'block';
+  });
+}
+
+function onDataChange() {
+  if(currentPage==='home') renderHome();
+  if(currentPage==='trainer') renderTrainer();
+  // update setup player grid if visible
+  if(document.getElementById('profileSetup').style.display !== 'none') renderSetupPlayers();
+}
+
+function updateChatBadge() {
+  const unread = STATE.chat.filter(m => (m.ts||0) > lastChatRead && currentPage !== 'chat').length;
+  const badge = document.getElementById('chatBadge');
+  if(badge){ badge.textContent = unread; badge.style.display = unread > 0 ? '' : 'none'; }
+}
+
+function applyLogo(logo) {
+  const sl = document.getElementById('splashLogo');
+  const sp = document.getElementById('splashLogoPlaceholder');
+  if(logo && sl && sp){ sl.src = logo; sl.style.display=''; sp.style.display='none'; }
+}
+
+// ---- Init ----
+window.addEventListener('load', () => {
+  initListeners();
+  setTimeout(() => {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    document.getElementById('splash').style.display = 'flex';
+  }, 1800);
+  document.getElementById('splash').addEventListener('click', afterSplash);
+  requestNotifPermission();
+});
+
+function afterSplash() {
+  document.getElementById('splash').style.display = 'none';
+  const profile = getProfile();
+  if(!profile || !profile.name) { showProfileSetup(); }
+  else { showApp(); }
+}
+
+function getProfile() {
+  const s = LS('profile');
+  return s ? JSON.parse(s) : null;
+}
+
+function showProfileSetup() {
+  document.getElementById('profileSetup').style.display = 'flex';
+  renderSetupPlayers();
+}
+
+function renderSetupPlayers() {
+  const grid = document.getElementById('setupPlayerGrid');
+  if(!grid) return;
+  grid.innerHTML = STATE.players.map(p => `
+    <div class="player-chip ${selectedSetupPlayer===p.id?'selected':''}" onclick="selectSetupPlayer('${p.id}')">
+      ${p.photo ? `<img src="${p.photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover">` : `<div class="avatar">${(p.name||'?')[0].toUpperCase()}</div>`}
+      <div style="font-size:11px;font-weight:700">#${p.number||'?'}</div>
+      <div style="font-size:10px;color:#6B7280;text-align:center;line-height:1.2">${escHtml(p.name||'')}</div>
+    </div>`).join('');
+}
+
+function selectSetupPlayer(id) {
+  selectedSetupPlayer = id;
+  renderSetupPlayers();
+}
+
+function saveProfile() {
+  const name = document.getElementById('setupName').value.trim();
+  if(!name){ alert('Bitte einen Namen eingeben'); return; }
+  if(!selectedSetupPlayer){ alert('Bitte ein Kind auswählen'); return; }
+  LSset('profile', JSON.stringify({name, playerId: selectedSetupPlayer}));
+  document.getElementById('profileSetup').style.display = 'none';
+  showApp();
+}
+
+function showApp() {
+  document.getElementById('app').style.display = 'flex';
+  renderHome();
+}
+
+function switchPage(page) {
+  currentPage = page;
+  document.querySelectorAll('.page, #chatPage').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById(page + 'Page');
+  if(el) el.classList.add('active');
+  document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
+  if(page === 'home') renderHome();
+  else if(page === 'chat') {
+    lastChatRead = Date.now();
+    LSset('lastChatRead', String(lastChatRead));
+    updateChatBadge();
+    renderChat();
+    setTimeout(() => { const c = document.getElementById('chatMessages'); if(c) c.scrollTop = c.scrollHeight; }, 100);
+  }
+  else if(page === 'galerie') renderGalerie();
+  else if(page === 'trainer') renderTrainer();
+}
+
+// ---- HOME ----
+function renderHome() {
+  const page = document.getElementById('homePage');
+  if(!page || !page.classList.contains('active')) return;
+  const profile = getProfile();
+  const now = Date.now();
+
+  const upcoming = [
+    ...STATE.trainings.map(t => ({...t, type:'training', sortDate: new Date(t.date + ' ' + (t.time||'00:00')).getTime()})),
+    ...STATE.games.map(g => ({...g, type:'game', sortDate: new Date(g.date + ' ' + (g.time||'00:00')).getTime()}))
+  ].filter(x => x.sortDate >= now - 3600000).sort((a,b) => a.sortDate - b.sortDate);
+
+  const nextTraining = upcoming.find(x => x.type === 'training');
+  const nextGame = upcoming.find(x => x.type === 'game');
+  const pid = profile?.playerId;
+
+  let html = '';
+
+  // Profile strip
+  if(profile) {
+    const player = STATE.players.find(p => p.id === pid);
+    html += `<div class="profile-strip">
+      <div style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="editProfile()">
+        ${player?.photo ? `<img src="${player.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.4)">` :
+          `<div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px">👤</div>`}
+        <div>
+          <div style="font-size:15px;font-weight:700">Hallo ${escHtml(profile.name)}!</div>
+          <div style="font-size:12px;opacity:.8">${player ? `Kind: ${escHtml(player.name)} #${player.number||'?'}` : 'Kind nicht gefunden'}</div>
+        </div>
+        <i class="fa fa-pencil" style="margin-left:auto;opacity:.6;font-size:14px"></i>
+      </div>
+    </div>`;
+  }
+
+  // Trainer quick bar
+  if(trainerLoggedIn) {
+    const tCount = STATE.trainings.length;
+    const pCount = STATE.players.length;
+    const gCount = STATE.games.length;
+    html += `<div class="card" style="padding:12px;display:flex;gap:0">
+      ${[['👥',pCount,'Spieler'],['🏃',tCount,'Trainings'],['⚽',gCount,'Spiele']].map(([icon,val,label])=>`
+        <div style="flex:1;text-align:center;border-right:1px solid #f3f4f6">
+          <div style="font-size:20px;font-weight:800;color:#0A2540">${val}</div>
+          <div style="font-size:11px;color:#6B7280">${icon} ${label}</div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  // RSVP Section
+  const rsvpList = STATE.trainings.filter(t => new Date(t.date + ' ' + (t.time||'00:00')).getTime() >= now - 3600000)
+    .sort((a,b) => new Date(a.date) - new Date(b.date)).slice(0, 3);
+  if(pid && rsvpList.length) {
+    html += `<div class="section-title">Meine Rückmeldungen</div>`;
+    rsvpList.forEach(t => {
+      const st = t.attendances?.[pid] || 'open';
+      const stLabel = st==='yes'?'✅ Zugesagt':st==='no'?'❌ Abgesagt':'🕐 Offen';
+      const stColor = st==='yes'?'#D1FAE5;color:#065F46':st==='no'?'#FEE2E2;color:#991B1B':'#FEF3C7;color:#92400E';
+      html += `<div class="card" style="padding:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div>
+            <div style="font-weight:700;font-size:14px">${fmt(t.date)}</div>
+            <div style="font-size:12px;color:#6B7280">${t.time||''} Uhr · ${escHtml(t.location||'')}</div>
+          </div>
+          <div style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;background:${stColor}">${stLabel}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="rsvp-btn ${st==='yes'?'go':''}" onclick="setRsvp('${t.id}','${pid}','yes')">✅ Zusagen</button>
+          <button class="rsvp-btn ${st==='open'?'opn':''}" onclick="setRsvp('${t.id}','${pid}','open')">🕐 Offen</button>
+          <button class="rsvp-btn ${st==='no'?'no':''}" onclick="setRsvp('${t.id}','${pid}','no')">❌ Absagen</button>
+        </div>
+      </div>`;
+    });
+  }
+
+  // Next Training card
+  if(nextTraining) {
+    html += `<div class="card-dark" style="padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Nächstes Training</div>
+          <div style="font-size:20px;font-weight:800;margin-top:4px">${fmtFull(nextTraining.date)}</div>
+          <div style="font-size:14px;opacity:.8;margin-top:4px"><i class="fa fa-clock"></i> ${nextTraining.time||'?'} Uhr</div>
+          <div style="font-size:14px;opacity:.8;margin-top:2px"><i class="fa fa-location-dot"></i> ${escHtml(nextTraining.location||'?')}</div>
+        </div>
+        <div class="countdown-bubble">${countdown(nextTraining.sortDate)}</div>
+      </div>
+      ${nextTraining.notes ? `<div style="margin-top:10px;font-size:13px;opacity:.7;border-top:1px solid rgba(255,255,255,.15);padding-top:8px">${escHtml(nextTraining.notes)}</div>` : ''}
+    </div>`;
+  }
+
+  // Next Game card
+  if(nextGame) {
+    const squadKeys = Object.keys(nextGame.squad || {}).filter(k => nextGame.squad[k]);
+    const squadSet = squadKeys.length > 0;
+    const inSquad = pid && squadKeys.includes(pid);
+    let squadBadge = `<div style="background:rgba(0,0,0,.15);border-radius:8px;padding:6px 10px;font-size:13px;margin-top:10px">🕐 Kader wird noch bekannt gegeben</div>`;
+    if(squadSet && inSquad) squadBadge = `<div style="background:rgba(16,185,129,.3);border-radius:8px;padding:6px 10px;font-size:13px;margin-top:10px;font-weight:600">✅ Dein Kind spielt mit!</div>`;
+    if(squadSet && !inSquad) squadBadge = `<div style="background:rgba(239,68,68,.3);border-radius:8px;padding:6px 10px;font-size:13px;margin-top:10px;font-weight:600">❌ Diesmal nicht nominiert</div>`;
+    html += `<div class="card-amber" style="padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:rgba(0,0,0,.6)">Nächstes Spiel</div>
+          <div style="font-size:20px;font-weight:800;margin-top:4px;color:#1f2937">vs. ${escHtml(nextGame.opponent||'?')}</div>
+          <div style="font-size:13px;color:rgba(0,0,0,.7);margin-top:4px"><i class="fa fa-clock"></i> ${nextGame.time||'?'} · <i class="fa fa-location-dot"></i> ${escHtml(nextGame.location||'?')}</div>
+          ${nextGame.result ? `<div style="font-size:18px;font-weight:800;margin-top:6px;color:#1f2937">Ergebnis: ${escHtml(nextGame.result)}</div>` : ''}
+        </div>
+        <div style="background:rgba(0,0,0,.15);border-radius:10px;padding:4px 10px;font-size:12px;font-weight:700">${countdown(nextGame.sortDate)}</div>
+      </div>
+      ${pid ? squadBadge : ''}
+    </div>`;
+  }
+
+  // Upcoming list
+  if(upcoming.length) {
+    html += `<div class="section-title">Alle Termine</div>`;
+    upcoming.slice(0,10).forEach(x => {
+      html += `<div class="card" style="padding:12px;display:flex;align-items:center;gap:12px">
+        <div style="width:40px;height:40px;border-radius:10px;background:${x.type==='training'?'#EEF2FF':'#FEF3C7'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${x.type==='training'?'🏃':'⚽'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px">${x.type==='training'?'Training':'vs. '+escHtml(x.opponent||'?')} ${isNew(x.createdAt)?'<span class="new-tag">NEU</span>':''}</div>
+          <div style="font-size:12px;color:#6B7280">${fmt(x.date)} · ${x.time||'?'} Uhr · ${escHtml(x.location||'?')}</div>
+        </div>
+      </div>`;
+    });
+  }
+
+  if(!upcoming.length && !nextTraining && !nextGame) {
+    html += `<div style="text-align:center;padding:60px 20px;color:#9CA3AF"><div style="font-size:48px">📅</div><div style="font-weight:700;margin-top:12px;font-size:16px">Noch keine Termine geplant</div></div>`;
+  }
+
+  page.innerHTML = html;
+}
+
+function setRsvp(tid, pid, status) {
+  db.ref('/trainings/' + tid + '/attendances/' + pid).set(status);
+}
+
+function editProfile() {
+  const p = getProfile();
+  selectedSetupPlayer = p?.playerId || null;
+  document.getElementById('profileSetup').style.display = 'flex';
+  document.getElementById('setupName').value = p?.name || '';
+  renderSetupPlayers();
+}
+
+// ---- CHAT ----
+function renderChat() {
+  const page = document.getElementById('chatPage');
+  if(!page) return;
+  const myName = chatName;
+  page.innerHTML = `
+    <div style="background:#0A2540;padding:14px 16px;color:#fff;display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <i class="fa fa-comments" style="font-size:18px"></i>
+      <span style="font-size:17px;font-weight:700">Team Chat</span>
+    </div>
+    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
+      ${STATE.chat.map(m => {
+        const mine = myName && m.author === myName;
+        return `<div style="display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'}">
+          ${!mine ? `<div style="font-size:11px;color:#6B7280;margin-bottom:2px;padding:0 4px">${escHtml(m.author||'Unbekannt')}</div>` : ''}
+          <div class="msg-bubble ${mine?'msg-mine':'msg-other'}">${escHtml(m.text||'')}</div>
+          <div style="font-size:10px;color:#9CA3AF;margin-top:2px;padding:0 4px">${new Date(m.ts||0).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="padding:10px;border-top:1px solid #e5e7eb;background:#fff;flex-shrink:0">
+      ${!myName ? `<div style="margin-bottom:8px;display:flex;gap:8px">
+        <input id="chatNameIn" class="input-field" placeholder="Dein Name..." style="flex:1;padding:10px">
+        <button onclick="setChatName()" style="background:#0A2540;color:#fff;border:none;border-radius:10px;padding:0 14px;cursor:pointer;font-weight:600">OK</button>
+      </div>` : ''}
+      <div style="display:flex;gap:8px">
+        <input id="chatInput" class="input-field" placeholder="Nachricht..." style="flex:1" onkeydown="if(event.key==='Enter')sendChat()">
+        <button onclick="sendChat()" style="background:#0A2540;color:#fff;border:none;border-radius:10px;padding:0 18px;font-size:18px;cursor:pointer"><i class="fa fa-paper-plane"></i></button>
+      </div>
+    </div>`;
+  setTimeout(() => { const c = document.getElementById('chatMessages'); if(c) c.scrollTop = c.scrollHeight; }, 50);
+}
+
+function setChatName() {
+  const v = document.getElementById('chatNameIn')?.value.trim();
+  if(v){ chatName = v; LSset('chatName', v); renderChat(); }
+}
+
+function sendChat() {
+  const inp = document.getElementById('chatInput');
+  if(!inp) return;
+  const text = inp.value.trim();
+  if(!text) return;
+  if(!chatName){ alert('Bitte zuerst deinen Namen eingeben'); return; }
+  inp.value = '';
+  db.ref('/chat').push({ author: chatName, text, ts: Date.now() });
+}
+
+// ---- GALLERY ----
+function renderGalerie() {
+  const page = document.getElementById('galeriePage');
+  if(!page || !page.classList.contains('active')) return;
+  page.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px">
+      <div class="section-title">Fotos (${STATE.photos.length})</div>
+      <label style="background:#0A2540;color:#fff;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer">
+        <i class="fa fa-upload"></i> Hochladen
+        <input type="file" accept="image/*" multiple style="display:none" onchange="uploadPhotos(this)">
+      </label>
+    </div>
+    ${STATE.photos.length ? `<div class="photo-grid">${STATE.photos.map(p =>
+      `<img src="${p.data}" class="photo-thumb" onclick="viewPhoto('${p.id}')" alt="${escHtml(p.cap||'')}">`
+    ).join('')}</div>` :
+    `<div style="text-align:center;padding:60px 20px;color:#9CA3AF"><div style="font-size:48px">📷</div><div style="font-weight:700;margin-top:12px">Noch keine Fotos</div><div style="font-size:13px;margin-top:4px">Lade das erste Foto hoch!</div></div>`}`;
+}
+
+function uploadPhotos(input) {
+  Array.from(input.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      compressImage(e.target.result, 1200, 0.8, data => {
+        db.ref('/photos').push({ data, cap:'', ts: Date.now() });
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function viewPhoto(id) {
+  const p = STATE.photos.find(x => x.id === id);
+  if(!p) return;
+  showModal(`<div class="modal-handle"></div>
+    <div style="text-align:center">
+      <img src="${p.data}" style="max-width:100%;max-height:65vh;border-radius:12px;object-fit:contain">
+      ${p.cap ? `<div style="margin-top:8px;color:#6B7280;font-size:13px">${escHtml(p.cap)}</div>` : ''}
+      ${trainerLoggedIn ? `<button class="btn-primary" style="background:#EF4444;margin-top:14px" onclick="deletePhoto('${id}')"><i class="fa fa-trash"></i> Foto löschen</button>` : ''}
+    </div>`);
+}
+
+function deletePhoto(id){ db.ref('/photos/' + id).remove(); closeModal(); }
+
+// ---- TRAINER ----
+function renderTrainer() {
+  const page = document.getElementById('trainerPage');
+  if(!page) return;
+  if(!trainerLoggedIn) { renderPinScreen(page); return; }
+  page.innerHTML = `
+    <div style="background:#0A2540;padding:14px 16px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:10px">
+        <i class="fa fa-whistle" style="font-size:18px"></i>
+        <span style="font-size:17px;font-weight:700">Trainer-Bereich</span>
+      </div>
+      <button onclick="trainerLogout()" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer">Abmelden</button>
+    </div>
+    <div class="trainer-tabs" style="padding:10px 12px 4px">
+      ${['spieler','training','spiele','statistiken','einstellungen'].map(t =>
+        `<button class="ttab ${trainerTab===t?'active':''}" onclick="setTrainerTab('${t}')">${t.charAt(0).toUpperCase()+t.slice(1)}</button>`
+      ).join('')}
+    </div>
+    <div style="padding:12px;display:flex;flex-direction:column;gap:12px" id="trainerContent"></div>`;
+  renderTrainerTab();
+}
+
+function setTrainerTab(t){ trainerTab = t; renderTrainer(); }
+
+function renderPinScreen(page) {
+  let pinVal = '';
+  page.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:16px">
+      <div style="font-size:40px">🔐</div>
+      <div style="font-size:22px;font-weight:800;color:#0A2540">Trainer PIN</div>
+      <div id="pinDisplay" style="font-size:32px;letter-spacing:14px;color:#0A2540;margin:8px 0">○○○○</div>
+      <div id="pinError" style="color:#EF4444;font-size:14px;min-height:20px"></div>
+      <div class="pin-grid" id="pinGrid"></div>
+    </div>`;
+  const update = () => {
+    const d = document.getElementById('pinDisplay');
+    if(d) d.innerHTML = '●'.repeat(pinVal.length) + '○'.repeat(Math.max(0,4-pinVal.length));
+  };
+  const grid = document.getElementById('pinGrid');
+  if(!grid) return;
+  ['1','2','3','4','5','6','7','8','9','⌫','0','✓'].forEach(k => {
+    const btn = document.createElement('button');
+    btn.className = 'pin-btn'; btn.textContent = k;
+    btn.onclick = () => {
+      if(k==='⌫'){ pinVal = pinVal.slice(0,-1); update(); return; }
+      if(k==='✓' || pinVal.length >= 3 && k !== '⌫') {
+        if(k !== '✓') pinVal += k;
+        update();
+        if(pinVal.length >= 4 || k==='✓') {
+          const pin = STATE.config.trainerPin || '1920';
+          if(pinVal === pin){ trainerLoggedIn=true; LSset('trainerLoggedIn','true'); renderTrainer(); }
+          else { document.getElementById('pinError').textContent='Falscher PIN'; pinVal=''; update(); }
+        }
+        return;
+      }
+      pinVal += k; update();
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function trainerLogout(){ trainerLoggedIn=false; LSset('trainerLoggedIn','false'); renderTrainer(); }
+
+function renderTrainerTab() {
+  const c = document.getElementById('trainerContent');
+  if(!c) return;
+  const tab = trainerTab;
+  if(tab==='spieler') renderSpielerTab(c);
+  else if(tab==='training') renderTrainingTab(c);
+  else if(tab==='spiele') renderSpieleTab(c);
+  else if(tab==='statistiken') renderStatistikTab(c);
+  else if(tab==='einstellungen') renderEinstellungenTab(c);
+}
+
+// ---- SPIELER TAB ----
+function renderSpielerTab(c) {
+  c.innerHTML = `
+    <button class="btn-primary" onclick="addPlayerModal()"><i class="fa fa-plus"></i> Spieler hinzufügen</button>
+    ${STATE.players.map(p => `
+    <div class="card" style="padding:12px;display:flex;align-items:center;gap:12px">
+      <div style="position:relative;cursor:pointer;flex-shrink:0" onclick="editPlayerPhoto('${p.id}')">
+        ${p.photo ? `<img src="${p.photo}" style="width:52px;height:52px;border-radius:50%;object-fit:cover">` :
+          `<div class="avatar-lg">${(p.name||'?')[0].toUpperCase()}</div>`}
+        <div style="position:absolute;bottom:0;right:0;background:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.25)">
+          <i class="fa fa-camera" style="font-size:9px;color:#0A2540"></i>
+        </div>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:15px">${escHtml(p.name||'')}</div>
+        <div style="font-size:12px;color:#6B7280">Rückennummer #${p.number||'?'}</div>
+      </div>
+      <div style="background:#0A2540;color:#fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${p.number||'?'}</div>
+      <button onclick="deletePlayer('${p.id}')" style="background:#FEE2E2;color:#991B1B;border:none;border-radius:8px;padding:8px 10px;cursor:pointer">
+        <i class="fa fa-trash"></i>
+      </button>
+    </div>`).join('')}`;
+}
+
+function addPlayerModal() {
+  showModal(`<div class="modal-handle"></div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:16px">Spieler hinzufügen</div>
+    <div style="text-align:center;margin-bottom:16px">
+      <div id="newPhotoPreview" style="width:80px;height:80px;border-radius:50%;background:#e5e7eb;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:36px;overflow:hidden">👤</div>
+      <label style="display:inline-block;margin-top:8px;color:#0A2540;font-size:13px;font-weight:600;cursor:pointer">
+        <i class="fa fa-camera"></i> Foto hochladen
+        <input type="file" accept="image/*" style="display:none" onchange="previewPhoto(this,'newPhotoPreview','newPhotoData')">
+      </label>
+      <input type="hidden" id="newPhotoData">
+    </div>
+    <input id="newPlayerName" class="input-field" placeholder="Name (z.B. Max Mustermann)" style="margin-bottom:10px">
+    <input id="newPlayerNumber" class="input-field" type="number" placeholder="Rückennummer" style="margin-bottom:16px">
+    <button class="btn-primary" onclick="saveNewPlayer()">Spieler speichern</button>`);
+}
+
+function previewPhoto(input, previewId, dataId) {
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    compressImage(e.target.result, 400, 0.8, data => {
+      const prev = document.getElementById(previewId);
+      if(prev) prev.innerHTML = `<img src="${data}" style="width:100%;height:100%;object-fit:cover">`;
+      const di = document.getElementById(dataId);
+      if(di) di.value = data;
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveNewPlayer() {
+  const name = document.getElementById('newPlayerName')?.value.trim();
+  const number = document.getElementById('newPlayerNumber')?.value.trim();
+  const photo = document.getElementById('newPhotoData')?.value || null;
+  if(!name){ alert('Name eingeben'); return; }
+  db.ref('/players').push({ name, number: number||'', photo, createdAt: Date.now() });
+  closeModal();
+}
+
+function editPlayerPhoto(id) {
+  const p = STATE.players.find(x => x.id === id);
+  if(!p) return;
+  showModal(`<div class="modal-handle"></div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:16px">Foto: ${escHtml(p.name||'')}</div>
+    <div style="text-align:center;margin-bottom:16px">
+      <div id="editPhotoPreview" style="width:80px;height:80px;border-radius:50%;background:#e5e7eb;margin:0 auto;overflow:hidden">
+        ${p.photo ? `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:32px">👤</div>'}
+      </div>
+      <label style="display:inline-block;margin-top:8px;color:#0A2540;font-size:13px;font-weight:600;cursor:pointer">
+        <i class="fa fa-camera"></i> Neues Foto
+        <input type="file" accept="image/*" style="display:none" onchange="previewPhoto(this,'editPhotoPreview','editPhotoData')">
+      </label>
+      <input type="hidden" id="editPhotoData" value="${p.photo||''}">
+    </div>
+    <button class="btn-primary" onclick="savePlayerPhoto('${id}')">Foto speichern</button>`);
+}
+
+function savePlayerPhoto(id) {
+  const data = document.getElementById('editPhotoData')?.value || null;
+  db.ref('/players/' + id + '/photo').set(data);
+  closeModal();
+}
+
+function deletePlayer(id) {
+  if(confirm('Spieler wirklich löschen?')) db.ref('/players/' + id).remove();
+}
+
+// ---- TRAINING TAB ----
+function renderTrainingTab(c) {
+  const sorted = [...STATE.trainings].sort((a,b) => new Date(b.date) - new Date(a.date));
+  c.innerHTML = `
+    <button class="btn-primary" onclick="addTrainingModal()"><i class="fa fa-plus"></i> Training hinzufügen</button>
+    ${sorted.map(t => {
+      const atts = t.attendances || {};
+      const yes = Object.values(atts).filter(v => v==='yes').length;
+      const no = Object.values(atts).filter(v => v==='no').length;
+      const open = STATE.players.length - yes - no;
+      return `<div class="card" style="padding:12px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div>
+            <div style="font-weight:700;font-size:15px">${fmt(t.date)}</div>
+            <div style="font-size:12px;color:#6B7280">${t.time||'?'} Uhr · ${escHtml(t.location||'?')}</div>
+          </div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+            <span style="background:#D1FAE5;color:#065F46;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px">✅ ${yes}</span>
+            <span style="background:#FEE2E2;color:#991B1B;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px">❌ ${no}</span>
+            <span style="background:#F3F4F6;color:#374151;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px">🕐 ${open}</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm" style="background:#EEF2FF;color:#0A2540;flex:1" onclick="trainingDetailModal('${t.id}')"><i class="fa fa-eye"></i> Details</button>
+          <button class="btn-sm" style="background:#FEE2E2;color:#991B1B" onclick="deleteTraining('${t.id}')"><i class="fa fa-trash"></i></button>
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+
+function addTrainingModal() {
+  const today = new Date().toISOString().slice(0,10);
+  showModal(`<div class="modal-handle"></div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:16px">Training hinzufügen</div>
+    <input id="tDate" class="input-field" type="date" value="${today}" style="margin-bottom:10px">
+    <input id="tTime" class="input-field" type="time" value="17:00" style="margin-bottom:10px">
+    <input id="tLocation" class="input-field" placeholder="Ort (z.B. Sportplatz Nord)" style="margin-bottom:10px">
+    <textarea id="tNotes" class="input-field" placeholder="Hinweise (optional)" rows="2" style="margin-bottom:16px;resize:none"></textarea>
+    <button class="btn-primary" onclick="saveTraining()">Training speichern</button>`);
+}
+
+function saveTraining() {
+  const date = document.getElementById('tDate')?.value;
+  const time = document.getElementById('tTime')?.value;
+  const location = document.getElementById('tLocation')?.value.trim();
+  const notes = document.getElementById('tNotes')?.value.trim();
+  if(!date){ alert('Datum eingeben'); return; }
+  const attendances = {};
+  STATE.players.forEach(p => { attendances[p.id] = 'open'; });
+  db.ref('/trainings').push({ date, time:time||'', location:location||'', notes:notes||'', attendances, actual:{}, createdAt: Date.now() });
+  closeModal();
+}
+
+function deleteTraining(id){ if(confirm('Training löschen?')) db.ref('/trainings/' + id).remove(); }
+
+function trainingDetailModal(id) {
+  const t = STATE.trainings.find(x => x.id === id);
+  if(!t) return;
+  const atts = t.attendances || {};
+  const actual = t.actual || {};
+  const yes = Object.values(atts).filter(v=>v==='yes').length;
+  const no = Object.values(atts).filter(v=>v==='no').length;
+  const open = STATE.players.length - yes - no;
+  showModal(`<div class="modal-handle"></div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:4px">Training: ${fmt(t.date)}</div>
+    <div style="font-size:13px;color:#6B7280;margin-bottom:14px">${t.time||''} Uhr · ${escHtml(t.location||'')}</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      ${[['yes','✅',yes,'#D1FAE5','#065F46'],['no','❌',no,'#FEE2E2','#991B1B'],['open','🕐',open,'#FEF3C7','#92400E']].map(([,icon,count,bg,col])=>
+        `<div style="flex:1;text-align:center;padding:10px;border-radius:10px;background:${bg}">
+          <div style="font-size:22px;font-weight:800;color:${col}">${count}</div>
+          <div style="font-size:11px;color:${col}">${icon}</div>
+        </div>`).join('')}
+    </div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px">Spieler</div>
+    ${STATE.players.map(p => {
+      const att = atts[p.id] || 'open';
+      const was = actual[p.id] || false;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f3f4f6">
+        ${p.photo ? `<img src="${p.photo}" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0">` :
+          `<div style="width:34px;height:34px;border-radius:50%;background:#0A2540;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0">${(p.name||'?')[0].toUpperCase()}</div>`}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600">${escHtml(p.name||'')}</div>
+          <div style="font-size:11px;color:#9CA3AF">RSVP: ${att==='yes'?'✅ Zugesagt':att==='no'?'❌ Abgesagt':'🕐 Offen'}</div>
+        </div>
+        <div style="display:flex;gap:3px">
+          <button class="att-btn ${att==='yes'?'yes':''}" onclick="setAtt('${t.id}','${p.id}','yes')">✅</button>
+          <button class="att-btn ${att==='open'?'opn':''}" onclick="setAtt('${t.id}','${p.id}','open')">🕐</button>
+          <button class="att-btn ${att==='no'?'no':''}" onclick="setAtt('${t.id}','${p.id}','no')">❌</button>
+        </div>
+        <button onclick="toggleActual('${t.id}','${p.id}',${!was})" style="padding:4px 8px;border-radius:6px;border:none;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;background:${was?'#D1FAE5':'#F3F4F6'};color:${was?'#065F46':'#6B7280'}">${was?'War da':'Fehlte'}</button>
+      </div>`;
+    }).join('')}`);
+}
+
+function setAtt(tid, pid, status){ db.ref('/trainings/'+tid+'/attendances/'+pid).set(status); closeModal(); setTimeout(()=>trainingDetailModal(tid),300); }
+function toggleActual(tid, pid, val){ db.ref('/trainings/'+tid+'/actual/'+pid).set(val); closeModal(); setTimeout(()=>trainingDetailModal(tid),300); }
+
+// ---- SPIELE TAB ----
+function renderSpieleTab(c) {
+  const sorted = [...STATE.games].sort((a,b) => new Date(b.date) - new Date(a.date));
+  c.innerHTML = `
+    <button class="btn-primary" onclick="addGameModal()"><i class="fa fa-plus"></i> Spiel hinzufügen</button>
+    ${sorted.map(g => {
+      const sq = Object.keys(g.squad||{}).filter(k=>g.squad[k]).length;
+      return `<div class="card" style="padding:12px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div>
+            <div style="font-weight:700;font-size:15px">vs. ${escHtml(g.opponent||'?')}</div>
+            <div style="font-size:12px;color:#6B7280">${fmt(g.date)} · ${g.time||'?'} · ${escHtml(g.location||'?')}</div>
+          </div>
+          <div style="text-align:right">
+            ${g.result ? `<div style="font-size:17px;font-weight:800;color:#0A2540">${escHtml(g.result)}</div>` : ''}
+            <div style="font-size:11px;color:#6B7280">${sq} im Kader</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm" style="background:#EEF2FF;color:#0A2540;flex:1" onclick="gameDetailModal('${g.id}')"><i class="fa fa-users"></i> Kader / Ergebnis</button>
+          <button class="btn-sm" style="background:#FEE2E2;color:#991B1B" onclick="deleteGame('${g.id}')"><i class="fa fa-trash"></i></button>
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+
+function addGameModal() {
+  const today = new Date().toISOString().slice(0,10);
+  showModal(`<div class="modal-handle"></div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:16px">Spiel hinzufügen</div>
+    <input id="gOpp" class="input-field" placeholder="Gegner" style="margin-bottom:10px">
+    <input id="gDate" class="input-field" type="date" value="${today}" style="margin-bottom:10px">
+    <input id="gTime" class="input-field" type="time" value="11:00" style="margin-bottom:10px">
+    <input id="gLoc" class="input-field" placeholder="Ort" style="margin-bottom:16px">
+    <button class="btn-primary" onclick="saveGame()">Spiel speichern</button>`);
+}
+
+function saveGame() {
+  const opponent = document.getElementById('gOpp')?.value.trim();
+  const date = document.getElementById('gDate')?.value;
+  const time = document.getElementById('gTime')?.value;
+  const location = document.getElementById('gLoc')?.value.trim();
+  if(!opponent || !date){ alert('Gegner und Datum eingeben'); return; }
+  db.ref('/games').push({ opponent, date, time:time||'', location:location||'', squad:{}, result:'', createdAt: Date.now() });
+  closeModal();
+}
+
+function deleteGame(id){ if(confirm('Spiel löschen?')) db.ref('/games/' + id).remove(); }
+
+function gameDetailModal(id) {
+  const g = STATE.games.find(x => x.id === id);
+  if(!g) return;
+  const squadKeys = Object.keys(g.squad||{}).filter(k => g.squad[k]);
+  const inSquad = STATE.players.filter(p => squadKeys.includes(p.id));
+  const notInSquad = STATE.players.filter(p => !squadKeys.includes(p.id));
+  showModal(`<div class="modal-handle"></div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:4px">vs. ${escHtml(g.opponent||'?')}</div>
+    <div style="font-size:13px;color:#6B7280;margin-bottom:14px">${fmt(g.date)} · ${g.time||''} · ${escHtml(g.location||'')}</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
+      <input id="gResultIn" class="input-field" placeholder="Ergebnis z.B. 3:1" value="${escHtml(g.result||'')}" style="flex:1">
+      <button class="btn-sm" style="background:#0A2540;color:#fff;white-space:nowrap" onclick="saveResult('${id}')">Speichern</button>
+    </div>
+    <div style="font-size:14px;font-weight:700;margin-bottom:10px">Kader (${inSquad.length} Spieler)</div>
+    ${inSquad.length ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+      ${inSquad.map(p => `<div class="squad-card in-squad" onclick="removeFromSquad('${id}','${p.id}')">
+        ${p.photo ? `<img src="${p.photo}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px">` :
+          `<div style="width:100%;aspect-ratio:1;background:#0A2540;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:700">${(p.name||'?')[0].toUpperCase()}</div>`}
+        <div style="font-size:10px;font-weight:700;margin-top:4px">#${p.number||'?'}</div>
+        <div style="font-size:10px;color:#374151;line-height:1.2">${escHtml(p.name||'')}</div>
+        <div style="font-size:9px;color:#065F46;font-weight:700;margin-top:2px">Im Kader ✓</div>
+      </div>`).join('')}
+    </div>` : `<div style="color:#9CA3AF;font-size:13px;margin-bottom:14px">Noch keine Spieler im Kader – tippe unten um hinzuzufügen</div>`}
+    ${notInSquad.length ? `<div style="font-size:14px;font-weight:700;margin-bottom:10px;color:#6B7280">Hinzufügen</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      ${notInSquad.map(p => `<div class="squad-card" onclick="addToSquad('${id}','${p.id}')" style="opacity:.75">
+        ${p.photo ? `<img src="${p.photo}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px">` :
+          `<div style="width:100%;aspect-ratio:1;background:#9CA3AF;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:700">${(p.name||'?')[0].toUpperCase()}</div>`}
+        <div style="font-size:10px;font-weight:700;margin-top:4px">#${p.number||'?'}</div>
+        <div style="font-size:10px;color:#6B7280;line-height:1.2">${escHtml(p.name||'')}</div>
+        <div style="font-size:9px;color:#0A2540;font-weight:700;margin-top:2px">+ Hinzufügen</div>
+      </div>`).join('')}
+    </div>` : ''}
+  `);
+}
+
+function saveResult(id){ const v=document.getElementById('gResultIn')?.value.trim()||''; db.ref('/games/'+id+'/result').set(v); closeModal(); setTimeout(()=>gameDetailModal(id),300); }
+function addToSquad(gid, pid){ db.ref('/games/'+gid+'/squad/'+pid).set(true); closeModal(); setTimeout(()=>gameDetailModal(gid),300); }
+function removeFromSquad(gid, pid){ db.ref('/games/'+gid+'/squad/'+pid).remove(); closeModal(); setTimeout(()=>gameDetailModal(gid),300); }
+
+// ---- STATISTIK TAB ----
+function renderStatistikTab(c) {
+  const totalT = STATE.trainings.length;
+  const totalP = STATE.players.length;
+  const avgAtt = totalP && totalT ? Math.round(STATE.players.reduce((sum, p) => {
+    const was = STATE.trainings.filter(t => t.actual?.[p.id]).length;
+    return sum + (was / totalT * 100);
+  }, 0) / totalP) : 0;
+
+  const playerStats = STATE.players.map(p => {
+    const was = STATE.trainings.filter(t => t.actual?.[p.id]).length;
+    const pct = totalT ? Math.round(was / totalT * 100) : 0;
+    const gameCount = STATE.games.filter(g => Object.keys(g.squad||{}).filter(k=>g.squad[k]).includes(p.id)).length;
+    return { ...p, was, pct, gameCount };
+  }).sort((a, b) => b.pct - a.pct);
+
+  const barChart = playerStats.map(p =>
+    `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+      <div style="font-size:11px;color:rgba(255,255,255,.8);width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p.name||'')}</div>
+      <div style="flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.15)">
+        <div style="height:100%;border-radius:4px;background:#10B981;width:${p.pct}%;transition:width .5s"></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:#fff;width:32px;text-align:right">${p.pct}%</div>
+    </div>`).join('');
+
+  const donutCards = playerStats.map(p => {
+    const r = 18, circ = 2*Math.PI*r;
+    const fill = circ * (1 - p.pct/100);
+    const color = p.pct>=70?'#10B981':p.pct>=40?'#F59E0B':'#EF4444';
+    const last10 = STATE.trainings.slice(-10);
+    const dots = last10.map(t =>
+      `<span class="training-dot" style="background:${t.actual?.[p.id]?'#10B981':t.attendances?.[p.id]==='no'?'#EF4444':'#D1D5DB'}"></span>`
+    ).join('');
+    const gameSquad = STATE.games.filter(g=>Object.keys(g.squad||{}).filter(k=>g.squad[k]).includes(p.id)).length;
+    return `<div class="card" style="padding:12px;display:flex;align-items:center;gap:12px">
+      ${p.photo ? `<img src="${p.photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0">` :
+        `<div style="width:48px;height:48px;border-radius:50%;background:#0A2540;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;flex-shrink:0">${(p.name||'?')[0].toUpperCase()}</div>`}
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:14px">${escHtml(p.name||'')} <span style="font-size:11px;color:#9CA3AF">#${p.number||'?'}</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:2px;margin:4px 0">${dots}</div>
+        <div style="font-size:11px;color:#6B7280">${p.was}/${totalT} Trainings · ${gameSquad} Spiele</div>
+      </div>
+      <svg width="48" height="48" viewBox="0 0 48 48" style="flex-shrink:0">
+        <circle cx="24" cy="24" r="${r}" fill="none" stroke="#e5e7eb" stroke-width="5"/>
+        <circle cx="24" cy="24" r="${r}" fill="none" stroke="${color}" stroke-width="5"
+          stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${fill.toFixed(1)}"
+          style="transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset .5s"/>
+        <text x="24" y="29" text-anchor="middle" font-size="10" font-weight="800" fill="#0A2540">${p.pct}%</text>
+      </svg>
+    </div>`;
+  }).join('');
+
+  c.innerHTML = `
+    <div class="card-dark" style="padding:16px">
+      <div style="display:flex;gap:0;margin-bottom:16px">
+        ${[['👥',totalP,'Spieler'],['🏃',totalT,'Trainings'],['📊',avgAtt+'%','Ø Anw.']].map(([icon,val,label])=>
+          `<div style="flex:1;text-align:center;border-right:1px solid rgba(255,255,255,.1)">
+            <div style="font-size:22px;font-weight:800">${val}</div>
+            <div style="font-size:11px;opacity:.7">${icon} ${label}</div>
+          </div>`).join('')}
+      </div>
+      ${barChart}
+    </div>
+    ${donutCards}`;
+}
+
+// ---- EINSTELLUNGEN TAB ----
+function renderEinstellungenTab(c) {
+  c.innerHTML = `
+    <div class="card" style="padding:16px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:12px"><i class="fa fa-lock"></i> Trainer PIN ändern</div>
+      <input id="newPin1" class="input-field" type="password" maxlength="8" placeholder="Neuer PIN" style="margin-bottom:8px">
+      <input id="newPin2" class="input-field" type="password" maxlength="8" placeholder="PIN bestätigen" style="margin-bottom:12px">
+      <button class="btn-primary" onclick="changePin()">PIN speichern</button>
+    </div>
+    <div class="card" style="padding:16px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:12px"><i class="fa fa-image"></i> Vereinslogo</div>
+      ${STATE.config.logo ? `<img src="${STATE.config.logo}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:12px;border:3px solid #e5e7eb">` :
+        `<div style="width:80px;height:80px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:12px">⚽</div>`}
+      <label class="btn-primary" style="cursor:pointer"><i class="fa fa-upload"></i> Logo hochladen<input type="file" accept="image/*" style="display:none" onchange="uploadLogo(this)"></label>
+    </div>
+    <div class="card" style="padding:16px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:12px"><i class="fa fa-download"></i> Daten exportieren</div>
+      <button class="btn-primary" onclick="exportData()"><i class="fa fa-file-export"></i> Als JSON exportieren</button>
+    </div>`;
+}
+
+function changePin() {
+  const p1 = document.getElementById('newPin1')?.value.trim();
+  const p2 = document.getElementById('newPin2')?.value.trim();
+  if(!p1 || p1 !== p2){ alert('PINs stimmen nicht überein'); return; }
+  if(p1.length < 4){ alert('Mindestens 4 Zeichen'); return; }
+  db.ref('/config/trainerPin').set(p1);
+  alert('PIN gespeichert!');
+}
+
+function uploadLogo(input) {
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    compressImage(e.target.result, 300, 0.85, data => {
+      db.ref('/config/logo').set(data);
+    });
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function exportData() {
+  const data = {
+    players: STATE.players, trainings: STATE.trainings,
+    games: STATE.games, exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'fc-niksar-export-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+// ---- MODAL ----
+function showModal(html) {
+  document.getElementById('modalContainer').innerHTML =
+    `<div class="modal-overlay" onclick="closeModalBg(event)"><div class="modal-sheet">${html}</div></div>`;
+}
+function closeModal(){ document.getElementById('modalContainer').innerHTML = ''; }
+function closeModalBg(e){ if(e.target.classList.contains('modal-overlay')) closeModal(); }
+
+// ---- IMAGE COMPRESSION ----
+function compressImage(dataUrl, maxW, quality, cb) {
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    let w = img.width, h = img.height;
+    if(w > maxW){ h = Math.round(h * maxW / w); w = maxW; }
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    cb(canvas.toDataURL('image/jpeg', quality));
+  };
+  img.src = dataUrl;
+}
+
+// ---- NOTIFICATIONS ----
+function requestNotifPermission() {
+  if('Notification' in window && Notification.permission === 'default') {
+    const banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#1D4ED8;color:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;z-index:600;font-size:13px;font-weight:600';
+    banner.innerHTML = `<span><i class="fa fa-bell"></i> Benachrichtigungen aktivieren?</span>
+      <div style="display:flex;gap:8px">
+        <button onclick="Notification.requestPermission();this.closest('div[style]').remove()" style="background:rgba(255,255,255,.25);border:none;color:#fff;padding:5px 12px;border-radius:6px;cursor:pointer;font-weight:700">Ja</button>
+        <button onclick="this.closest('div[style]').remove()" style="border:none;background:none;color:#fff;cursor:pointer;font-size:18px">✕</button>
+      </div>`;
+    document.body.appendChild(banner);
+    setTimeout(() => { if(banner.parentNode) banner.remove(); }, 9000);
+  }
+}
+</script>
+</body>
+</html>
