@@ -363,6 +363,20 @@ function switchPage(page) {
 }
 
 // ---- HOME ----
+function dateBox(dateStr, dark) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const day = d.toLocaleDateString('de-DE',{weekday:'short'}).toUpperCase();
+  const num = d.getDate();
+  const mon = d.toLocaleDateString('de-DE',{month:'short'}).toUpperCase();
+  const bg = dark ? 'rgba(255,255,255,.18)' : '#0A2540';
+  const col = '#fff';
+  return `<div style="width:50px;border-radius:12px;background:${bg};color:${col};text-align:center;padding:8px 4px;flex-shrink:0">
+    <div style="font-size:9px;font-weight:700;opacity:.75;letter-spacing:.04em">${day}</div>
+    <div style="font-size:24px;font-weight:900;line-height:1.1">${num}</div>
+    <div style="font-size:9px;font-weight:700;opacity:.75;letter-spacing:.04em">${mon}</div>
+  </div>`;
+}
+
 function renderHome() {
   const page = document.getElementById('homePage');
   if(!page || !page.classList.contains('active')) return;
@@ -370,161 +384,230 @@ function renderHome() {
   const now = Date.now();
 
   const upcoming = [
-    ...STATE.trainings.map(t => ({...t, type:'training', sortDate: new Date(t.date + ' ' + (t.time||'00:00')).getTime()})),
-    ...STATE.games.map(g => ({...g, type:'game', sortDate: new Date(g.date + ' ' + (g.time||'00:00')).getTime()}))
+    ...STATE.trainings.map(t => ({...t, type:'training', sortDate: new Date(t.date+'T'+(t.time||'00:00')).getTime()})),
+    ...STATE.games.map(g => ({...g, type:'game', sortDate: new Date(g.date+'T'+(g.time||'00:00')).getTime()}))
   ].filter(x => x.sortDate >= now - 3600000).sort((a,b) => a.sortDate - b.sortDate);
 
-  const nextTraining = upcoming.find(x => x.type === 'training');
-  const nextGame = upcoming.find(x => x.type === 'game');
+  const nextTraining = upcoming.find(x => x.type==='training');
+  const nextGame = upcoming.find(x => x.type==='game');
   const pid = profile?.playerId;
 
-  let html = '';
+  let html = `<div style="display:flex;flex-direction:column;gap:0">`;
 
-  // Profile strip
+  // ── PROFILE STRIP ──
   if(profile) {
     const player = STATE.players.find(p => p.id === pid);
-    html += `<div class="profile-strip">
-      <div style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="editProfile()">
-        ${player?.photo ? `<img src="${player.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.4)">` :
-          `<div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px">👤</div>`}
-        <div>
-          <div style="font-size:15px;font-weight:700">Hallo ${escHtml(profile.name)}!</div>
-          <div style="font-size:12px;opacity:.8">${player ? `Kind: ${escHtml(player.name)} #${player.number||'?'}` : 'Kind nicht gefunden'}</div>
+    const yesCount = STATE.trainings.filter(t=>new Date(t.date+'T'+(t.time||'00:00')).getTime()>=now && t.attendances?.[pid]==='yes').length;
+    const noCount  = STATE.trainings.filter(t=>new Date(t.date+'T'+(t.time||'00:00')).getTime()>=now && t.attendances?.[pid]==='no').length;
+    html += `<div style="background:linear-gradient(135deg,#0A2540 0%,#1e3a5f 100%);padding:16px;cursor:pointer;margin-bottom:0" onclick="editProfile()">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:${pid?'12':'0'}px">
+        <div style="width:48px;height:48px;border-radius:50%;overflow:hidden;border:2.5px solid rgba(255,255,255,.35);flex-shrink:0">
+          ${player?.photo ? `<img src="${player.photo}" style="width:100%;height:100%;object-fit:cover">` :
+            `<div style="width:100%;height:100%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff">${(profile.name||'?')[0].toUpperCase()}</div>`}
         </div>
-        <i class="fa fa-pencil" style="margin-left:auto;opacity:.6;font-size:14px"></i>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:16px;font-weight:800;color:#fff">Hallo, ${escHtml(profile.name.split(' ')[0])}! 👋</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.65);margin-top:2px">
+            ${player ? `Kind: <b style="color:rgba(255,255,255,.9)">${escHtml(player.name)}</b> · Nr. ${player.number||'?'}` : '<span style="color:#FCD34D">Kind noch nicht zugeordnet → Profil bearbeiten</span>'}
+          </div>
+        </div>
+        <i class="fas fa-pen" style="color:rgba(255,255,255,.3);font-size:12px;flex-shrink:0"></i>
       </div>
+      ${pid ? `<div style="display:flex;gap:8px">
+        <div style="flex:1;background:rgba(255,255,255,.1);border-radius:10px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:900;color:#4ADE80">${yesCount}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:1px">Zugesagt</div>
+        </div>
+        <div style="flex:1;background:rgba(255,255,255,.1);border-radius:10px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:900;color:#FCA5A5">${noCount}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:1px">Abgesagt</div>
+        </div>
+        <div style="flex:1;background:rgba(255,255,255,.1);border-radius:10px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:900;color:#fff">${STATE.games.filter(g=>Object.keys(g.squad||{}).filter(k=>g.squad[k]).includes(pid)).length}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:1px">Spiele</div>
+        </div>
+      </div>` : ''}
     </div>`;
   }
 
-  // Trainer quick bar
+  // ── TRAINER QUICK STATS ──
   if(trainerLoggedIn) {
-    const tCount = STATE.trainings.length;
-    const pCount = STATE.players.length;
-    const gCount = STATE.games.length;
-    html += `<div class="card" style="padding:12px;display:flex;gap:0">
-      ${[['👥',pCount,'Spieler'],['🏃',tCount,'Trainings'],['⚽',gCount,'Spiele']].map(([icon,val,label])=>`
-        <div style="flex:1;text-align:center;border-right:1px solid #f3f4f6">
-          <div style="font-size:20px;font-weight:800;color:#0A2540">${val}</div>
-          <div style="font-size:11px;color:#6B7280">${icon} ${label}</div>
+    html += `<div style="background:#0A2540;padding:0 16px 14px;display:flex;gap:8px">
+      ${[['fas fa-users',STATE.players.length,'Spieler'],['fas fa-running',STATE.trainings.length,'Trainings'],['fas fa-futbol',STATE.games.length,'Spiele']].map(([ic,val,lab])=>
+        `<div style="flex:1;background:rgba(255,255,255,.08);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:20px;font-weight:900;color:#fff">${val}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:2px"><i class="${ic}"></i> ${lab}</div>
         </div>`).join('')}
     </div>`;
   }
 
-  // RSVP Section
-  const rsvpList = STATE.trainings.filter(t => new Date(t.date + ' ' + (t.time||'00:00')).getTime() >= now - 3600000)
-    .sort((a,b) => new Date(a.date) - new Date(b.date)).slice(0, 3);
+  html += `<div style="padding:12px;display:flex;flex-direction:column;gap:14px">`;
+
+  // ── RSVP SECTION ──
+  const rsvpList = STATE.trainings
+    .filter(t => new Date(t.date+'T'+(t.time||'00:00')).getTime() >= now - 3600000)
+    .sort((a,b) => new Date(a.date) - new Date(b.date)).slice(0,3);
+
   if(pid && rsvpList.length) {
-    html += `<div class="section-title">Meine Rückmeldungen</div>`;
+    html += `<div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="width:28px;height:28px;border-radius:8px;background:#EEF2FF;display:flex;align-items:center;justify-content:center"><i class="fas fa-clipboard-check" style="color:#4F46E5;font-size:13px"></i></div>
+        <span style="font-size:13px;font-weight:800;color:#1F2937;letter-spacing:.01em">Meine Zu- / Absagen</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">`;
     rsvpList.forEach(t => {
       const st = t.attendances?.[pid] || 'open';
-      const stLabel = st==='yes'?'✅ Zugesagt':st==='no'?'❌ Abgesagt':'🕐 Offen';
-      const stColor = st==='yes'?'#D1FAE5;color:#065F46':st==='no'?'#FEE2E2;color:#991B1B':'#FEF3C7;color:#92400E';
-      html += `<div class="card" style="padding:12px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div>
-            <div style="font-weight:700;font-size:14px">${fmt(t.date)}</div>
-            <div style="font-size:12px;color:#6B7280">${t.time||''} Uhr · ${escHtml(t.location||'')}</div>
+      const stCfg = {
+        yes:  {label:'Zugesagt',   bg:'#D1FAE5', col:'#065F46', border:'#34D399', icon:'fa-check-circle'},
+        no:   {label:'Abgesagt',   bg:'#FEE2E2', col:'#991B1B', border:'#F87171', icon:'fa-times-circle'},
+        open: {label:'Noch offen', bg:'#FEF3C7', col:'#92400E', border:'#FCD34D', icon:'fa-question-circle'}
+      }[st];
+      html += `<div class="card" style="border-left:4px solid ${stCfg.border};overflow:visible">
+        <div style="padding:12px 14px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            ${dateBox(t.date, false)}
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:800;font-size:14px;color:#1F2937">Training</div>
+              <div style="font-size:12px;color:#6B7280;margin-top:2px">
+                <i class="fas fa-clock" style="width:13px"></i> ${t.time||'?'} Uhr
+                ${t.location ? ` · <i class="fas fa-location-dot" style="width:13px"></i> ${escHtml(t.location)}` : ''}
+              </div>
+            </div>
+            <div style="background:${stCfg.bg};color:${stCfg.col};font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0">
+              <i class="fas ${stCfg.icon}" style="margin-right:3px"></i>${stCfg.label}
+            </div>
           </div>
-          <div style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;background:${stColor}">${stLabel}</div>
-        </div>
-        <div style="display:flex;gap:6px">
-          <button class="rsvp-btn ${st==='yes'?'go':''}" onclick="setRsvp('${t.id}','${pid}','yes')">✅ Zusagen</button>
-          <button class="rsvp-btn ${st==='open'?'opn':''}" onclick="setRsvp('${t.id}','${pid}','open')">🕐 Offen</button>
-          <button class="rsvp-btn ${st==='no'?'no':''}" onclick="setRsvp('${t.id}','${pid}','no')">❌ Absagen</button>
+          <div style="display:flex;gap:6px">
+            <button onclick="setRsvp('${t.id}','${pid}','yes')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='yes'?'#10B981':'#E5E7EB'};background:${st==='yes'?'#D1FAE5':'#fff'};color:${st==='yes'?'#065F46':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer;transition:all .15s">✅ Zusagen</button>
+            <button onclick="setRsvp('${t.id}','${pid}','open')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='open'?'#F59E0B':'#E5E7EB'};background:${st==='open'?'#FEF3C7':'#fff'};color:${st==='open'?'#92400E':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer;transition:all .15s">🕐 Offen</button>
+            <button onclick="setRsvp('${t.id}','${pid}','no')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='no'?'#EF4444':'#E5E7EB'};background:${st==='no'?'#FEE2E2':'#fff'};color:${st==='no'?'#991B1B':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer;transition:all .15s">❌ Absagen</button>
+          </div>
         </div>
       </div>`;
     });
+    html += `</div></div>`;
   }
 
-  // Next Training card
+  // ── NEXT TRAINING CARD ──
   if(nextTraining) {
     const cd = countdown(nextTraining.sortDate);
-    html += `<div class="card-dark" style="padding:18px 16px">
-      <div style="font-size:10px;font-weight:700;opacity:.6;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">🏃 Nächstes Training</div>
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:19px;font-weight:800;line-height:1.2;margin-bottom:8px">${fmtFull(nextTraining.date)}</div>
-          <div style="font-size:13px;opacity:.8;display:flex;flex-direction:column;gap:3px">
-            <div><i class="fa fa-clock" style="width:16px"></i> ${nextTraining.time||'?'} Uhr</div>
-            <div><i class="fa fa-location-dot" style="width:16px"></i> ${escHtml(nextTraining.location||'Ort folgt')}</div>
+    html += `<div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="width:28px;height:28px;border-radius:8px;background:#DBEAFE;display:flex;align-items:center;justify-content:center"><i class="fas fa-running" style="color:#1D4ED8;font-size:13px"></i></div>
+        <span style="font-size:13px;font-weight:800;color:#1F2937">Nächstes Training</span>
+      </div>
+      <div style="background:linear-gradient(135deg,#0A2540 0%,#1e4d8c 100%);border-radius:18px;padding:18px;color:#fff;overflow:hidden">
+        <div style="display:flex;align-items:flex-start;gap:14px">
+          ${dateBox(nextTraining.date, true)}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:18px;font-weight:900;line-height:1.15;margin-bottom:8px">${fmtFull(nextTraining.date)}</div>
+            <div style="display:flex;flex-direction:column;gap:4px;font-size:13px;opacity:.85">
+              <div><i class="fas fa-clock" style="width:16px;opacity:.7"></i> ${nextTraining.time||'?'} Uhr</div>
+              <div><i class="fas fa-location-dot" style="width:16px;opacity:.7"></i> ${escHtml(nextTraining.location||'Ort folgt')}</div>
+            </div>
+            ${nextTraining.notes ? `<div style="margin-top:10px;font-size:12px;opacity:.6;border-top:1px solid rgba(255,255,255,.15);padding-top:8px;font-style:italic">${escHtml(nextTraining.notes)}</div>` : ''}
           </div>
-          ${nextTraining.notes ? `<div style="margin-top:10px;font-size:12px;opacity:.65;border-top:1px solid rgba(255,255,255,.15);padding-top:8px">${escHtml(nextTraining.notes)}</div>` : ''}
-        </div>
-        <div style="background:rgba(255,255,255,.18);border-radius:14px;padding:10px 12px;text-align:center;flex-shrink:0;min-width:56px">
-          <div style="font-size:${typeof cd.n==='number'?'26':'15'}px;font-weight:900;line-height:1">${cd.n}</div>
-          ${cd.u ? `<div style="font-size:9px;font-weight:700;opacity:.8;margin-top:2px;text-transform:uppercase">${cd.u}</div>` : ''}
+          <div style="background:rgba(255,255,255,.15);border-radius:14px;padding:10px 12px;text-align:center;flex-shrink:0;min-width:54px;border:1.5px solid rgba(255,255,255,.2)">
+            <div style="font-size:${typeof cd.n==='number'?'28':'14'}px;font-weight:900;line-height:1">${cd.n}</div>
+            ${cd.u ? `<div style="font-size:9px;font-weight:700;opacity:.7;margin-top:3px;letter-spacing:.06em">${cd.u}</div>` : ''}
+          </div>
         </div>
       </div>
     </div>`;
   }
 
-  // Next Game card
+  // ── NEXT GAME CARD ──
   if(nextGame) {
     const cd = countdown(nextGame.sortDate);
-    const squadKeys = Object.keys(nextGame.squad || {}).filter(k => nextGame.squad[k]);
+    const squadKeys = Object.keys(nextGame.squad||{}).filter(k=>nextGame.squad[k]);
     const squadSet = squadKeys.length > 0;
     const inSquad = pid && squadKeys.includes(pid);
-    // Squad avatars
-    const squadPlayers = STATE.players.filter(p => squadKeys.includes(p.id)).slice(0,6);
-    const extraCount = squadKeys.length - squadPlayers.length;
-    const avatarRow = squadSet ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.1)">
-      <div style="font-size:10px;font-weight:700;color:rgba(0,0,0,.5);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">👕 Kader (${squadKeys.length})</div>
-      <div style="display:flex;gap:4px;align-items:center">
-        ${squadPlayers.map(p=>`<div style="position:relative" title="${escHtml(p.name||'')}">
-          <div style="width:32px;height:32px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.6)">
-            ${p.photo?`<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;background:#0A2540;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">${(p.name||'?')[0].toUpperCase()}</div>`}
-          </div>
-          <div style="position:absolute;bottom:-2px;right:-2px;background:#0A2540;color:#fff;font-size:8px;font-weight:800;padding:1px 3px;border-radius:4px">${p.number||'?'}</div>
-        </div>`).join('')}
-        ${extraCount>0?`<div style="width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">+${extraCount}</div>`:''}
-      </div>
-    </div>` : '';
+    const squadPlayers = STATE.players.filter(p=>squadKeys.includes(p.id)).slice(0,7);
+    const extra = squadKeys.length - squadPlayers.length;
+
     let childBadge = '';
     if(pid) {
-      if(!squadSet) childBadge = `<div style="background:rgba(0,0,0,.12);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600;margin-top:10px">🕐 Kader wird noch bekannt gegeben</div>`;
-      else if(inSquad) childBadge = `<div style="background:rgba(16,185,129,.25);border:1.5px solid rgba(16,185,129,.5);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;margin-top:10px;color:#064E3B">✅ Dein Kind spielt mit!</div>`;
-      else childBadge = `<div style="background:rgba(239,68,68,.18);border:1.5px solid rgba(239,68,68,.4);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;margin-top:10px;color:#7F1D1D">❌ Diesmal nicht nominiert</div>`;
+      if(!squadSet)  childBadge = `<div style="background:rgba(0,0,0,.15);border-radius:10px;padding:9px 12px;font-size:13px;font-weight:600;margin-top:12px">🕐 Kader wird noch bekannt gegeben</div>`;
+      else if(inSquad) childBadge = `<div style="background:rgba(16,185,129,.3);border:1.5px solid rgba(16,185,129,.6);border-radius:10px;padding:9px 12px;font-size:13px;font-weight:800;margin-top:12px;color:#fff">✅ Dein Kind spielt mit!</div>`;
+      else             childBadge = `<div style="background:rgba(239,68,68,.25);border:1.5px solid rgba(239,68,68,.5);border-radius:10px;padding:9px 12px;font-size:13px;font-weight:800;margin-top:12px;color:#fff">❌ Diesmal nicht nominiert</div>`;
     }
-    html += `<div class="card-amber" style="padding:18px 16px">
-      <div style="font-size:10px;font-weight:700;color:rgba(0,0,0,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">⚽ Nächstes Spiel</div>
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:19px;font-weight:900;color:#1f2937;line-height:1.1;margin-bottom:6px">vs. ${escHtml(nextGame.opponent||'?')}</div>
-          <div style="font-size:13px;color:rgba(0,0,0,.65);display:flex;flex-direction:column;gap:3px">
-            <div><i class="fa fa-calendar" style="width:16px"></i> ${fmtFull(nextGame.date)}</div>
-            <div><i class="fa fa-clock" style="width:16px"></i> ${nextGame.time||'?'} Uhr</div>
-            <div><i class="fa fa-location-dot" style="width:16px"></i> ${escHtml(nextGame.location||'Ort folgt')}</div>
+
+    html += `<div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="width:28px;height:28px;border-radius:8px;background:#FEF3C7;display:flex;align-items:center;justify-content:center"><i class="fas fa-futbol" style="color:#D97706;font-size:13px"></i></div>
+        <span style="font-size:13px;font-weight:800;color:#1F2937">Nächstes Spiel</span>
+      </div>
+      <div style="background:linear-gradient(135deg,#B45309 0%,#F59E0B 100%);border-radius:18px;padding:18px;overflow:hidden">
+        <div style="display:flex;align-items:flex-start;gap:14px">
+          ${dateBox(nextGame.date, true)}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:20px;font-weight:900;color:#1F2937;line-height:1.1;margin-bottom:6px">vs. ${escHtml(nextGame.opponent||'?')}</div>
+            <div style="display:flex;flex-direction:column;gap:4px;font-size:13px;color:rgba(0,0,0,.7)">
+              <div><i class="fas fa-clock" style="width:16px;opacity:.7"></i> ${nextGame.time||'?'} Uhr</div>
+              <div><i class="fas fa-location-dot" style="width:16px;opacity:.7"></i> ${escHtml(nextGame.location||'Ort folgt')}</div>
+            </div>
+            ${nextGame.result ? `<div style="margin-top:8px;background:rgba(0,0,0,.15);display:inline-block;padding:4px 14px;border-radius:8px;font-size:20px;font-weight:900;color:#1F2937">${escHtml(nextGame.result)}</div>` : ''}
+            ${childBadge}
+            ${squadSet ? `<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(0,0,0,.1)">
+              <div style="font-size:10px;font-weight:700;color:rgba(0,0,0,.5);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">👕 Kader (${squadKeys.length})</div>
+              <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+                ${squadPlayers.map(p=>`<div style="position:relative" title="${escHtml(p.name||'')}">
+                  <div style="width:34px;height:34px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.7)">
+                    ${p.photo?`<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;background:#0A2540;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700">${(p.name||'?')[0].toUpperCase()}</div>`}
+                  </div>
+                  <div style="position:absolute;bottom:-2px;right:-2px;background:#0A2540;color:#fff;font-size:8px;font-weight:800;padding:1px 3px;border-radius:4px">${p.number||'?'}</div>
+                </div>`).join('')}
+                ${extra>0?`<div style="width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff">+${extra}</div>`:''}
+              </div>
+            </div>` : ''}
           </div>
-          ${nextGame.result ? `<div style="font-size:20px;font-weight:900;margin-top:8px;color:#1f2937;background:rgba(0,0,0,.1);display:inline-block;padding:4px 12px;border-radius:8px">${escHtml(nextGame.result)}</div>` : ''}
-          ${childBadge}
-          ${avatarRow}
-        </div>
-        <div style="background:rgba(0,0,0,.15);border-radius:14px;padding:10px 12px;text-align:center;flex-shrink:0;min-width:56px">
-          <div style="font-size:${typeof cd.n==='number'?'26':'15'}px;font-weight:900;line-height:1;color:#1f2937">${cd.n}</div>
-          ${cd.u ? `<div style="font-size:9px;font-weight:700;opacity:.6;margin-top:2px;text-transform:uppercase;color:#1f2937">${cd.u}</div>` : ''}
+          <div style="background:rgba(0,0,0,.18);border-radius:14px;padding:10px 12px;text-align:center;flex-shrink:0;min-width:54px">
+            <div style="font-size:${typeof cd.n==='number'?'28':'14'}px;font-weight:900;line-height:1;color:#1F2937">${cd.n}</div>
+            ${cd.u ? `<div style="font-size:9px;font-weight:700;color:rgba(0,0,0,.5);margin-top:3px;letter-spacing:.06em">${cd.u}</div>` : ''}
+          </div>
         </div>
       </div>
     </div>`;
   }
 
-  // Upcoming list
-  if(upcoming.length) {
-    html += `<div class="section-title">Alle Termine</div>`;
+  // ── UPCOMING LIST ──
+  if(upcoming.length > 0) {
+    html += `<div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="width:28px;height:28px;border-radius:8px;background:#F3F4F6;display:flex;align-items:center;justify-content:center"><i class="fas fa-calendar-days" style="color:#6B7280;font-size:13px"></i></div>
+        <span style="font-size:13px;font-weight:800;color:#1F2937">Alle Termine</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">`;
     upcoming.slice(0,10).forEach(x => {
-      html += `<div class="card" style="padding:12px;display:flex;align-items:center;gap:12px">
-        <div style="width:40px;height:40px;border-radius:10px;background:${x.type==='training'?'#EEF2FF':'#FEF3C7'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${x.type==='training'?'🏃':'⚽'}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:14px">${x.type==='training'?'Training':'vs. '+escHtml(x.opponent||'?')} ${isNew(x.createdAt)?'<span class="new-tag">NEU</span>':''}</div>
-          <div style="font-size:12px;color:#6B7280">${fmt(x.date)} · ${x.time||'?'} Uhr · ${escHtml(x.location||'?')}</div>
+      const isT = x.type==='training';
+      const st = pid ? (x.attendances?.[pid]||null) : null;
+      const stDot = st==='yes'?'#10B981':st==='no'?'#EF4444':st==='open'?'#F59E0B':null;
+      html += `<div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:12px">
+        <div style="width:42px;height:42px;border-radius:12px;background:${isT?'#EEF2FF':'#FEF3C7'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="${isT?'fas fa-running':'fas fa-futbol'}" style="color:${isT?'#4F46E5':'#D97706'};font-size:16px"></i>
         </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px;color:#1F2937;display:flex;align-items:center;gap:6px">
+            ${isT?'Training':'vs. '+escHtml(x.opponent||'?')}
+            ${isNew(x.createdAt)?'<span style="background:#EF4444;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px">NEU</span>':''}
+          </div>
+          <div style="font-size:12px;color:#9CA3AF;margin-top:2px">${fmt(x.date)} · ${x.time||'?'} Uhr · ${escHtml(x.location||'')}</div>
+        </div>
+        ${stDot ? `<div style="width:10px;height:10px;border-radius:50%;background:${stDot};flex-shrink:0"></div>` : ''}
       </div>`;
     });
+    html += `</div></div>`;
   }
 
-  if(!upcoming.length && !nextTraining && !nextGame) {
-    html += `<div style="text-align:center;padding:60px 20px;color:#9CA3AF"><div style="font-size:48px">📅</div><div style="font-weight:700;margin-top:12px;font-size:16px">Noch keine Termine geplant</div></div>`;
+  if(!upcoming.length) {
+    html += `<div style="text-align:center;padding:50px 20px;color:#D1D5DB">
+      <div style="font-size:52px;margin-bottom:12px">📅</div>
+      <div style="font-weight:700;font-size:16px;color:#9CA3AF">Noch keine Termine geplant</div>
+      <div style="font-size:13px;color:#D1D5DB;margin-top:4px">Der Trainer trägt sie bald ein</div>
+    </div>`;
   }
 
+  html += `</div></div>`;
   page.innerHTML = html;
 }
 
