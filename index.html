@@ -383,10 +383,22 @@ function renderHome() {
   const profile = getProfile();
   const now = Date.now();
 
+  // Robust date parsing – show everything from start of today onward
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const todayMs = todayStart.getTime();
+
+  function parseSortDate(dateStr, timeStr) {
+    if(!dateStr) return 0;
+    try {
+      const t = timeStr || '00:00';
+      return new Date(dateStr + 'T' + t).getTime();
+    } catch(e) { return 0; }
+  }
+
   const upcoming = [
-    ...STATE.trainings.map(t => ({...t, type:'training', sortDate: new Date(t.date+'T'+(t.time||'00:00')).getTime()})),
-    ...STATE.games.map(g => ({...g, type:'game', sortDate: new Date(g.date+'T'+(g.time||'00:00')).getTime()}))
-  ].filter(x => x.sortDate >= now - 3600000).sort((a,b) => a.sortDate - b.sortDate);
+    ...STATE.trainings.map(t => ({...t, type:'training', sortDate: parseSortDate(t.date, t.time)})),
+    ...STATE.games.map(g => ({...g, type:'game', sortDate: parseSortDate(g.date, g.time)}))
+  ].filter(x => x.sortDate >= todayMs).sort((a,b) => a.sortDate - b.sortDate);
 
   const nextTraining = upcoming.find(x => x.type==='training');
   const nextGame = upcoming.find(x => x.type==='game');
@@ -445,10 +457,10 @@ function renderHome() {
 
   // ── RSVP SECTION ──
   const rsvpList = STATE.trainings
-    .filter(t => new Date(t.date+'T'+(t.time||'00:00')).getTime() >= now - 3600000)
+    .filter(t => parseSortDate(t.date, t.time) >= todayMs)
     .sort((a,b) => new Date(a.date) - new Date(b.date)).slice(0,3);
 
-  if(pid && rsvpList.length) {
+  if(rsvpList.length) {
     html += `<div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
         <div style="width:28px;height:28px;border-radius:8px;background:#EEF2FF;display:flex;align-items:center;justify-content:center"><i class="fas fa-clipboard-check" style="color:#4F46E5;font-size:13px"></i></div>
@@ -477,11 +489,15 @@ function renderHome() {
               <i class="fas ${stCfg.icon}" style="margin-right:3px"></i>${stCfg.label}
             </div>
           </div>
-          <div style="display:flex;gap:6px">
-            <button onclick="setRsvp('${t.id}','${pid}','yes')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='yes'?'#10B981':'#E5E7EB'};background:${st==='yes'?'#D1FAE5':'#fff'};color:${st==='yes'?'#065F46':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer;transition:all .15s">✅ Zusagen</button>
-            <button onclick="setRsvp('${t.id}','${pid}','open')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='open'?'#F59E0B':'#E5E7EB'};background:${st==='open'?'#FEF3C7':'#fff'};color:${st==='open'?'#92400E':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer;transition:all .15s">🕐 Offen</button>
-            <button onclick="setRsvp('${t.id}','${pid}','no')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='no'?'#EF4444':'#E5E7EB'};background:${st==='no'?'#FEE2E2':'#fff'};color:${st==='no'?'#991B1B':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer;transition:all .15s">❌ Absagen</button>
-          </div>
+          ${pid
+            ? `<div style="display:flex;gap:6px">
+                <button onclick="setRsvp('${t.id}','${pid}','yes')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='yes'?'#10B981':'#E5E7EB'};background:${st==='yes'?'#D1FAE5':'#fff'};color:${st==='yes'?'#065F46':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer">✅ Zusagen</button>
+                <button onclick="setRsvp('${t.id}','${pid}','open')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='open'?'#F59E0B':'#E5E7EB'};background:${st==='open'?'#FEF3C7':'#fff'};color:${st==='open'?'#92400E':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer">🕐 Offen</button>
+                <button onclick="setRsvp('${t.id}','${pid}','no')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='no'?'#EF4444':'#E5E7EB'};background:${st==='no'?'#FEE2E2':'#fff'};color:${st==='no'?'#991B1B':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer">❌ Absagen</button>
+              </div>`
+            : `<div onclick="editProfile()" style="background:#FEF3C7;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;color:#92400E;cursor:pointer;text-align:center">
+                ⚠️ Kind noch nicht zugeordnet — <u>Profil bearbeiten</u>
+              </div>`}
         </div>
       </div>`;
     });
