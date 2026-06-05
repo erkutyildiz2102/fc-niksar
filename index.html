@@ -593,6 +593,38 @@ function renderHome() {
     </div>`;
   }
 
+  // ── STATUS BANNER (sofort sichtbar ohne scrollen) ──
+  const openRsvp = pid
+    ? upcomingTrainings.filter(t => { const s = t.attendances?.[pid]; return !s || s === 'open'; }).length
+    : 0;
+  const hasNew = [...upcomingTrainings, ...upcomingGames].some(x => isNew(x.createdAt));
+
+  if(openRsvp > 0 || hasNew) {
+    const isUrgent = openRsvp > 0;
+    const bg     = isUrgent ? 'linear-gradient(135deg,#F59E0B,#D97706)' : 'linear-gradient(135deg,#EF4444,#DC2626)';
+    const icon   = isUrgent ? 'fas fa-clipboard-list' : 'fas fa-star';
+    const msg    = openRsvp > 0
+      ? `${openRsvp} ${openRsvp===1?'Training wartet':'Trainings warten'} auf deine Rückmeldung`
+      : 'Neue Termine wurden eingetragen!';
+    const hint   = openRsvp > 0 ? 'Jetzt im Training-Slider zusagen oder absagen ↓' : 'Schau in den Slidern unten nach ↓';
+    html += `<div style="background:${bg};padding:12px 16px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="document.getElementById('sliderTraining')?.scrollIntoView({behavior:'smooth'})">
+      <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="${icon}" style="color:#fff;font-size:15px"></i>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:800;font-size:14px;color:#fff">${msg}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.8);margin-top:2px">${hint}</div>
+      </div>
+      <i class="fas fa-chevron-down" style="color:rgba(255,255,255,.6);font-size:14px;flex-shrink:0"></i>
+    </div>`;
+  } else if(pid && upcomingTrainings.length > 0) {
+    // Alles beantwortet — kleine grüne Bestätigung
+    html += `<div style="background:#F0FDF4;border-top:1px solid #BBF7D0;padding:10px 16px;display:flex;align-items:center;gap:8px">
+      <i class="fas fa-circle-check" style="color:#10B981;font-size:16px"></i>
+      <span style="font-size:13px;font-weight:600;color:#065F46">Alle Rückmeldungen erledigt ✓</span>
+    </div>`;
+  }
+
   html += `<div style="padding:12px;display:flex;flex-direction:column;gap:14px">`;
 
   // ── TRAINING SLIDER ──
