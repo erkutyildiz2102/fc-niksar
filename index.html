@@ -1038,38 +1038,67 @@ function saveGame() {
 
 function deleteGame(id){ if(confirm('Spiel löschen?')) db.ref('/games/' + id).remove(); }
 
+function playerCircle(p, size=68) {
+  return `<div style="position:relative;width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;flex-shrink:0">
+    ${p.photo
+      ? `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover;display:block">`
+      : `<div style="width:100%;height:100%;background:#0A2540;display:flex;align-items:center;justify-content:center;color:#fff;font-size:${Math.round(size*.35)}px;font-weight:800">${(p.name||'?')[0].toUpperCase()}</div>`}
+    <div style="position:absolute;bottom:0;right:0;background:#0A2540;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:6px 0 0 0;line-height:1.6">${p.number||'?'}</div>
+  </div>`;
+}
+
 function gameDetailModal(id) {
   const g = STATE.games.find(x => x.id === id);
   if(!g) return;
   const squadKeys = Object.keys(g.squad||{}).filter(k => g.squad[k]);
-  const inSquad = STATE.players.filter(p => squadKeys.includes(p.id));
+  const inSquad   = STATE.players.filter(p => squadKeys.includes(p.id));
   const notInSquad = STATE.players.filter(p => !squadKeys.includes(p.id));
+
   showModal(`<div class="modal-handle"></div>
-    <div style="font-size:18px;font-weight:700;margin-bottom:4px">vs. ${escHtml(g.opponent||'?')}</div>
-    <div style="font-size:13px;color:#6B7280;margin-bottom:14px">${fmt(g.date)} · ${g.time||''} · ${escHtml(g.location||'')}</div>
-    <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
-      <input id="gResultIn" class="input-field" placeholder="Ergebnis z.B. 3:1" value="${escHtml(g.result||'')}" style="flex:1">
-      <button class="btn-sm" style="background:#0A2540;color:#fff;white-space:nowrap" onclick="saveResult('${id}')">Speichern</button>
+    <div style="font-size:18px;font-weight:800;margin-bottom:2px;padding-right:36px">vs. ${escHtml(g.opponent||'?')}</div>
+    <div style="font-size:13px;color:#6B7280;margin-bottom:16px">${fmt(g.date)} · ${g.time||''} Uhr · ${escHtml(g.location||'')}</div>
+
+    <!-- Ergebnis -->
+    <div style="display:flex;gap:8px;margin-bottom:20px;align-items:center">
+      <input id="gResultIn" class="input-field" placeholder="Ergebnis z.B. 3:1" value="${escHtml(g.result||'')}" style="flex:1;font-size:18px;font-weight:700;text-align:center">
+      <button style="background:#0A2540;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap" onclick="saveResult('${id}')">Speichern</button>
     </div>
-    <div style="font-size:14px;font-weight:700;margin-bottom:10px">Kader (${inSquad.length} Spieler)</div>
-    ${inSquad.length ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
-      ${inSquad.map(p => `<div class="squad-card in-squad" onclick="removeFromSquad('${id}','${p.id}')">
-        ${p.photo ? `<img src="${p.photo}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px">` :
-          `<div style="width:100%;aspect-ratio:1;background:#0A2540;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:700">${(p.name||'?')[0].toUpperCase()}</div>`}
-        <div style="font-size:10px;font-weight:700;margin-top:4px">#${p.number||'?'}</div>
-        <div style="font-size:10px;color:#374151;line-height:1.2">${escHtml(p.name||'')}</div>
-        <div style="font-size:9px;color:#065F46;font-weight:700;margin-top:2px">Im Kader ✓</div>
-      </div>`).join('')}
-    </div>` : `<div style="color:#9CA3AF;font-size:13px;margin-bottom:14px">Noch keine Spieler im Kader – tippe unten um hinzuzufügen</div>`}
-    ${notInSquad.length ? `<div style="font-size:14px;font-weight:700;margin-bottom:10px;color:#6B7280">Hinzufügen</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-      ${notInSquad.map(p => `<div class="squad-card" onclick="addToSquad('${id}','${p.id}')" style="opacity:.75">
-        ${p.photo ? `<img src="${p.photo}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px">` :
-          `<div style="width:100%;aspect-ratio:1;background:#9CA3AF;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:700">${(p.name||'?')[0].toUpperCase()}</div>`}
-        <div style="font-size:10px;font-weight:700;margin-top:4px">#${p.number||'?'}</div>
-        <div style="font-size:10px;color:#6B7280;line-height:1.2">${escHtml(p.name||'')}</div>
-        <div style="font-size:9px;color:#0A2540;font-weight:700;margin-top:2px">+ Hinzufügen</div>
-      </div>`).join('')}
+
+    <!-- Kader -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:800;color:#1F2937">Kader <span style="background:#0A2540;color:#fff;font-size:11px;padding:2px 8px;border-radius:12px;margin-left:4px">${inSquad.length}</span></div>
+    </div>
+    ${inSquad.length
+      ? `<div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:20px">
+          ${inSquad.map(p => `
+            <div onclick="removeFromSquad('${id}','${p.id}')" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;width:72px" title="Tippen zum Entfernen">
+              <div style="position:relative">
+                ${playerCircle(p, 64)}
+                <div style="position:absolute;top:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:#10B981;border:2px solid #fff;display:flex;align-items:center;justify-content:center">
+                  <i class="fas fa-check" style="color:#fff;font-size:8px"></i>
+                </div>
+              </div>
+              <div style="font-size:10px;font-weight:700;color:#1F2937;text-align:center;width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p.name||'')}</div>
+              <div style="font-size:9px;color:#10B981;font-weight:700">Im Kader</div>
+            </div>`).join('')}
+         </div>`
+      : `<div style="background:#F9FAFB;border-radius:12px;padding:16px;text-align:center;color:#9CA3AF;font-size:13px;margin-bottom:16px">Noch keine Spieler nominiert</div>`}
+
+    <!-- Hinzufügen -->
+    ${notInSquad.length ? `
+    <div style="font-size:13px;font-weight:700;color:#6B7280;margin-bottom:12px;padding-top:12px;border-top:1px solid #F3F4F6">Spieler hinzufügen</div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px">
+      ${notInSquad.map(p => `
+        <div onclick="addToSquad('${id}','${p.id}')" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;width:72px;opacity:.7">
+          <div style="position:relative">
+            ${playerCircle(p, 64)}
+            <div style="position:absolute;top:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:#E5E7EB;border:2px solid #fff;display:flex;align-items:center;justify-content:center">
+              <i class="fas fa-plus" style="color:#6B7280;font-size:9px"></i>
+            </div>
+          </div>
+          <div style="font-size:10px;font-weight:700;color:#6B7280;text-align:center;width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p.name||'')}</div>
+          <div style="font-size:9px;color:#9CA3AF;font-weight:600">Hinzufügen</div>
+        </div>`).join('')}
     </div>` : ''}
   `);
 }
