@@ -498,6 +498,15 @@ function dateBox(dateStr, dark) {
   </div>`;
 }
 
+// ── RSVP EDIT MAP ──
+window._rsvpEdit = window._rsvpEdit || {};
+
+function toggleRsvpEdit(tid) {
+  window._rsvpEdit = window._rsvpEdit || {};
+  window._rsvpEdit[tid] = !window._rsvpEdit[tid];
+  renderHome();
+}
+
 function renderHome() {
   const page = document.getElementById('homePage');
   if(!page || !page.classList.contains('active')) return;
@@ -521,9 +530,19 @@ function renderHome() {
     ...STATE.games.map(g => ({...g, type:'game', sortDate: parseSortDate(g.date, g.time)}))
   ].filter(x => x.sortDate >= todayMs).sort((a,b) => a.sortDate - b.sortDate);
 
-  const nextTraining = upcoming.find(x => x.type==='training');
-  const nextGame = upcoming.find(x => x.type==='game');
   const pid = profile?.playerId;
+
+  const upcomingTrainings = STATE.trainings
+    .map(t => ({...t, sortDate: parseSortDate(t.date, t.time)}))
+    .filter(t => t.sortDate >= todayMs)
+    .sort((a,b) => a.sortDate - b.sortDate)
+    .slice(0, 5);
+
+  const upcomingGames = STATE.games
+    .map(g => ({...g, sortDate: parseSortDate(g.date, g.time)}))
+    .filter(g => g.sortDate >= todayMs)
+    .sort((a,b) => a.sortDate - b.sortDate)
+    .slice(0, 5);
 
   let html = `<div style="display:flex;flex-direction:column;gap:0">`;
 
@@ -576,151 +595,140 @@ function renderHome() {
 
   html += `<div style="padding:12px;display:flex;flex-direction:column;gap:14px">`;
 
-  // ── RSVP SECTION ──
-  const rsvpList = STATE.trainings
-    .filter(t => {
-      const st = t.attendances?.[pid];
-      return parseSortDate(t.date, t.time) >= todayMs && (st === 'open' || !st);
-    })
-    .sort((a,b) => new Date(a.date) - new Date(b.date)).slice(0, 3);
-
-  const upcomingTrainings = STATE.trainings.filter(t => parseSortDate(t.date, t.time) >= todayMs);
-
-  if(rsvpList.length) {
+  // ── TRAINING SLIDER ──
+  if(upcomingTrainings.length > 0) {
     html += `<div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <div style="width:28px;height:28px;border-radius:8px;background:#EEF2FF;display:flex;align-items:center;justify-content:center"><i class="fas fa-clipboard-check" style="color:#4F46E5;font-size:13px"></i></div>
-        <span style="font-size:13px;font-weight:800;color:#1F2937;letter-spacing:.01em">Meine Zu- / Absagen</span>
+        <div style="width:28px;height:28px;border-radius:8px;background:#EEF2FF;display:flex;align-items:center;justify-content:center"><i class="fas fa-running" style="color:#4F46E5;font-size:13px"></i></div>
+        <span style="font-size:13px;font-weight:800;color:#1F2937">Trainings</span>
       </div>
-      <div style="display:flex;flex-direction:column;gap:10px">`;
-    rsvpList.forEach(t => {
-      const st = t.attendances?.[pid] || 'open';
-      const stCfg = {
-        yes:  {label:'Zugesagt',   bg:'#D1FAE5', col:'#065F46', border:'#34D399'},
-        no:   {label:'Abgesagt',   bg:'#FEE2E2', col:'#991B1B', border:'#F87171'},
-        open: {label:'Noch offen', bg:'#FEF3C7', col:'#92400E', border:'#FCD34D'}
-      }[st];
-      html += `<div class="card" style="border-left:4px solid ${stCfg.border};overflow:visible">
-        <div style="padding:12px 14px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-            ${dateBox(t.date, false)}
+      <div class="event-slider" id="sliderTraining">`;
+
+    upcomingTrainings.forEach(t => {
+      const st = pid ? (t.attendances?.[pid] || 'open') : null;
+      const inEditMode = window._rsvpEdit?.[t.id];
+      const showButtons = !pid ? false : (st === 'open' || !st || inEditMode);
+
+      let rsvpSection = '';
+      if(pid) {
+        if(showButtons) {
+          rsvpSection = `<div style="display:flex;gap:6px;margin-top:14px">
+            <button onclick="event.stopPropagation();setRsvpHome('${t.id}','${pid}','yes')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='yes'?'#10B981':'rgba(255,255,255,.3)'};background:${st==='yes'?'rgba(16,185,129,.35)':'rgba(255,255,255,.1)'};color:#fff;font-size:12px;font-weight:700;cursor:pointer">Zusagen</button>
+            <button onclick="event.stopPropagation();setRsvpHome('${t.id}','${pid}','open')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='open'?'#F59E0B':'rgba(255,255,255,.3)'};background:${st==='open'?'rgba(245,158,11,.35)':'rgba(255,255,255,.1)'};color:#fff;font-size:12px;font-weight:700;cursor:pointer">Offen</button>
+            <button onclick="event.stopPropagation();setRsvpHome('${t.id}','${pid}','no')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='no'?'#EF4444':'rgba(255,255,255,.3)'};background:${st==='no'?'rgba(239,68,68,.3)':'rgba(255,255,255,.1)'};color:#fff;font-size:12px;font-weight:700;cursor:pointer">Absagen</button>
+          </div>`;
+        } else {
+          const badgeBg = st==='yes' ? 'rgba(16,185,129,.35)' : 'rgba(239,68,68,.3)';
+          const badgeBorder = st==='yes' ? 'rgba(16,185,129,.6)' : 'rgba(239,68,68,.5)';
+          const badgeLabel = st==='yes' ? 'Zugesagt ✓' : 'Abgesagt ✗';
+          rsvpSection = `<div style="margin-top:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div style="background:${badgeBg};border:1.5px solid ${badgeBorder};border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:#fff">${badgeLabel}</div>
+            <button onclick="event.stopPropagation();toggleRsvpEdit('${t.id}')" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:600;color:rgba(255,255,255,.85);cursor:pointer">Antwort ändern</button>
+          </div>`;
+        }
+      } else {
+        rsvpSection = `<div onclick="editProfile()" style="margin-top:14px;background:rgba(255,255,255,.1);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;color:rgba(255,255,255,.8);cursor:pointer;text-align:center">
+          ⚠️ Kind zuordnen → Profil bearbeiten
+        </div>`;
+      }
+
+      html += `<div class="event-slide" style="min-width:calc(90vw - 32px)">
+        <div style="background:linear-gradient(135deg,#0A2540,#1e4d8c);padding:18px;border-radius:18px;height:100%">
+          <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
+            ${dateBox(t.date, true)}
             <div style="flex:1;min-width:0">
-              <div style="font-weight:800;font-size:14px;color:#1F2937">Training</div>
-              <div style="font-size:12px;color:#6B7280;margin-top:2px">
-                <i class="fas fa-clock" style="width:13px"></i> ${t.time||'?'} Uhr
-                ${t.location ? ` · <i class="fas fa-location-dot" style="width:13px"></i> ${escHtml(t.location)}` : ''}
+              <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">🏃 Training${isNew(t.createdAt)?' <span style="background:#EF4444;color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:4px">NEU</span>':''}</div>
+              <div style="font-size:15px;font-weight:800;color:#fff;line-height:1.2">${fmtFull(t.date)}</div>
+              <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:4px">
+                <i class="fas fa-clock" style="opacity:.7;margin-right:3px"></i>${t.time||'?'} Uhr
+                ${t.location ? ` · <i class="fas fa-location-dot" style="opacity:.7;margin-right:3px"></i>${escHtml(t.location)}` : ''}
               </div>
             </div>
-            <div style="background:${stCfg.bg};color:${stCfg.col};font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;border:1px solid ${stCfg.border}">
-              ${stCfg.label}
-            </div>
+            <button onclick="event.stopPropagation();calBtn(this)" data-title="FC Niksar Training" data-date="${t.date||''}" data-time="${t.time||''}" data-loc="${(t.location||'').replace(/"/g,'')}" data-dur="90" style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);border-radius:8px;padding:6px 8px;font-size:11px;color:rgba(255,255,255,.8);cursor:pointer;white-space:nowrap;flex-shrink:0">
+              <i class="fas fa-calendar-plus"></i>
+            </button>
           </div>
-          ${pid
-            ? `<div style="display:flex;gap:6px">
-                <button onclick="setRsvp('${t.id}','${pid}','yes')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='yes'?'#10B981':'#E5E7EB'};background:${st==='yes'?'#D1FAE5':'#fff'};color:${st==='yes'?'#065F46':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer">Zusagen</button>
-                <button onclick="setRsvp('${t.id}','${pid}','open')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='open'?'#F59E0B':'#E5E7EB'};background:${st==='open'?'#FEF3C7':'#fff'};color:${st==='open'?'#92400E':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer">Offen</button>
-                <button onclick="setRsvp('${t.id}','${pid}','no')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='no'?'#EF4444':'#E5E7EB'};background:${st==='no'?'#FEE2E2':'#fff'};color:${st==='no'?'#991B1B':'#6B7280'};font-size:12px;font-weight:700;cursor:pointer">Absagen</button>
-              </div>`
-            : `<div onclick="editProfile()" style="background:#FEF3C7;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;color:#92400E;cursor:pointer;text-align:center">
-                ⚠️ Kind noch nicht zugeordnet — <u>Profil bearbeiten</u>
-              </div>`}
+          ${t.notes ? `<div style="font-size:11px;color:rgba(255,255,255,.55);font-style:italic;margin-bottom:6px">${escHtml(t.notes)}</div>` : ''}
+          ${rsvpSection}
         </div>
       </div>`;
     });
-    html += `</div></div>`;
-  } else if(pid && upcomingTrainings.length > 0) {
-    html += `<div style="background:#D1FAE5;border:1.5px solid #34D399;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:10px">
-      <span style="font-size:20px">✅</span>
-      <span style="font-size:13px;font-weight:700;color:#065F46">Alle Rückmeldungen erledigt!</span>
-    </div>`;
+
+    html += `</div>`;
+    if(upcomingTrainings.length > 1) {
+      html += `<div id="sliderDots-training" style="display:flex;justify-content:center;gap:6px;margin-top:8px">
+        ${upcomingTrainings.map((_,i) => `<div style="width:${i===0?'18':'7'}px;height:7px;border-radius:4px;background:${i===0?'#4F46E5':'#D1D5DB'};transition:all .3s" data-idx="${i}"></div>`).join('')}
+      </div>`;
+    }
+    html += `</div>`;
   }
 
-  // ── EVENT CARDS (stacked) ──
-  function renderEventCard(x) {
-    const isT = x.type === 'training';
-    const cd  = countdown(x.sortDate);
-    const bg  = isT ? 'linear-gradient(135deg,#0A2540 0%,#1e4d8c 100%)' : 'linear-gradient(135deg,#B45309 0%,#F59E0B 100%)';
-    const textCol = isT ? '#fff' : '#1F2937';
-    const subCol  = isT ? 'rgba(255,255,255,.8)' : 'rgba(0,0,0,.65)';
+  // ── GAME SLIDER ──
+  if(upcomingGames.length > 0) {
+    html += `<div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="width:28px;height:28px;border-radius:8px;background:#FEF3C7;display:flex;align-items:center;justify-content:center"><i class="fas fa-futbol" style="color:#D97706;font-size:13px"></i></div>
+        <span style="font-size:13px;font-weight:800;color:#1F2937">Spiele &amp; Turniere</span>
+      </div>
+      <div class="event-slider" id="sliderGames">`;
 
-    // RSVP badge for training
-    let rsvpBadge = '';
-    if(isT && pid) {
-      const st = x.attendances?.[pid];
-      if(st === 'yes')       rsvpBadge = `<div style="margin-top:8px;display:inline-block;background:rgba(16,185,129,.3);border:1.5px solid rgba(16,185,129,.6);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:#fff">Zugesagt ✓</div>`;
-      else if(st === 'no')   rsvpBadge = `<div style="margin-top:8px;display:inline-block;background:rgba(239,68,68,.25);border:1.5px solid rgba(239,68,68,.45);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:#fff">Abgesagt ✗</div>`;
-      else                   rsvpBadge = `<div style="margin-top:8px;display:inline-block;background:rgba(245,158,11,.25);border:1.5px solid rgba(245,158,11,.5);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:#fff">Noch nicht geantwortet</div>`;
-    }
-
-    // Game-specific: squad + child badge
-    let gameExtras = '';
-    if(!isT) {
-      const squadKeys    = Object.keys(x.squad||{}).filter(k=>x.squad[k]);
+    upcomingGames.forEach(g => {
+      const squadKeys    = Object.keys(g.squad||{}).filter(k=>g.squad[k]);
       const squadSet     = squadKeys.length > 0;
       const inSquad      = pid && squadKeys.includes(pid);
       const squadPlayers = STATE.players.filter(p=>squadKeys.includes(p.id)).slice(0,6);
       const extra        = squadKeys.length - squadPlayers.length;
+
+      let childBadge = '';
       if(pid) {
-        if(!squadSet)    gameExtras += `<div style="background:rgba(0,0,0,.15);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;margin-top:10px;color:${textCol}">Kader wird noch bekannt gegeben</div>`;
-        else if(inSquad) gameExtras += `<div style="background:rgba(16,185,129,.3);border:1.5px solid rgba(16,185,129,.6);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:800;margin-top:10px;color:#fff">✅ Dein Kind spielt mit!</div>`;
-        else             gameExtras += `<div style="background:rgba(239,68,68,.25);border:1.5px solid rgba(239,68,68,.45);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:800;margin-top:10px;color:#fff">❌ Diesmal nicht nominiert</div>`;
+        if(!squadSet)    childBadge = `<div style="background:rgba(0,0,0,.2);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;color:rgba(0,0,0,.7);margin-top:10px">Kader offen</div>`;
+        else if(inSquad) childBadge = `<div style="background:rgba(16,185,129,.3);border:1.5px solid rgba(16,185,129,.5);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;color:#1F2937;margin-top:10px">✅ Dein Kind spielt mit!</div>`;
+        else             childBadge = `<div style="background:rgba(239,68,68,.2);border:1.5px solid rgba(239,68,68,.35);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;color:#7F1D1D;margin-top:10px">❌ Nicht nominiert</div>`;
       }
-      if(squadSet) gameExtras += `<div style="display:flex;gap:3px;margin-top:10px;flex-wrap:wrap">
-        ${squadPlayers.map(p=>`<div style="position:relative">
-          <div style="width:30px;height:30px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.6)">
-            ${p.photo?`<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;background:#0A2540;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700">${(p.name||'?')[0].toUpperCase()}</div>`}
+
+      let squadRow = '';
+      if(squadSet) {
+        squadRow = `<div style="display:flex;gap:3px;margin-top:10px;flex-wrap:wrap">
+          ${squadPlayers.map(p=>`<div style="position:relative">
+            <div style="width:30px;height:30px;border-radius:50%;overflow:hidden;border:2px solid rgba(0,0,0,.25)">
+              ${p.photo?`<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;background:#0A2540;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700">${(p.name||'?')[0].toUpperCase()}</div>`}
+            </div>
+            <div style="position:absolute;bottom:-1px;right:-2px;background:#0A2540;color:#fff;font-size:7px;font-weight:800;padding:1px 3px;border-radius:4px">${p.number||'?'}</div>
+          </div>`).join('')}
+          ${extra>0?`<div style="width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#1F2937">+${extra}</div>`:''}
+        </div>`;
+      }
+
+      html += `<div class="event-slide" style="min-width:calc(90vw - 32px)">
+        <div style="background:linear-gradient(135deg,#B45309,#F59E0B);padding:18px;border-radius:18px;height:100%">
+          <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:8px">
+            ${dateBox(g.date, false)}
+            <div style="flex:1;min-width:0">
+              <div style="font-size:10px;font-weight:700;color:rgba(0,0,0,.45);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">⚽ Spiel${isNew(g.createdAt)?' <span style="background:#EF4444;color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:4px">NEU</span>':''}</div>
+              <div style="font-size:15px;font-weight:800;color:#1F2937;line-height:1.2">vs. ${escHtml(g.opponent||'?')}</div>
+              <div style="font-size:12px;color:rgba(0,0,0,.6);margin-top:4px">
+                <i class="fas fa-clock" style="opacity:.7;margin-right:3px"></i>${g.time||'?'} Uhr
+                ${g.location ? ` · <i class="fas fa-location-dot" style="opacity:.7;margin-right:3px"></i>${escHtml(g.location)}` : ''}
+              </div>
+            </div>
+            <button onclick="event.stopPropagation();calBtn(this)" data-title="FC Niksar vs. ${(g.opponent||'').replace(/"/g,'')}" data-date="${g.date||''}" data-time="${g.time||''}" data-loc="${(g.location||'').replace(/"/g,'')}" data-dur="120" style="background:rgba(0,0,0,.1);border:1.5px solid rgba(0,0,0,.15);border-radius:8px;padding:6px 8px;font-size:11px;color:rgba(0,0,0,.6);cursor:pointer;white-space:nowrap;flex-shrink:0">
+              <i class="fas fa-calendar-plus"></i>
+            </button>
           </div>
-          <div style="position:absolute;bottom:-1px;right:-2px;background:#0A2540;color:#fff;font-size:7px;font-weight:800;padding:1px 3px;border-radius:4px">${p.number||'?'}</div>
-        </div>`).join('')}
-        ${extra>0?`<div style="width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">+${extra}</div>`:''}
+          ${g.result ? `<div style="background:rgba(0,0,0,.15);display:inline-block;padding:3px 12px;border-radius:6px;font-size:18px;font-weight:900;color:#1F2937;margin-bottom:4px">${escHtml(g.result)}</div>` : ''}
+          ${childBadge}
+          ${squadRow}
+        </div>
       </div>`;
-      if(x.result) gameExtras += `<div style="margin-top:8px;background:rgba(0,0,0,.15);display:inline-block;padding:3px 12px;border-radius:6px;font-size:18px;font-weight:900;color:${textCol}">${escHtml(x.result)}</div>`;
+    });
+
+    html += `</div>`;
+    if(upcomingGames.length > 1) {
+      html += `<div id="sliderDots-games" style="display:flex;justify-content:center;gap:6px;margin-top:8px">
+        ${upcomingGames.map((_,i) => `<div style="width:${i===0?'18':'7'}px;height:7px;border-radius:4px;background:${i===0?'#D97706':'#D1D5DB'};transition:all .3s" data-idx="${i}"></div>`).join('')}
+      </div>`;
     }
-
-    return `<div style="background:${bg};padding:16px;border-radius:18px;overflow:hidden">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:10px;font-weight:700;color:${isT?'rgba(255,255,255,.6)':'rgba(0,0,0,.45)'};text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">
-            ${isT ? '🏃 Training' : '⚽ Spiel'} ${isNew(x.createdAt)?'<span style="background:#EF4444;color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:4px">NEU</span>':''}
-          </div>
-          <div style="font-size:17px;font-weight:900;color:${textCol};line-height:1.15;margin-bottom:8px">${isT ? fmtFull(x.date) : 'vs. '+escHtml(x.opponent||'?')}</div>
-          <div style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:${subCol}">
-            <div>${dateBox(x.date, isT).replace(/flex-shrink:0/,'display:inline-block')}</div>
-            <div><i class="fas fa-clock" style="width:14px;opacity:.7"></i> ${x.time||'?'} Uhr</div>
-            <div><i class="fas fa-location-dot" style="width:14px;opacity:.7"></i> ${escHtml(x.location||'Ort folgt')}</div>
-          </div>
-          ${isT ? rsvpBadge : gameExtras}
-          ${isT && x.notes ? `<div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,.6);font-style:italic">${escHtml(x.notes)}</div>` : ''}
-          <button onclick="event.stopPropagation();calBtn(this)" data-title="${isT?'FC Niksar Training':'FC Niksar vs. '+(x.opponent||'').replace(/\"/g,'')}" data-date="${x.date||''}" data-time="${x.time||''}" data-loc="${(x.location||'').replace(/"/g,'')}" data-dur="${isT?90:120}" style="margin-top:12px;background:rgba(255,255,255,.12);color:${isT?'rgba(255,255,255,.85)':'rgba(0,0,0,.6)'};border:1.5px solid ${isT?'rgba(255,255,255,.2)':'rgba(0,0,0,.12)'};border-radius:8px;padding:7px 10px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px">
-            <i class="fas fa-calendar-plus"></i> Zum Kalender
-          </button>
-        </div>
-        <div style="background:${isT?'rgba(255,255,255,.15)':'rgba(0,0,0,.15)'};border-radius:12px;padding:8px 10px;text-align:center;flex-shrink:0;min-width:50px;border:1.5px solid ${isT?'rgba(255,255,255,.2)':'rgba(0,0,0,.1)'}">
-          <div style="font-size:${typeof cd.n==='number'?'24':'13'}px;font-weight:900;line-height:1;color:${textCol}">${cd.n}</div>
-          ${cd.u?`<div style="font-size:8px;font-weight:700;opacity:.65;margin-top:3px;letter-spacing:.06em;color:${textCol}">${cd.u}</div>`:''}
-        </div>
-      </div>
-    </div>`;
-  }
-
-  if(nextTraining) {
-    html += `<div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <div style="width:28px;height:28px;border-radius:8px;background:#EEF2FF;display:flex;align-items:center;justify-content:center"><i class="fas fa-running" style="color:#4F46E5;font-size:13px"></i></div>
-        <span style="font-size:13px;font-weight:800;color:#1F2937">Nächstes Training</span>
-      </div>
-      ${renderEventCard(nextTraining)}
-    </div>`;
-  }
-
-  if(nextGame) {
-    html += `<div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <div style="width:28px;height:28px;border-radius:8px;background:#FEF3C7;display:flex;align-items:center;justify-content:center"><i class="fas fa-futbol" style="color:#D97706;font-size:13px"></i></div>
-        <span style="font-size:13px;font-weight:800;color:#1F2937">Nächstes Spiel</span>
-      </div>
-      ${renderEventCard(nextGame)}
-    </div>`;
+    html += `</div>`;
   }
 
   // ── UPCOMING LIST ──
@@ -765,6 +773,30 @@ function renderHome() {
 
   html += `</div></div>`;
   page.innerHTML = html;
+
+  // ── SLIDER DOT LISTENERS ──
+  ['Training', 'Games'].forEach(suffix => {
+    const slider = document.getElementById('slider' + suffix);
+    const dotsEl = document.getElementById('sliderDots-' + suffix.toLowerCase());
+    if(!slider || !dotsEl) return;
+    const dots = dotsEl.querySelectorAll('div[data-idx]');
+    const slideEls = slider.querySelectorAll('.event-slide');
+    const activeColor = suffix === 'Training' ? '#4F46E5' : '#D97706';
+    slider.addEventListener('scroll', () => {
+      if(!slideEls.length) return;
+      const idx = Math.round(slider.scrollLeft / (slideEls[0].offsetWidth + 12));
+      dots.forEach((d, i) => {
+        d.style.width = i === idx ? '18px' : '7px';
+        d.style.background = i === idx ? activeColor : '#D1D5DB';
+      });
+    }, {passive: true});
+  });
+}
+
+function setRsvpHome(tid, pid, status) {
+  window._rsvpEdit = window._rsvpEdit || {};
+  delete window._rsvpEdit[tid];
+  db.ref('/trainings/' + tid + '/attendances/' + pid).set(status);
 }
 
 function setRsvp(tid, pid, status) {
