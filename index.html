@@ -809,9 +809,9 @@ function renderHome() {
 
       let childBadge = '';
       if(pid) {
-        if(!squadSet)    childBadge = `<div style="background:rgba(0,0,0,.2);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;color:rgba(0,0,0,.7);margin-top:10px">Kader offen</div>`;
-        else if(inSquad) childBadge = `<div style="background:rgba(16,185,129,.3);border:1.5px solid rgba(16,185,129,.5);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;color:#1F2937;margin-top:10px">✅ Dein Kind spielt mit!</div>`;
-        else             childBadge = `<div style="background:rgba(239,68,68,.2);border:1.5px solid rgba(239,68,68,.35);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;color:#7F1D1D;margin-top:10px">❌ Nicht nominiert</div>`;
+        if(!squadSet)    childBadge = `<div style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#fff;margin-top:10px">📋 Kader noch offen</div>`;
+        else if(inSquad) childBadge = `<div style="background:rgba(16,185,129,.4);border:1.5px solid rgba(16,185,129,.7);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;color:#fff;margin-top:10px">✅ Dein Kind spielt mit!</div>`;
+        else             childBadge = `<div style="background:rgba(239,68,68,.35);border:1.5px solid rgba(239,68,68,.6);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;color:#fff;margin-top:10px">❌ Nicht nominiert</div>`;
       }
 
       let squadRow = '';
@@ -823,7 +823,7 @@ function renderHome() {
             </div>
             <div style="position:absolute;bottom:-1px;right:-2px;background:#0A2540;color:#fff;font-size:7px;font-weight:800;padding:1px 3px;border-radius:4px">${p.number||'?'}</div>
           </div>`).join('')}
-          ${extra>0?`<div style="width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#1F2937">+${extra}</div>`:''}
+          ${extra>0?`<div style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">+${extra}</div>`:''}
         </div>`;
       }
 
