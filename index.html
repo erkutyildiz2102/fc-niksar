@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>FC Niksar Â· F1/U9</title>
+<title>FC Niksar · F1/U9</title>
 <meta name="theme-color" content="#0A2540">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -77,10 +77,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </head>
 <body>
 
-<div id="offlineBanner"><i class="fa fa-wifi-slash"></i> Keine Verbindung â€“ Offline-Modus</div>
+<div id="offlineBanner"><i class="fa fa-wifi-slash"></i> Keine Verbindung – Offline-Modus</div>
 
 <div id="loadingOverlay">
-  <div style="font-size:56px;margin-bottom:16px">âš½</div>
+  <div style="font-size:56px;margin-bottom:16px">⚽</div>
   <div style="font-size:22px;font-weight:800;letter-spacing:2px">FC NIKSAR</div>
   <div style="opacity:.7;margin-top:8px;font-size:14px">Verbinde...</div>
 </div>
@@ -88,23 +88,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div id="splash">
   <img id="splashLogo" style="width:110px;height:110px;border-radius:50%;object-fit:cover;display:none">
   <div id="splashLogoPlaceholder" style="width:110px;height:110px;border-radius:50%;background:#0A2540;display:flex;align-items:center;justify-content:center">
-    <span style="font-size:56px">âš½</span>
+    <span style="font-size:56px">⚽</span>
   </div>
   <div style="margin-top:24px;font-size:30px;font-weight:900;color:#0A2540;letter-spacing:2px">FC NIKSAR</div>
-  <div style="font-size:16px;color:#6B7280;margin-top:6px;font-weight:600">F1 Â· U9 Â· Saison 26/27</div>
+  <div style="font-size:16px;color:#6B7280;margin-top:6px;font-weight:600">F1 · U9 · Saison 26/27</div>
   <div style="margin-top:48px;font-size:13px;color:#D1D5DB">Tippe irgendwo um fortzufahren</div>
 </div>
 
 <div id="profileSetup" style="display:none">
   <div style="text-align:center;margin-bottom:28px">
-    <div style="font-size:40px">ðŸ‘‹</div>
+    <div style="font-size:40px">👋</div>
     <div style="font-size:24px;font-weight:800;color:#0A2540;margin-top:8px">Willkommen!</div>
-    <div style="color:#6B7280;margin-top:4px">Einmalige Einrichtung â€“ dauert nur kurz</div>
+    <div style="color:#6B7280;margin-top:4px">Einmalige Einrichtung – dauert nur kurz</div>
   </div>
   <div style="width:100%;max-width:400px">
-    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:6px">Dein Name (z.B. "Sabrina â€“ Lukas Mama")</div>
+    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:6px">Dein Name (z.B. "Sabrina – Lukas Mama")</div>
     <input id="setupName" class="input-field" type="text" placeholder="Name eingeben..." style="margin-bottom:16px">
-    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px">WÃ¤hle dein Kind:</div>
+    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px">Wähle dein Kind:</div>
     <div id="setupPlayerGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:24px"></div>
     <button class="btn-primary" onclick="saveProfile()">Fertig &amp; loslegen</button>
   </div>
@@ -112,22 +112,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div id="app">
 
-  <!-- â•â•â• HEADER â•â•â• -->
+  <!-- ═══ HEADER ═══ -->
   <header style="background:#0A2540;padding:max(14px,env(safe-area-inset-top)) 16px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:90">
     <div style="display:flex;align-items:center;gap:10px">
       <div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
         <img id="headerLogoImg" src="" style="display:none;width:100%;height:100%;object-fit:cover">
-        <span id="headerLogoEmoji" style="font-size:22px">âš½</span>
+        <span id="headerLogoEmoji" style="font-size:22px">⚽</span>
       </div>
       <div>
         <div style="color:#fff;font-weight:900;font-size:17px;letter-spacing:.04em;line-height:1.1">FC NIKSAR</div>
-        <div style="color:#93c5fd;font-size:11px;font-weight:600;letter-spacing:.04em">F1 Â· U9 Â· Saison 26/27</div>
+        <div style="color:#93c5fd;font-size:11px;font-weight:600;letter-spacing:.04em">F1 · U9 · Saison 26/27</div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <div id="trainerHeaderTag" style="display:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:.03em">âš¡ Trainer</div>
+      <div id="trainerHeaderTag" style="display:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:.03em">⚡ Trainer</div>
       <button id="profileHeaderBtn" onclick="editProfile()" title="Mein Profil" style="width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.15);cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;flex-shrink:0">
-        <div id="profileHeaderContent">ðŸ‘¤</div>
+        <div id="profileHeaderContent">👤</div>
       </button>
     </div>
   </header>
@@ -160,6 +160,8 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const PUSH_API_URL = 'https://fc-niksar.vercel.app/api/send-push';
+const VAPID_PUBLIC_KEY = 'BL7m75OaxT_ll5z_yiUwyhOrO6lWjT-d9xtLPraiY8colUSE-jq_4b15r5KBZOJO5AvRi75W3WSkm19XFFk7qXU';
 
 // ---- Helpers ----
 const LS = k => localStorage.getItem('fcniksar_' + k);
@@ -204,9 +206,8 @@ if ('serviceWorker' in navigator) {
 }
 
 // ---- Push Notifications ----
-// VAPID Public Key â€“ muss mit dem Server Ã¼bereinstimmen
-const VAPID_PUBLIC_KEY = 'BL7m75OaxT_ll5z_yiUwyhOrO6lWjT-d9xtLPraiY8colUSE-jq_4b15r5KBZOJO5AvRi75W3WSkm19XFFk7qXU';
-const PUSH_API_URL = 'https://fc-niksar.vercel.app/api/send-push';
+// VAPID Public Key – muss mit dem Server übereinstimmen
+const VAPID_PUBLIC_KEY = 'DEIN_VAPID_PUBLIC_KEY_HIER';
 
 function urlBase64ToUint8Array(b64) {
   const pad = '='.repeat((4 - b64.length % 4) % 4);
@@ -216,7 +217,7 @@ function urlBase64ToUint8Array(b64) {
 
 async function subscribeToPush() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    alert('Push-Benachrichtigungen werden von diesem Browser nicht unterstÃ¼tzt.'); return;
+    alert('Push-Benachrichtigungen werden von diesem Browser nicht unterstützt.'); return;
   }
   const perm = await Notification.requestPermission();
   if (perm !== 'granted') { alert('Benachrichtigungen wurden nicht erlaubt.'); return; }
@@ -233,14 +234,12 @@ async function subscribeToPush() {
     await db.ref('/pushSubscriptions/' + key).set(sub.toJSON());
     LSset('pushEnabled', 'true');
     LSset('pushKey', key);
-    alert('ðŸ”” Benachrichtigungen aktiviert!');
+    alert('🔔 Benachrichtigungen aktiviert!');
   } catch(e) {
     console.error('Push-Fehler:', e);
     alert('Fehler: ' + e.message);
   }
 }
-
-async function notifyAll(title, body) { try { await fetch(PUSH_API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({title,body}) }); } catch(e) { console.warn('Push-API:', e.message); } }
 
 async function unsubscribeFromPush() {
   try {
@@ -252,7 +251,7 @@ async function unsubscribeFromPush() {
       await sub.unsubscribe();
     }
     LSset('pushEnabled', 'false');
-    alert('ðŸ”• Benachrichtigungen deaktiviert.');
+    alert('🔕 Benachrichtigungen deaktiviert.');
   } catch(e) {
     alert('Fehler: ' + e.message);
   }
@@ -311,7 +310,7 @@ function updateHeader() {
   const btn = document.getElementById('profileHeaderContent');
   if(!btn) return;
   const profile = getProfile();
-  if(!profile) { btn.innerHTML = 'ðŸ‘¤'; return; }
+  if(!profile) { btn.innerHTML = '👤'; return; }
   const player = STATE.players.find(p => p.id === profile.playerId);
   if(player?.photo) {
     btn.innerHTML = `<img src="${player.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
@@ -367,7 +366,7 @@ function selectSetupPlayer(id) {
 function saveProfile() {
   const name = document.getElementById('setupName').value.trim();
   if(!name){ alert('Bitte einen Namen eingeben'); return; }
-  if(!selectedSetupPlayer){ alert('Bitte ein Kind auswÃ¤hlen'); return; }
+  if(!selectedSetupPlayer){ alert('Bitte ein Kind auswählen'); return; }
   LSset('profile', JSON.stringify({name, playerId: selectedSetupPlayer}));
   document.getElementById('profileSetup').style.display = 'none';
   showApp();
@@ -422,7 +421,7 @@ function renderHome() {
     html += `<div class="profile-strip">
       <div style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="editProfile()">
         ${player?.photo ? `<img src="${player.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.4)">` :
-          `<div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px">ðŸ‘¤</div>`}
+          `<div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px">👤</div>`}
         <div>
           <div style="font-size:15px;font-weight:700">Hallo ${escHtml(profile.name)}!</div>
           <div style="font-size:12px;opacity:.8">${player ? `Kind: ${escHtml(player.name)} #${player.number||'?'}` : 'Kind nicht gefunden'}</div>
@@ -438,7 +437,7 @@ function renderHome() {
     const pCount = STATE.players.length;
     const gCount = STATE.games.length;
     html += `<div class="card" style="padding:12px;display:flex;gap:0">
-      ${[['ðŸ‘¥',pCount,'Spieler'],['ðŸƒ',tCount,'Trainings'],['âš½',gCount,'Spiele']].map(([icon,val,label])=>`
+      ${[['👥',pCount,'Spieler'],['🏃',tCount,'Trainings'],['⚽',gCount,'Spiele']].map(([icon,val,label])=>`
         <div style="flex:1;text-align:center;border-right:1px solid #f3f4f6">
           <div style="font-size:20px;font-weight:800;color:#0A2540">${val}</div>
           <div style="font-size:11px;color:#6B7280">${icon} ${label}</div>
@@ -450,23 +449,23 @@ function renderHome() {
   const rsvpList = STATE.trainings.filter(t => new Date(t.date + ' ' + (t.time||'00:00')).getTime() >= now - 3600000)
     .sort((a,b) => new Date(a.date) - new Date(b.date)).slice(0, 3);
   if(pid && rsvpList.length) {
-    html += `<div class="section-title">Meine RÃ¼ckmeldungen</div>`;
+    html += `<div class="section-title">Meine Rückmeldungen</div>`;
     rsvpList.forEach(t => {
       const st = t.attendances?.[pid] || 'open';
-      const stLabel = st==='yes'?'âœ… Zugesagt':st==='no'?'âŒ Abgesagt':'ðŸ• Offen';
+      const stLabel = st==='yes'?'✅ Zugesagt':st==='no'?'❌ Abgesagt':'🕐 Offen';
       const stColor = st==='yes'?'#D1FAE5;color:#065F46':st==='no'?'#FEE2E2;color:#991B1B':'#FEF3C7;color:#92400E';
       html += `<div class="card" style="padding:12px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div>
             <div style="font-weight:700;font-size:14px">${fmt(t.date)}</div>
-            <div style="font-size:12px;color:#6B7280">${t.time||''} Uhr Â· ${escHtml(t.location||'')}</div>
+            <div style="font-size:12px;color:#6B7280">${t.time||''} Uhr · ${escHtml(t.location||'')}</div>
           </div>
           <div style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;background:${stColor}">${stLabel}</div>
         </div>
         <div style="display:flex;gap:6px">
-          <button class="rsvp-btn ${st==='yes'?'go':''}" onclick="setRsvp('${t.id}','${pid}','yes')">âœ… Zusagen</button>
-          <button class="rsvp-btn ${st==='open'?'opn':''}" onclick="setRsvp('${t.id}','${pid}','open')">ðŸ• Offen</button>
-          <button class="rsvp-btn ${st==='no'?'no':''}" onclick="setRsvp('${t.id}','${pid}','no')">âŒ Absagen</button>
+          <button class="rsvp-btn ${st==='yes'?'go':''}" onclick="setRsvp('${t.id}','${pid}','yes')">✅ Zusagen</button>
+          <button class="rsvp-btn ${st==='open'?'opn':''}" onclick="setRsvp('${t.id}','${pid}','open')">🕐 Offen</button>
+          <button class="rsvp-btn ${st==='no'?'no':''}" onclick="setRsvp('${t.id}','${pid}','no')">❌ Absagen</button>
         </div>
       </div>`;
     });
@@ -476,7 +475,7 @@ function renderHome() {
   if(nextTraining) {
     const cd = countdown(nextTraining.sortDate);
     html += `<div class="card-dark" style="padding:18px 16px">
-      <div style="font-size:10px;font-weight:700;opacity:.6;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">ðŸƒ NÃ¤chstes Training</div>
+      <div style="font-size:10px;font-weight:700;opacity:.6;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">🏃 Nächstes Training</div>
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
         <div style="flex:1;min-width:0">
           <div style="font-size:19px;font-weight:800;line-height:1.2;margin-bottom:8px">${fmtFull(nextTraining.date)}</div>
@@ -504,7 +503,7 @@ function renderHome() {
     const squadPlayers = STATE.players.filter(p => squadKeys.includes(p.id)).slice(0,6);
     const extraCount = squadKeys.length - squadPlayers.length;
     const avatarRow = squadSet ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.1)">
-      <div style="font-size:10px;font-weight:700;color:rgba(0,0,0,.5);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">ðŸ‘• Kader (${squadKeys.length})</div>
+      <div style="font-size:10px;font-weight:700;color:rgba(0,0,0,.5);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">👕 Kader (${squadKeys.length})</div>
       <div style="display:flex;gap:4px;align-items:center">
         ${squadPlayers.map(p=>`<div style="position:relative" title="${escHtml(p.name||'')}">
           <div style="width:32px;height:32px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.6)">
@@ -517,12 +516,12 @@ function renderHome() {
     </div>` : '';
     let childBadge = '';
     if(pid) {
-      if(!squadSet) childBadge = `<div style="background:rgba(0,0,0,.12);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600;margin-top:10px">ðŸ• Kader wird noch bekannt gegeben</div>`;
-      else if(inSquad) childBadge = `<div style="background:rgba(16,185,129,.25);border:1.5px solid rgba(16,185,129,.5);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;margin-top:10px;color:#064E3B">âœ… Dein Kind spielt mit!</div>`;
-      else childBadge = `<div style="background:rgba(239,68,68,.18);border:1.5px solid rgba(239,68,68,.4);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;margin-top:10px;color:#7F1D1D">âŒ Diesmal nicht nominiert</div>`;
+      if(!squadSet) childBadge = `<div style="background:rgba(0,0,0,.12);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600;margin-top:10px">🕐 Kader wird noch bekannt gegeben</div>`;
+      else if(inSquad) childBadge = `<div style="background:rgba(16,185,129,.25);border:1.5px solid rgba(16,185,129,.5);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;margin-top:10px;color:#064E3B">✅ Dein Kind spielt mit!</div>`;
+      else childBadge = `<div style="background:rgba(239,68,68,.18);border:1.5px solid rgba(239,68,68,.4);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;margin-top:10px;color:#7F1D1D">❌ Diesmal nicht nominiert</div>`;
     }
     html += `<div class="card-amber" style="padding:18px 16px">
-      <div style="font-size:10px;font-weight:700;color:rgba(0,0,0,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">âš½ NÃ¤chstes Spiel</div>
+      <div style="font-size:10px;font-weight:700;color:rgba(0,0,0,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">⚽ Nächstes Spiel</div>
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
         <div style="flex:1;min-width:0">
           <div style="font-size:19px;font-weight:900;color:#1f2937;line-height:1.1;margin-bottom:6px">vs. ${escHtml(nextGame.opponent||'?')}</div>
@@ -548,17 +547,17 @@ function renderHome() {
     html += `<div class="section-title">Alle Termine</div>`;
     upcoming.slice(0,10).forEach(x => {
       html += `<div class="card" style="padding:12px;display:flex;align-items:center;gap:12px">
-        <div style="width:40px;height:40px;border-radius:10px;background:${x.type==='training'?'#EEF2FF':'#FEF3C7'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${x.type==='training'?'ðŸƒ':'âš½'}</div>
+        <div style="width:40px;height:40px;border-radius:10px;background:${x.type==='training'?'#EEF2FF':'#FEF3C7'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${x.type==='training'?'🏃':'⚽'}</div>
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;font-size:14px">${x.type==='training'?'Training':'vs. '+escHtml(x.opponent||'?')} ${isNew(x.createdAt)?'<span class="new-tag">NEU</span>':''}</div>
-          <div style="font-size:12px;color:#6B7280">${fmt(x.date)} Â· ${x.time||'?'} Uhr Â· ${escHtml(x.location||'?')}</div>
+          <div style="font-size:12px;color:#6B7280">${fmt(x.date)} · ${x.time||'?'} Uhr · ${escHtml(x.location||'?')}</div>
         </div>
       </div>`;
     });
   }
 
   if(!upcoming.length && !nextTraining && !nextGame) {
-    html += `<div style="text-align:center;padding:60px 20px;color:#9CA3AF"><div style="font-size:48px">ðŸ“…</div><div style="font-weight:700;margin-top:12px;font-size:16px">Noch keine Termine geplant</div></div>`;
+    html += `<div style="text-align:center;padding:60px 20px;color:#9CA3AF"><div style="font-size:48px">📅</div><div style="font-weight:700;margin-top:12px;font-size:16px">Noch keine Termine geplant</div></div>`;
   }
 
   page.innerHTML = html;
@@ -617,8 +616,7 @@ function sendChat() {
   if(!text) return;
   if(!chatName){ alert('Bitte zuerst deinen Namen eingeben'); return; }
   inp.value = '';
-  db.ref('/chat').push({ author: chatName, text, ts: Date.now() });
-  notifyAll('💬 ' + chatName, text);
+  db.ref('/chat').push({ author: chatName, text, ts: Date.now() }); notifyAll(chatName, text);
 }
 
 // ---- GALLERY ----
@@ -636,7 +634,7 @@ function renderGalerie() {
     ${STATE.photos.length ? `<div class="photo-grid">${STATE.photos.map(p =>
       `<img src="${p.data}" class="photo-thumb" onclick="viewPhoto('${p.id}')" alt="${escHtml(p.cap||'')}">`
     ).join('')}</div>` :
-    `<div style="text-align:center;padding:60px 20px;color:#9CA3AF"><div style="font-size:48px">ðŸ“·</div><div style="font-weight:700;margin-top:12px">Noch keine Fotos</div><div style="font-size:13px;margin-top:4px">Lade das erste Foto hoch!</div></div>`}`;
+    `<div style="text-align:center;padding:60px 20px;color:#9CA3AF"><div style="font-size:48px">📷</div><div style="font-weight:700;margin-top:12px">Noch keine Fotos</div><div style="font-size:13px;margin-top:4px">Lade das erste Foto hoch!</div></div>`}`;
 }
 
 function uploadPhotos(input) {
@@ -659,7 +657,7 @@ function viewPhoto(id) {
     <div style="text-align:center">
       <img src="${p.data}" style="max-width:100%;max-height:65vh;border-radius:12px;object-fit:contain">
       ${p.cap ? `<div style="margin-top:8px;color:#6B7280;font-size:13px">${escHtml(p.cap)}</div>` : ''}
-      ${trainerLoggedIn ? `<button class="btn-primary" style="background:#EF4444;margin-top:14px" onclick="deletePhoto('${id}')"><i class="fa fa-trash"></i> Foto lÃ¶schen</button>` : ''}
+      ${trainerLoggedIn ? `<button class="btn-primary" style="background:#EF4444;margin-top:14px" onclick="deletePhoto('${id}')"><i class="fa fa-trash"></i> Foto löschen</button>` : ''}
     </div>`);
 }
 
@@ -693,27 +691,27 @@ function renderPinScreen(page) {
   let pinVal = '';
   page.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:16px">
-      <div style="font-size:40px">ðŸ”</div>
+      <div style="font-size:40px">🔐</div>
       <div style="font-size:22px;font-weight:800;color:#0A2540">Trainer PIN</div>
-      <div id="pinDisplay" style="font-size:32px;letter-spacing:14px;color:#0A2540;margin:8px 0">â—‹â—‹â—‹â—‹</div>
+      <div id="pinDisplay" style="font-size:32px;letter-spacing:14px;color:#0A2540;margin:8px 0">○○○○</div>
       <div id="pinError" style="color:#EF4444;font-size:14px;min-height:20px"></div>
       <div class="pin-grid" id="pinGrid"></div>
     </div>`;
   const update = () => {
     const d = document.getElementById('pinDisplay');
-    if(d) d.innerHTML = 'â—'.repeat(pinVal.length) + 'â—‹'.repeat(Math.max(0,4-pinVal.length));
+    if(d) d.innerHTML = '●'.repeat(pinVal.length) + '○'.repeat(Math.max(0,4-pinVal.length));
   };
   const grid = document.getElementById('pinGrid');
   if(!grid) return;
-  ['1','2','3','4','5','6','7','8','9','âŒ«','0','âœ“'].forEach(k => {
+  ['1','2','3','4','5','6','7','8','9','⌫','0','✓'].forEach(k => {
     const btn = document.createElement('button');
     btn.className = 'pin-btn'; btn.textContent = k;
     btn.onclick = () => {
-      if(k==='âŒ«'){ pinVal = pinVal.slice(0,-1); update(); return; }
-      if(k==='âœ“' || pinVal.length >= 3 && k !== 'âŒ«') {
-        if(k !== 'âœ“') pinVal += k;
+      if(k==='⌫'){ pinVal = pinVal.slice(0,-1); update(); return; }
+      if(k==='✓' || pinVal.length >= 3 && k !== '⌫') {
+        if(k !== '✓') pinVal += k;
         update();
-        if(pinVal.length >= 4 || k==='âœ“') {
+        if(pinVal.length >= 4 || k==='✓') {
           const pin = STATE.config.trainerPin || '1920';
           if(pinVal === pin){ trainerLoggedIn=true; LSset('trainerLoggedIn','true'); updateHeader(); renderTrainer(); }
           else { document.getElementById('pinError').textContent='Falscher PIN'; pinVal=''; update(); }
@@ -742,7 +740,7 @@ function renderTrainerTab() {
 // ---- SPIELER TAB ----
 function renderSpielerTab(c) {
   c.innerHTML = `
-    <button class="btn-primary" onclick="addPlayerModal()"><i class="fa fa-plus"></i> Spieler hinzufÃ¼gen</button>
+    <button class="btn-primary" onclick="addPlayerModal()"><i class="fa fa-plus"></i> Spieler hinzufügen</button>
     ${STATE.players.map(p => `
     <div class="card" style="padding:12px;display:flex;align-items:center;gap:12px">
       <div style="position:relative;cursor:pointer;flex-shrink:0" onclick="editPlayerPhoto('${p.id}')">
@@ -754,7 +752,7 @@ function renderSpielerTab(c) {
       </div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:15px">${escHtml(p.name||'')}</div>
-        <div style="font-size:12px;color:#6B7280">RÃ¼ckennummer #${p.number||'?'}</div>
+        <div style="font-size:12px;color:#6B7280">Rückennummer #${p.number||'?'}</div>
       </div>
       <div style="background:#0A2540;color:#fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${p.number||'?'}</div>
       <button onclick="deletePlayer('${p.id}')" style="background:#FEE2E2;color:#991B1B;border:none;border-radius:8px;padding:8px 10px;cursor:pointer">
@@ -765,9 +763,9 @@ function renderSpielerTab(c) {
 
 function addPlayerModal() {
   showModal(`<div class="modal-handle"></div>
-    <div style="font-size:18px;font-weight:700;margin-bottom:16px">Spieler hinzufÃ¼gen</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:16px">Spieler hinzufügen</div>
     <div style="text-align:center;margin-bottom:16px">
-      <div id="newPhotoPreview" style="width:80px;height:80px;border-radius:50%;background:#e5e7eb;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:36px;overflow:hidden">ðŸ‘¤</div>
+      <div id="newPhotoPreview" style="width:80px;height:80px;border-radius:50%;background:#e5e7eb;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:36px;overflow:hidden">👤</div>
       <label style="display:inline-block;margin-top:8px;color:#0A2540;font-size:13px;font-weight:600;cursor:pointer">
         <i class="fa fa-camera"></i> Foto hochladen
         <input type="file" accept="image/*" style="display:none" onchange="previewPhoto(this,'newPhotoPreview','newPhotoData')">
@@ -775,7 +773,7 @@ function addPlayerModal() {
       <input type="hidden" id="newPhotoData">
     </div>
     <input id="newPlayerName" class="input-field" placeholder="Name (z.B. Max Mustermann)" style="margin-bottom:10px">
-    <input id="newPlayerNumber" class="input-field" type="number" placeholder="RÃ¼ckennummer" style="margin-bottom:16px">
+    <input id="newPlayerNumber" class="input-field" type="number" placeholder="Rückennummer" style="margin-bottom:16px">
     <button class="btn-primary" onclick="saveNewPlayer()">Spieler speichern</button>`);
 }
 
@@ -809,7 +807,7 @@ function editPlayerPhoto(id) {
     <div style="font-size:18px;font-weight:700;margin-bottom:16px">Foto: ${escHtml(p.name||'')}</div>
     <div style="text-align:center;margin-bottom:16px">
       <div id="editPhotoPreview" style="width:80px;height:80px;border-radius:50%;background:#e5e7eb;margin:0 auto;overflow:hidden">
-        ${p.photo ? `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:32px">ðŸ‘¤</div>'}
+        ${p.photo ? `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:32px">👤</div>'}
       </div>
       <label style="display:inline-block;margin-top:8px;color:#0A2540;font-size:13px;font-weight:600;cursor:pointer">
         <i class="fa fa-camera"></i> Neues Foto
@@ -827,14 +825,14 @@ function savePlayerPhoto(id) {
 }
 
 function deletePlayer(id) {
-  if(confirm('Spieler wirklich lÃ¶schen?')) db.ref('/players/' + id).remove();
+  if(confirm('Spieler wirklich löschen?')) db.ref('/players/' + id).remove();
 }
 
 // ---- TRAINING TAB ----
 function renderTrainingTab(c) {
   const sorted = [...STATE.trainings].sort((a,b) => new Date(b.date) - new Date(a.date));
   c.innerHTML = `
-    <button class="btn-primary" onclick="addTrainingModal()"><i class="fa fa-plus"></i> Training hinzufÃ¼gen</button>
+    <button class="btn-primary" onclick="addTrainingModal()"><i class="fa fa-plus"></i> Training hinzufügen</button>
     ${sorted.map(t => {
       const atts = t.attendances || {};
       const yes = Object.values(atts).filter(v => v==='yes').length;
@@ -844,12 +842,12 @@ function renderTrainingTab(c) {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
           <div>
             <div style="font-weight:700;font-size:15px">${fmt(t.date)}</div>
-            <div style="font-size:12px;color:#6B7280">${t.time||'?'} Uhr Â· ${escHtml(t.location||'?')}</div>
+            <div style="font-size:12px;color:#6B7280">${t.time||'?'} Uhr · ${escHtml(t.location||'?')}</div>
           </div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
-            <span style="background:#D1FAE5;color:#065F46;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px">âœ… ${yes}</span>
-            <span style="background:#FEE2E2;color:#991B1B;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px">âŒ ${no}</span>
-            <span style="background:#F3F4F6;color:#374151;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px">ðŸ• ${open}</span>
+            <span style="background:#D1FAE5;color:#065F46;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px">✅ ${yes}</span>
+            <span style="background:#FEE2E2;color:#991B1B;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px">❌ ${no}</span>
+            <span style="background:#F3F4F6;color:#374151;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px">🕐 ${open}</span>
           </div>
         </div>
         <div style="display:flex;gap:6px">
@@ -863,7 +861,7 @@ function renderTrainingTab(c) {
 function addTrainingModal() {
   const today = new Date().toISOString().slice(0,10);
   showModal(`<div class="modal-handle"></div>
-    <div style="font-size:18px;font-weight:700;margin-bottom:16px">Training hinzufÃ¼gen</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:16px">Training hinzufügen</div>
     <input id="tDate" class="input-field" type="date" value="${today}" style="margin-bottom:10px">
     <input id="tTime" class="input-field" type="time" value="17:00" style="margin-bottom:10px">
     <input id="tLocation" class="input-field" placeholder="Ort (z.B. Sportplatz Nord)" style="margin-bottom:10px">
@@ -879,12 +877,11 @@ function saveTraining() {
   if(!date){ alert('Datum eingeben'); return; }
   const attendances = {};
   STATE.players.forEach(p => { attendances[p.id] = 'open'; });
-  db.ref('/trainings').push({ date, time:time||'', location:location||'', notes:notes||'', attendances, actual:{}, createdAt: Date.now() });
-  notifyAll('🏃 Neues Training!', (date ? new Date(date).toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'}) : '') + ' · ' + (time||'?') + ' Uhr · ' + (location||''));
+  db.ref('/trainings').push({ date, time:time||'', location:location||'', notes:notes||'', attendances, actual:{}, createdAt: Date.now() }); notifyAll('Neues Training!', (date||'')+' '+( time||'')+' Uhr - '+(location||''));
   closeModal();
 }
 
-function deleteTraining(id){ if(confirm('Training lÃ¶schen?')) db.ref('/trainings/' + id).remove(); }
+function deleteTraining(id){ if(confirm('Training löschen?')) db.ref('/trainings/' + id).remove(); }
 
 function trainingDetailModal(id) {
   const t = STATE.trainings.find(x => x.id === id);
@@ -896,9 +893,9 @@ function trainingDetailModal(id) {
   const open = STATE.players.length - yes - no;
   showModal(`<div class="modal-handle"></div>
     <div style="font-size:18px;font-weight:700;margin-bottom:4px">Training: ${fmt(t.date)}</div>
-    <div style="font-size:13px;color:#6B7280;margin-bottom:14px">${t.time||''} Uhr Â· ${escHtml(t.location||'')}</div>
+    <div style="font-size:13px;color:#6B7280;margin-bottom:14px">${t.time||''} Uhr · ${escHtml(t.location||'')}</div>
     <div style="display:flex;gap:8px;margin-bottom:16px">
-      ${[['yes','âœ…',yes,'#D1FAE5','#065F46'],['no','âŒ',no,'#FEE2E2','#991B1B'],['open','ðŸ•',open,'#FEF3C7','#92400E']].map(([,icon,count,bg,col])=>
+      ${[['yes','✅',yes,'#D1FAE5','#065F46'],['no','❌',no,'#FEE2E2','#991B1B'],['open','🕐',open,'#FEF3C7','#92400E']].map(([,icon,count,bg,col])=>
         `<div style="flex:1;text-align:center;padding:10px;border-radius:10px;background:${bg}">
           <div style="font-size:22px;font-weight:800;color:${col}">${count}</div>
           <div style="font-size:11px;color:${col}">${icon}</div>
@@ -913,12 +910,12 @@ function trainingDetailModal(id) {
           `<div style="width:34px;height:34px;border-radius:50%;background:#0A2540;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0">${(p.name||'?')[0].toUpperCase()}</div>`}
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600">${escHtml(p.name||'')}</div>
-          <div style="font-size:11px;color:#9CA3AF">RSVP: ${att==='yes'?'âœ… Zugesagt':att==='no'?'âŒ Abgesagt':'ðŸ• Offen'}</div>
+          <div style="font-size:11px;color:#9CA3AF">RSVP: ${att==='yes'?'✅ Zugesagt':att==='no'?'❌ Abgesagt':'🕐 Offen'}</div>
         </div>
         <div style="display:flex;gap:3px">
-          <button class="att-btn ${att==='yes'?'yes':''}" onclick="setAtt('${t.id}','${p.id}','yes')">âœ…</button>
-          <button class="att-btn ${att==='open'?'opn':''}" onclick="setAtt('${t.id}','${p.id}','open')">ðŸ•</button>
-          <button class="att-btn ${att==='no'?'no':''}" onclick="setAtt('${t.id}','${p.id}','no')">âŒ</button>
+          <button class="att-btn ${att==='yes'?'yes':''}" onclick="setAtt('${t.id}','${p.id}','yes')">✅</button>
+          <button class="att-btn ${att==='open'?'opn':''}" onclick="setAtt('${t.id}','${p.id}','open')">🕐</button>
+          <button class="att-btn ${att==='no'?'no':''}" onclick="setAtt('${t.id}','${p.id}','no')">❌</button>
         </div>
         <button onclick="toggleActual('${t.id}','${p.id}',${!was})" style="padding:4px 8px;border-radius:6px;border:none;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;background:${was?'#D1FAE5':'#F3F4F6'};color:${was?'#065F46':'#6B7280'}">${was?'War da':'Fehlte'}</button>
       </div>`;
@@ -932,14 +929,14 @@ function toggleActual(tid, pid, val){ db.ref('/trainings/'+tid+'/actual/'+pid).s
 function renderSpieleTab(c) {
   const sorted = [...STATE.games].sort((a,b) => new Date(b.date) - new Date(a.date));
   c.innerHTML = `
-    <button class="btn-primary" onclick="addGameModal()"><i class="fa fa-plus"></i> Spiel hinzufÃ¼gen</button>
+    <button class="btn-primary" onclick="addGameModal()"><i class="fa fa-plus"></i> Spiel hinzufügen</button>
     ${sorted.map(g => {
       const sq = Object.keys(g.squad||{}).filter(k=>g.squad[k]).length;
       return `<div class="card" style="padding:12px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
           <div>
             <div style="font-weight:700;font-size:15px">vs. ${escHtml(g.opponent||'?')}</div>
-            <div style="font-size:12px;color:#6B7280">${fmt(g.date)} Â· ${g.time||'?'} Â· ${escHtml(g.location||'?')}</div>
+            <div style="font-size:12px;color:#6B7280">${fmt(g.date)} · ${g.time||'?'} · ${escHtml(g.location||'?')}</div>
           </div>
           <div style="text-align:right">
             ${g.result ? `<div style="font-size:17px;font-weight:800;color:#0A2540">${escHtml(g.result)}</div>` : ''}
@@ -957,7 +954,7 @@ function renderSpieleTab(c) {
 function addGameModal() {
   const today = new Date().toISOString().slice(0,10);
   showModal(`<div class="modal-handle"></div>
-    <div style="font-size:18px;font-weight:700;margin-bottom:16px">Spiel hinzufÃ¼gen</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:16px">Spiel hinzufügen</div>
     <input id="gOpp" class="input-field" placeholder="Gegner" style="margin-bottom:10px">
     <input id="gDate" class="input-field" type="date" value="${today}" style="margin-bottom:10px">
     <input id="gTime" class="input-field" type="time" value="11:00" style="margin-bottom:10px">
@@ -971,12 +968,11 @@ function saveGame() {
   const time = document.getElementById('gTime')?.value;
   const location = document.getElementById('gLoc')?.value.trim();
   if(!opponent || !date){ alert('Gegner und Datum eingeben'); return; }
-  db.ref('/games').push({ opponent, date, time:time||'', location:location||'', squad:{}, result:'', createdAt: Date.now() });
-  notifyAll('⚽ Neues Spiel!', 'vs. ' + opponent + ' · ' + (date ? new Date(date).toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'}) : ''));
+  db.ref('/games').push({ opponent, date, time:time||'', location:location||'', squad:{}, result:'', createdAt: Date.now() }); notifyAll('Neues Spiel!', 'vs. '+(opponent||'')+' am '+(date||''));
   closeModal();
 }
 
-function deleteGame(id){ if(confirm('Spiel lÃ¶schen?')) db.ref('/games/' + id).remove(); }
+function deleteGame(id){ if(confirm('Spiel löschen?')) db.ref('/games/' + id).remove(); }
 
 function gameDetailModal(id) {
   const g = STATE.games.find(x => x.id === id);
@@ -986,7 +982,7 @@ function gameDetailModal(id) {
   const notInSquad = STATE.players.filter(p => !squadKeys.includes(p.id));
   showModal(`<div class="modal-handle"></div>
     <div style="font-size:18px;font-weight:700;margin-bottom:4px">vs. ${escHtml(g.opponent||'?')}</div>
-    <div style="font-size:13px;color:#6B7280;margin-bottom:14px">${fmt(g.date)} Â· ${g.time||''} Â· ${escHtml(g.location||'')}</div>
+    <div style="font-size:13px;color:#6B7280;margin-bottom:14px">${fmt(g.date)} · ${g.time||''} · ${escHtml(g.location||'')}</div>
     <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
       <input id="gResultIn" class="input-field" placeholder="Ergebnis z.B. 3:1" value="${escHtml(g.result||'')}" style="flex:1">
       <button class="btn-sm" style="background:#0A2540;color:#fff;white-space:nowrap" onclick="saveResult('${id}')">Speichern</button>
@@ -998,17 +994,17 @@ function gameDetailModal(id) {
           `<div style="width:100%;aspect-ratio:1;background:#0A2540;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:700">${(p.name||'?')[0].toUpperCase()}</div>`}
         <div style="font-size:10px;font-weight:700;margin-top:4px">#${p.number||'?'}</div>
         <div style="font-size:10px;color:#374151;line-height:1.2">${escHtml(p.name||'')}</div>
-        <div style="font-size:9px;color:#065F46;font-weight:700;margin-top:2px">Im Kader âœ“</div>
+        <div style="font-size:9px;color:#065F46;font-weight:700;margin-top:2px">Im Kader ✓</div>
       </div>`).join('')}
-    </div>` : `<div style="color:#9CA3AF;font-size:13px;margin-bottom:14px">Noch keine Spieler im Kader â€“ tippe unten um hinzuzufÃ¼gen</div>`}
-    ${notInSquad.length ? `<div style="font-size:14px;font-weight:700;margin-bottom:10px;color:#6B7280">HinzufÃ¼gen</div>
+    </div>` : `<div style="color:#9CA3AF;font-size:13px;margin-bottom:14px">Noch keine Spieler im Kader – tippe unten um hinzuzufügen</div>`}
+    ${notInSquad.length ? `<div style="font-size:14px;font-weight:700;margin-bottom:10px;color:#6B7280">Hinzufügen</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
       ${notInSquad.map(p => `<div class="squad-card" onclick="addToSquad('${id}','${p.id}')" style="opacity:.75">
         ${p.photo ? `<img src="${p.photo}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px">` :
           `<div style="width:100%;aspect-ratio:1;background:#9CA3AF;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:700">${(p.name||'?')[0].toUpperCase()}</div>`}
         <div style="font-size:10px;font-weight:700;margin-top:4px">#${p.number||'?'}</div>
         <div style="font-size:10px;color:#6B7280;line-height:1.2">${escHtml(p.name||'')}</div>
-        <div style="font-size:9px;color:#0A2540;font-weight:700;margin-top:2px">+ HinzufÃ¼gen</div>
+        <div style="font-size:9px;color:#0A2540;font-weight:700;margin-top:2px">+ Hinzufügen</div>
       </div>`).join('')}
     </div>` : ''}
   `);
@@ -1058,7 +1054,7 @@ function renderStatistikTab(c) {
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:14px">${escHtml(p.name||'')} <span style="font-size:11px;color:#9CA3AF">#${p.number||'?'}</span></div>
         <div style="display:flex;flex-wrap:wrap;gap:2px;margin:4px 0">${dots}</div>
-        <div style="font-size:11px;color:#6B7280">${p.was}/${totalT} Trainings Â· ${gameSquad} Spiele</div>
+        <div style="font-size:11px;color:#6B7280">${p.was}/${totalT} Trainings · ${gameSquad} Spiele</div>
       </div>
       <svg width="48" height="48" viewBox="0 0 48 48" style="flex-shrink:0">
         <circle cx="24" cy="24" r="${r}" fill="none" stroke="#e5e7eb" stroke-width="5"/>
@@ -1073,7 +1069,7 @@ function renderStatistikTab(c) {
   c.innerHTML = `
     <div class="card-dark" style="padding:16px">
       <div style="display:flex;gap:0;margin-bottom:16px">
-        ${[['ðŸ‘¥',totalP,'Spieler'],['ðŸƒ',totalT,'Trainings'],['ðŸ“Š',avgAtt+'%','Ã˜ Anw.']].map(([icon,val,label])=>
+        ${[['👥',totalP,'Spieler'],['🏃',totalT,'Trainings'],['📊',avgAtt+'%','Ø Anw.']].map(([icon,val,label])=>
           `<div style="flex:1;text-align:center;border-right:1px solid rgba(255,255,255,.1)">
             <div style="font-size:22px;font-weight:800">${val}</div>
             <div style="font-size:11px;opacity:.7">${icon} ${label}</div>
@@ -1093,21 +1089,21 @@ function renderEinstellungenTab(c) {
       <div style="font-size:15px;font-weight:700;margin-bottom:4px"><i class="fa fa-bell"></i> Push-Benachrichtigungen</div>
       <div style="font-size:12px;color:#6B7280;margin-bottom:12px">Werde benachrichtigt bei neuen Trainings, Spielen und Chat-Nachrichten.</div>
       ${notifGranted && pushEnabled
-        ? `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span style="background:#D1FAE5;color:#065F46;padding:4px 12px;border-radius:8px;font-size:13px;font-weight:700">ðŸ”” Aktiviert</span></div>
+        ? `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span style="background:#D1FAE5;color:#065F46;padding:4px 12px;border-radius:8px;font-size:13px;font-weight:700">🔔 Aktiviert</span></div>
            <button class="btn-primary" style="background:#EF4444" onclick="unsubscribeFromPush().then(()=>renderTrainer())"><i class="fa fa-bell-slash"></i> Deaktivieren</button>`
         : `<button class="btn-primary" onclick="subscribeToPush().then(()=>renderTrainer())"><i class="fa fa-bell"></i> Benachrichtigungen aktivieren</button>`
       }
     </div>
     <div class="card" style="padding:16px">
-      <div style="font-size:15px;font-weight:700;margin-bottom:12px"><i class="fa fa-lock"></i> Trainer PIN Ã¤ndern</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:12px"><i class="fa fa-lock"></i> Trainer PIN ändern</div>
       <input id="newPin1" class="input-field" type="password" maxlength="8" placeholder="Neuer PIN" style="margin-bottom:8px">
-      <input id="newPin2" class="input-field" type="password" maxlength="8" placeholder="PIN bestÃ¤tigen" style="margin-bottom:12px">
+      <input id="newPin2" class="input-field" type="password" maxlength="8" placeholder="PIN bestätigen" style="margin-bottom:12px">
       <button class="btn-primary" onclick="changePin()">PIN speichern</button>
     </div>
     <div class="card" style="padding:16px">
       <div style="font-size:15px;font-weight:700;margin-bottom:12px"><i class="fa fa-image"></i> Vereinslogo</div>
       ${STATE.config.logo ? `<img src="${STATE.config.logo}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:12px;border:3px solid #e5e7eb">` :
-        `<div style="width:80px;height:80px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:12px">âš½</div>`}
+        `<div style="width:80px;height:80px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:12px">⚽</div>`}
       <label class="btn-primary" style="cursor:pointer"><i class="fa fa-upload"></i> Logo hochladen<input type="file" accept="image/*" style="display:none" onchange="uploadLogo(this)"></label>
     </div>
     <div class="card" style="padding:16px">
@@ -1119,7 +1115,7 @@ function renderEinstellungenTab(c) {
 function changePin() {
   const p1 = document.getElementById('newPin1')?.value.trim();
   const p2 = document.getElementById('newPin2')?.value.trim();
-  if(!p1 || p1 !== p2){ alert('PINs stimmen nicht Ã¼berein'); return; }
+  if(!p1 || p1 !== p2){ alert('PINs stimmen nicht überein'); return; }
   if(p1.length < 4){ alert('Mindestens 4 Zeichen'); return; }
   db.ref('/config/trainerPin').set(p1);
   alert('PIN gespeichert!');
@@ -1171,6 +1167,12 @@ function compressImage(dataUrl, maxW, quality, cb) {
   img.src = dataUrl;
 }
 
+// ---- Push Functions ----
+function urlBase64ToUint8Array(b64){const pad='='.repeat((4-b64.length%4)%4);const raw=atob((b64+pad).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));}
+async function notifyAll(title,body){try{await fetch(PUSH_API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,body})});}catch(e){}}
+async function subscribeToPush(){if(!('PushManager'in window)){alert('Nicht unterstuetzt');return;}const p=await Notification.requestPermission();if(p!=='granted'){alert('Abgelehnt');return;}try{const r=await navigator.serviceWorker.ready;let s=await r.pushManager.getSubscription();if(!s)s=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});const k=btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);await db.ref('/pushSubscriptions/'+k).set(s.toJSON());LSset('pushEnabled','true');alert('Beanchrichtigungen aktiviert!');}catch(e){alert('Fehler: '+e.message);}}
+async function unsubscribeFromPush(){try{const r=await navigator.serviceWorker.ready;const s=await r.pushManager.getSubscription();if(s){const k=btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);await db.ref('/pushSubscriptions/'+k).remove();await s.unsubscribe();}LSset('pushEnabled','false');alert('Deaktiviert.');}catch(e){alert('Fehler: '+e.message);}}
+
 // ---- NOTIFICATIONS ----
 function requestNotifPermission() {
   // Automatisches Banner nur wenn noch nicht entschieden
@@ -1181,7 +1183,7 @@ function requestNotifPermission() {
     banner.innerHTML = `<span><i class="fa fa-bell"></i> Benachrichtigungen aktivieren?</span>
       <div style="display:flex;gap:8px">
         <button onclick="subscribeToPush();document.getElementById('notifBanner')?.remove()" style="background:rgba(255,255,255,.25);border:none;color:#fff;padding:5px 12px;border-radius:6px;cursor:pointer;font-weight:700">Ja</button>
-        <button onclick="LSset('pushEnabled','false');this.closest('#notifBanner').remove()" style="border:none;background:none;color:#fff;cursor:pointer;font-size:18px">âœ•</button>
+        <button onclick="LSset('pushEnabled','false');this.closest('#notifBanner').remove()" style="border:none;background:none;color:#fff;cursor:pointer;font-size:18px">✕</button>
       </div>`;
     document.body.appendChild(banner);
     setTimeout(() => { document.getElementById('notifBanner')?.remove(); }, 12000);
@@ -1190,5 +1192,3 @@ function requestNotifPermission() {
 </script>
 </body>
 </html>
-
-
