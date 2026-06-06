@@ -1605,23 +1605,95 @@ function addTrainingModal() {
   const today = new Date().toISOString().slice(0,10);
   showModal(`<div class="modal-handle"></div>
     <div style="font-size:18px;font-weight:700;margin-bottom:16px">Training hinzufügen</div>
-    <input id="tDate" class="input-field" type="date" value="${today}" style="margin-bottom:10px">
+
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button id="modeEinzel" onclick="setTrainingMode('einzel')" style="flex:1;padding:8px;border-radius:10px;border:2px solid #0A2540;background:#0A2540;color:#fff;font-weight:700;font-size:13px;cursor:pointer">Einzeltermin</button>
+      <button id="modeSerie" onclick="setTrainingMode('serie')" style="flex:1;padding:8px;border-radius:10px;border:2px solid #e5e7eb;background:#fff;color:#374151;font-weight:700;font-size:13px;cursor:pointer">📅 Serie</button>
+    </div>
+
+    <div id="tEinzelFields">
+      <input id="tDate" class="input-field" type="date" value="${today}" style="margin-bottom:10px">
+    </div>
+    <div id="tSerieFields" style="display:none">
+      <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Wochentag</div>
+      <select id="tWochentag" class="input-field" style="margin-bottom:10px">
+        <option value="1">Montag</option>
+        <option value="2">Dienstag</option>
+        <option value="3">Mittwoch</option>
+        <option value="4">Donnerstag</option>
+        <option value="5">Freitag</option>
+        <option value="6">Samstag</option>
+        <option value="0">Sonntag</option>
+      </select>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <div style="flex:1">
+          <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Startdatum</div>
+          <input id="tSerieStart" class="input-field" type="date" value="${today}">
+        </div>
+        <div style="flex:1">
+          <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Enddatum</div>
+          <input id="tSerieEnd" class="input-field" type="date">
+        </div>
+      </div>
+    </div>
+
     <input id="tTime" class="input-field" type="time" value="17:00" style="margin-bottom:10px">
     <input id="tLocation" class="input-field" placeholder="Ort (z.B. Sportplatz Nord)" style="margin-bottom:10px">
     <textarea id="tNotes" class="input-field" placeholder="Hinweise (optional)" rows="2" style="margin-bottom:16px;resize:none"></textarea>
     <button class="btn-primary" onclick="saveTraining()">Training speichern</button>`);
 }
 
+function setTrainingMode(mode) {
+  document.getElementById('tEinzelFields').style.display = mode === 'einzel' ? 'block' : 'none';
+  document.getElementById('tSerieFields').style.display = mode === 'serie' ? 'block' : 'none';
+  document.getElementById('modeEinzel').style.background = mode === 'einzel' ? '#0A2540' : '#fff';
+  document.getElementById('modeEinzel').style.color = mode === 'einzel' ? '#fff' : '#374151';
+  document.getElementById('modeEinzel').style.borderColor = mode === 'einzel' ? '#0A2540' : '#e5e7eb';
+  document.getElementById('modeSerie').style.background = mode === 'serie' ? '#0A2540' : '#fff';
+  document.getElementById('modeSerie').style.color = mode === 'serie' ? '#fff' : '#374151';
+  document.getElementById('modeSerie').style.borderColor = mode === 'serie' ? '#0A2540' : '#e5e7eb';
+}
+
 function saveTraining() {
-  const date = document.getElementById('tDate')?.value;
-  const time = document.getElementById('tTime')?.value;
-  const location = document.getElementById('tLocation')?.value.trim();
-  const notes = document.getElementById('tNotes')?.value.trim();
-  if(!date){ alert('Datum eingeben'); return; }
+  const isSerie = document.getElementById('tSerieFields')?.style.display !== 'none';
+  const time = document.getElementById('tTime')?.value || '';
+  const location = document.getElementById('tLocation')?.value.trim() || '';
+  const notes = document.getElementById('tNotes')?.value.trim() || '';
   const attendances = {};
   STATE.players.forEach(p => { attendances[p.id] = 'open'; });
-  const _tData={date,time:time||'',location:location||''};notifyAll('Neues Training!',(_tData.date||'')+' - '+(_tData.time||'')+' Uhr - '+(_tData.location||''));db.ref('/trainings').push({ date, time:time||'', location:location||'', notes:notes||'', attendances, actual:{}, createdAt: Date.now() });
-  closeModal();
+
+  if (isSerie) {
+    const wochentag = parseInt(document.getElementById('tWochentag')?.value);
+    const serieStart = document.getElementById('tSerieStart')?.value;
+    const serieEnd = document.getElementById('tSerieEnd')?.value;
+    if (!serieStart || !serieEnd) { alert('Start- und Enddatum eingeben'); return; }
+    if (serieStart > serieEnd) { alert('Startdatum muss vor Enddatum liegen'); return; }
+
+    const dates = [];
+    const cur = new Date(serieStart);
+    const end = new Date(serieEnd);
+    // Zum ersten passenden Wochentag springen
+    while (cur.getDay() !== wochentag) cur.setDate(cur.getDate() + 1);
+    while (cur <= end) {
+      dates.push(cur.toISOString().slice(0, 10));
+      cur.setDate(cur.getDate() + 7);
+    }
+    if (dates.length === 0) { alert('Kein passender Wochentag im gewählten Zeitraum'); return; }
+    if (dates.length > 52) { alert('Maximal 52 Termine pro Serie'); return; }
+
+    dates.forEach(date => {
+      db.ref('/trainings').push({ date, time, location, notes, attendances, actual:{}, createdAt: Date.now() });
+    });
+    notifyAll('🏃 Neue Trainingsserie!', dates.length + ' Termine · ' + time + ' Uhr · ' + location);
+    closeModal();
+    alert('✅ ' + dates.length + ' Trainingstermine erstellt!');
+  } else {
+    const date = document.getElementById('tDate')?.value;
+    if (!date) { alert('Datum eingeben'); return; }
+    notifyAll('🏃 Neues Training!', date + ' - ' + time + ' Uhr - ' + location);
+    db.ref('/trainings').push({ date, time, location, notes, attendances, actual:{}, createdAt: Date.now() });
+    closeModal();
+  }
 }
 
 function deleteTraining(id){ if(confirm('Training löschen?')){ db.ref('/trainings/' + id).remove(); notifyAll('🗑️ Training abgesagt', 'Ein Training wurde vom Trainer abgesagt.'); } }
