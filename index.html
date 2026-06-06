@@ -536,20 +536,18 @@ function renderHome() {
 
   const pid = profile?.playerId;
 
-  // Datum-only Vergleich (robuster — schließt heutige Termine nicht aus)
-  const dateOnly = s => s ? new Date(s + 'T00:00:00').getTime() : 0;
+  // Robust: Datum-String direkt vergleichen (keine Timezone-Probleme)
+  const todayStr = new Date().toISOString().slice(0, 10); // "2026-06-10"
 
   const upcomingTrainings = STATE.trainings
+    .filter(t => t.date && t.date >= todayStr)
     .map(t => ({...t, sortDate: parseSortDate(t.date, t.time)}))
-    .filter(t => t.date && dateOnly(t.date) >= todayMs)
-    .sort((a,b) => a.sortDate - b.sortDate)
-    .slice(0, 5);
+    .sort((a,b) => a.sortDate - b.sortDate);
 
   const upcomingGames = STATE.games
+    .filter(g => g.date && g.date >= todayStr)
     .map(g => ({...g, sortDate: parseSortDate(g.date, g.time)}))
-    .filter(g => g.date && dateOnly(g.date) >= todayMs)
-    .sort((a,b) => a.sortDate - b.sortDate)
-    .slice(0, 5);
+    .sort((a,b) => a.sortDate - b.sortDate);
 
   let html = `<div style="display:flex;flex-direction:column;gap:0">`;
 
