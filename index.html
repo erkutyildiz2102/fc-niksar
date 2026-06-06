@@ -1872,7 +1872,7 @@ function renderEinstellungenTab(c) {
     <div class="card" style="padding:16px;margin-bottom:0">
       <div style="font-size:15px;font-weight:700;margin-bottom:8px"><i class="fa fa-bell"></i> Push-Benachrichtigungen</div>
       <div style="font-size:13px;color:#6B7280;margin-bottom:12px">Benachrichtigung bei neuen Trainings, Spielen und Chat.</div>
-      <button class="btn-primary" onclick="subscribeToPush()" id="pushBtn" ${pushOn ? 'style="background:#10B981" disabled' : ''}>${pushOn ? '✅ Aktiviert' : '🔔 Benachrichtigungen aktivieren'}</button>
+      <button class="btn-primary" onclick="subscribeToPush()" id="pushBtn" style="${pushOn ? 'background:#10B981' : ''}">${pushOn ? '✅ Aktiviert – erneut tippen zum Reaktivieren' : '🔔 Benachrichtigungen aktivieren'}</button>
     </div>
     
     
