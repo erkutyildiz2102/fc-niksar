@@ -1687,11 +1687,11 @@ function saveGame() {
   const time = document.getElementById('gTime')?.value;
   const location = document.getElementById('gLoc')?.value.trim();
   if(!opponent || !date){ alert('Gegner und Datum eingeben'); return; }
-  notifyAll('Neues Spiel!','vs. '+(opponent||'')+' am '+(date||''));db.ref('/games').push({ opponent, date, time:time||'', location:location||'', squad:{}, result:'', createdAt: Date.now() });
+  notifyAll('⚽ Neues Spiel!','vs. '+(opponent||'')+' am '+(date||''));db.ref('/games').push({ opponent, date, time:time||'', location:location||'', squad:{}, result:'', createdAt: Date.now() });
   closeModal();
 }
 
-function deleteGame(id){ if(confirm('Spiel löschen?')) db.ref('/games/' + id).remove(); }
+function deleteGame(id){ if(confirm('Spiel löschen?')){ db.ref('/games/' + id).remove(); notifyAll('🗑️ Spiel abgesagt', 'Ein Spiel wurde vom Trainer abgesagt.'); } }
 
 function playerCircle(p, size=68) {
   return `<div style="position:relative;width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;flex-shrink:0">
