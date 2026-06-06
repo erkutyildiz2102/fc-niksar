@@ -1,5 +1,9 @@
-// FC Niksar Service Worker v4 - Auto-Update
-const CACHE = 'fcn-v4';
+// FC Niksar Service Worker v5 - Auto-Update
+const CACHE = 'fcn-v5';
+
+self.addEventListener('message', e => {
+  if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
+});
 
 self.addEventListener('install', e => {
   self.skipWaiting();

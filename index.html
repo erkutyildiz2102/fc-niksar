@@ -256,18 +256,27 @@ const APP_VERSION = '1.5';
 if ('serviceWorker' in navigator) {
   // Network-first Service Worker: immer frische HTML, Fallback auf Cache wenn offline
     navigator.serviceWorker.register('/fc-niksar/sw.js').then(reg => {
-    // Wenn neuer Service Worker wartet → Update-Banner zeigen
+    // Wenn neuer Service Worker wartet → sofort aktivieren
     reg.addEventListener('updatefound', () => {
       const newSW = reg.installing;
       newSW.addEventListener('statechange', () => {
         if(newSW.state === 'installed' && navigator.serviceWorker.controller) {
-          showUpdateBanner();
+          newSW.postMessage({ type: 'SKIP_WAITING' });
         }
       });
     });
+
+    // Alle 30 Minuten auf Updates prüfen
+    setInterval(() => reg.update(), 30 * 60 * 1000);
+
+    // Beim Öffnen der App (aus Hintergrund) sofort prüfen
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') reg.update();
+    });
+
   }).catch(()=>{});
 
-  // Seite neu laden wenn neuer SW aktiv wird
+  // Seite automatisch neu laden wenn neuer SW aktiv wird
   let refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if(!refreshing){ refreshing = true; window.location.reload(); }
