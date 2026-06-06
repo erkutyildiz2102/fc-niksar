@@ -1866,7 +1866,19 @@ function renderStatistikTab(c) {
 
 // ---- EINSTELLUNGEN TAB ----
 function renderEinstellungenTab(c) {
+  const pushOn = localStorage.getItem('fcniksar_pushEnabled') === 'true';
   c.innerHTML = `
+    <div class="card" style="padding:16px;margin-bottom:0">
+      <div style="font-size:15px;font-weight:700;margin-bottom:8px"><i class="fa fa-bell"></i> Push-Benachrichtigungen</div>
+      <div style="font-size:13px;color:#6B7280;margin-bottom:12px">Benachrichtigung bei neuen Trainings, Spielen und Chat.</div>
+      <button class="btn-primary" onclick="subscribeToPush()" id="pushBtn">🔔 Benachrichtigungen aktivieren</button>
+    </div>
+    
+    <div class="card" style="padding:16px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:8px"><i class="fa fa-bell"></i> Push-Benachrichtigungen</div>
+      <div style="font-size:13px;color:#6B7280;margin-bottom:12px">Benachrichtigung bei neuen Trainings, Spielen &amp; Chat.</div>
+      \
+    </div>
     <div class="card" style="padding:16px">
       <div style="font-size:15px;font-weight:700;margin-bottom:12px"><i class="fa fa-lock"></i> Trainer PIN ändern</div>
       <input id="newPin1" class="input-field" type="password" maxlength="8" placeholder="Neuer PIN" style="margin-bottom:8px">
