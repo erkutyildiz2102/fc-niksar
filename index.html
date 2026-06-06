@@ -1327,6 +1327,7 @@ function sendChat() {
   if(ep) ep.style.display = 'none';
   emojiOpen = false;
   db.ref('/chat').push({ author, text, ts: Date.now() });
+  notifyAll('💬 Neue Nachricht', author + ': ' + text);
 }
 
 // ---- GALLERY ----
@@ -1599,7 +1600,7 @@ function saveTraining() {
   closeModal();
 }
 
-function deleteTraining(id){ if(confirm('Training löschen?')) db.ref('/trainings/' + id).remove(); }
+function deleteTraining(id){ if(confirm('Training löschen?')){ db.ref('/trainings/' + id).remove(); notifyAll('🗑️ Training abgesagt', 'Ein Training wurde vom Trainer abgesagt.'); } }
 
 function trainingDetailModal(id) {
   const t = STATE.trainings.find(x => x.id === id);
