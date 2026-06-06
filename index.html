@@ -1952,16 +1952,20 @@ async function unsubscribeFromPush(){try{const r=await navigator.serviceWorker.r
 
 // ---- NOTIFICATIONS ----
 function requestNotifPermission() {
-  if('Notification' in window && Notification.permission === 'default') {
-    const banner = document.createElement('div');
-    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#1D4ED8;color:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;z-index:600;font-size:13px;font-weight:600';
-    banner.innerHTML = `<span><i class="fa fa-bell"></i> Benachrichtigungen aktivieren?</span>
-      <div style="display:flex;gap:8px">
-        <button onclick="Notification.requestPermission();this.closest('div[style]').remove()" style="background:rgba(255,255,255,.25);border:none;color:#fff;padding:5px 12px;border-radius:6px;cursor:pointer;font-weight:700">Ja</button>
-        <button onclick="this.closest('div[style]').remove()" style="border:none;background:none;color:#fff;cursor:pointer;font-size:18px">✕</button>
+  if('Notification' in window && Notification.permission === 'default' && LS('pushEnabled') === null) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.id = 'notifPopup';
+      el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;display:flex;align-items:center;justify-content:center;padding:24px';
+      el.innerHTML = `<div style="background:#fff;border-radius:24px;padding:28px 24px;max-width:320px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+        <div style="font-size:52px;margin-bottom:12px">&#128276;</div>
+        <div style="font-size:20px;font-weight:800;color:#0A2540;margin-bottom:8px">Benachrichtigungen</div>
+        <div style="font-size:14px;color:#6B7280;margin-bottom:24px;line-height:1.5">Erhalte eine Nachricht wenn der Trainer ein neues Training oder Spiel eintr&#228;gt.</div>
+        <button onclick="subscribeToPush().then(()=>document.getElementById('notifPopup')?.remove())" style="width:100%;background:#0A2540;color:#fff;border:none;padding:14px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px">Ja, aktivieren &#128276;</button>
+        <button onclick="LSset('pushEnabled','false');document.getElementById('notifPopup').remove()" style="width:100%;background:#f3f4f6;color:#6B7280;border:none;padding:12px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">Nein danke</button>
       </div>`;
-    document.body.appendChild(banner);
-    setTimeout(() => { if(banner.parentNode) banner.remove(); }, 9000);
+      document.body.appendChild(el);
+    }, 2000);
   }
 }
 </script>
