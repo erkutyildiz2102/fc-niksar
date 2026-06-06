@@ -759,7 +759,7 @@ function renderHome() {
               </div>
               <div style="font-size:15px;font-weight:800;color:#fff;line-height:1.2">${fmtFull(t.date)}</div>
               <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:4px">
-                <i class="fas fa-clock" style="opacity:.7;margin-right:3px"></i>${t.time||'?'} Uhr
+                <i class="fas fa-clock" style="opacity:.7;margin-right:3px"></i>${t.time||'?'}${t.timeTo?' - '+t.timeTo:''} Uhr
                 ${t.location ? ` · <i class="fas fa-location-dot" style="opacity:.7;margin-right:3px"></i>${escHtml(t.location)}` : ''}
               </div>
             </div>
@@ -1585,7 +1585,7 @@ function renderTrainingTab(c) {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
           <div>
             <div style="font-weight:700;font-size:15px">${fmt(t.date)}</div>
-            <div style="font-size:12px;color:#6B7280">${t.time||'?'} Uhr · ${escHtml(t.location||'?')}</div>
+            <div style="font-size:12px;color:#6B7280">${t.time||'?'}${t.timeTo?' - '+t.timeTo:''} Uhr · ${escHtml(t.location||'?')}</div>
           </div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
             <span style="background:#D1FAE5;color:#065F46;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px">✅ ${yes}</span>
@@ -1637,7 +1637,16 @@ function addTrainingModal() {
       </div>
     </div>
 
-    <input id="tTime" class="input-field" type="time" value="17:00" style="margin-bottom:10px">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <div style="flex:1">
+        <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Von</div>
+        <input id="tTime" class="input-field" type="time" value="17:00">
+      </div>
+      <div style="flex:1">
+        <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Bis</div>
+        <input id="tTimeTo" class="input-field" type="time" value="18:30">
+      </div>
+    </div>
     <input id="tLocation" class="input-field" placeholder="Ort (z.B. Sportplatz Nord)" style="margin-bottom:10px">
     <textarea id="tNotes" class="input-field" placeholder="Hinweise (optional)" rows="2" style="margin-bottom:16px;resize:none"></textarea>
     <button class="btn-primary" onclick="saveTraining()">Training speichern</button>`);
@@ -1657,6 +1666,7 @@ function setTrainingMode(mode) {
 function saveTraining() {
   const isSerie = document.getElementById('tSerieFields')?.style.display !== 'none';
   const time = document.getElementById('tTime')?.value || '';
+  const timeTo = document.getElementById('tTimeTo')?.value || '';
   const location = document.getElementById('tLocation')?.value.trim() || '';
   const notes = document.getElementById('tNotes')?.value.trim() || '';
   const attendances = {};
@@ -1682,16 +1692,16 @@ function saveTraining() {
     if (dates.length > 52) { alert('Maximal 52 Termine pro Serie'); return; }
 
     dates.forEach(date => {
-      db.ref('/trainings').push({ date, time, location, notes, attendances, actual:{}, createdAt: Date.now() });
+      db.ref('/trainings').push({ date, time, timeTo, location, notes, attendances, actual:{}, createdAt: Date.now() });
     });
-    notifyAll('🏃 Neue Trainingsserie!', dates.length + ' Termine · ' + time + ' Uhr · ' + location);
+    notifyAll('🏃 Neue Trainingsserie!', dates.length + ' Termine · ' + time + (timeTo?' - '+timeTo:'') + ' Uhr · ' + location);
     closeModal();
     alert('✅ ' + dates.length + ' Trainingstermine erstellt!');
   } else {
     const date = document.getElementById('tDate')?.value;
     if (!date) { alert('Datum eingeben'); return; }
-    notifyAll('🏃 Neues Training!', date + ' - ' + time + ' Uhr - ' + location);
-    db.ref('/trainings').push({ date, time, location, notes, attendances, actual:{}, createdAt: Date.now() });
+    notifyAll('🏃 Neues Training!', date + ' · ' + time + (timeTo?' - '+timeTo:'') + ' Uhr · ' + location);
+    db.ref('/trainings').push({ date, time, timeTo, location, notes, attendances, actual:{}, createdAt: Date.now() });
     closeModal();
   }
 }
@@ -1708,7 +1718,7 @@ function trainingDetailModal(id) {
   const open = STATE.players.length - yes - no;
   showModal(`<div class="modal-handle"></div>
     <div style="font-size:18px;font-weight:700;margin-bottom:4px">Training: ${fmt(t.date)}</div>
-    <div style="font-size:13px;color:#6B7280;margin-bottom:14px">${t.time||''} Uhr · ${escHtml(t.location||'')}</div>
+    <div style="font-size:13px;color:#6B7280;margin-bottom:14px">${t.time||''}${t.timeTo?' - '+t.timeTo:''} Uhr · ${escHtml(t.location||'')}</div>
     <div style="display:flex;gap:8px;margin-bottom:16px">
       ${[['yes','✅',yes,'#D1FAE5','#065F46'],['no','❌',no,'#FEE2E2','#991B1B'],['open','🕐',open,'#FEF3C7','#92400E']].map(([,icon,count,bg,col])=>
         `<div style="flex:1;text-align:center;padding:10px;border-radius:10px;background:${bg}">
