@@ -1051,7 +1051,10 @@ function setRsvpHome(tid, pid, status) {
   delete window._rsvpEdit[tid];
   window._localAtt = window._localAtt || {};
   window._localAtt[tid + '_' + pid] = status;
+  const _t = STATE.trainings.find(x => x.id === tid);
+  if (_t) { _t.attendances = _t.attendances || {}; _t.attendances[pid] = status; }
   renderHome(); // sofortiger Neuaufbau mit lokalem Wert
+  renderTermine();
   // Firebase schreiben (im Hintergrund)
   db.ref('/trainings/' + tid + '/attendances/' + pid).set(status).then(() => {
     // Firebase bestätigt → lokalen Override entfernen
@@ -1060,6 +1063,11 @@ function setRsvpHome(tid, pid, status) {
 }
 
 function setRsvp(tid, pid, status) {
+  // Sofort lokal updaten
+  const t = STATE.trainings.find(x => x.id === tid);
+  if (t) { t.attendances = t.attendances || {}; t.attendances[pid] = status; }
+  renderTermine();
+  renderHome();
   db.ref('/trainings/' + tid + '/attendances/' + pid).set(status);
 }
 
