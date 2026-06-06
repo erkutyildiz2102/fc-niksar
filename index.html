@@ -89,7 +89,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 @keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes slideUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}
 #chatMessages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
-#chatPage{display:none;flex-direction:column;position:fixed;left:0;right:0;top:62px;bottom:calc(60px + env(safe-area-inset-bottom, 0px));background:#ECE5DD;z-index:10}
+#chatPage{display:none;flex-direction:column;position:fixed;left:0;right:0;top:62px;bottom:0;background:#ECE5DD;z-index:10}
 #chatPage.active{display:flex}
 #chatPage.active{display:flex}
 </style>
@@ -473,6 +473,14 @@ function showApp() {
   updateHeader();
   renderHome();
 }
+
+function fixChatHeight() {
+  const nav = document.getElementById('bottomNav');
+  const chat = document.getElementById('chatPage');
+  if (nav && chat) chat.style.bottom = nav.offsetHeight + 'px';
+}
+window.addEventListener('resize', fixChatHeight);
+setTimeout(fixChatHeight, 300);
 
 function switchPage(page) {
   currentPage = page;
