@@ -1871,14 +1871,10 @@ function renderEinstellungenTab(c) {
     <div class="card" style="padding:16px;margin-bottom:0">
       <div style="font-size:15px;font-weight:700;margin-bottom:8px"><i class="fa fa-bell"></i> Push-Benachrichtigungen</div>
       <div style="font-size:13px;color:#6B7280;margin-bottom:12px">Benachrichtigung bei neuen Trainings, Spielen und Chat.</div>
-      <button class="btn-primary" onclick="subscribeToPush()" id="pushBtn">🔔 Benachrichtigungen aktivieren</button>
+      <button class="btn-primary" onclick="subscribeToPush()" id="pushBtn" ${pushOn ? 'style="background:#10B981" disabled' : ''}>${pushOn ? '✅ Aktiviert' : '🔔 Benachrichtigungen aktivieren'}</button>
     </div>
     
-    <div class="card" style="padding:16px">
-      <div style="font-size:15px;font-weight:700;margin-bottom:8px"><i class="fa fa-bell"></i> Push-Benachrichtigungen</div>
-      <div style="font-size:13px;color:#6B7280;margin-bottom:12px">Benachrichtigung bei neuen Trainings, Spielen &amp; Chat.</div>
-      \
-    </div>
+    
     <div class="card" style="padding:16px">
       <div style="font-size:15px;font-weight:700;margin-bottom:12px"><i class="fa fa-lock"></i> Trainer PIN ändern</div>
       <input id="newPin1" class="input-field" type="password" maxlength="8" placeholder="Neuer PIN" style="margin-bottom:8px">
@@ -1959,7 +1955,7 @@ function compressImage(dataUrl, maxW, quality, cb) {
 
 function urlBase64ToUint8Array(b64){const pad='='.repeat((4-b64.length%4)%4);const raw=atob((b64+pad).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));}
 async function notifyAll(title,body){try{await fetch(PUSH_API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,body})});}catch(e){}}
-async function subscribeToPush(){if(!('PushManager'in window)){alert('Nicht unterstuetzt');return;}const p=await Notification.requestPermission();if(p!=='granted'){alert('Abgelehnt');return;}try{const r=await navigator.serviceWorker.ready;let s=await r.pushManager.getSubscription();if(!s)s=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});const k=btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);await db.ref('/pushSubscriptions/'+k).set(s.toJSON());LSset('pushEnabled','true');alert('Benachrichtigungen aktiviert!');}catch(e){alert('Fehler: '+e.message);}}
+async function subscribeToPush(){if(!('PushManager'in window)){alert('Nicht unterstuetzt');return;}const p=await Notification.requestPermission();if(p!=='granted'){alert('Abgelehnt');return;}try{const r=await navigator.serviceWorker.ready;let s=await r.pushManager.getSubscription();if(!s)s=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});const k=btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);await db.ref('/pushSubscriptions/'+k).set(s.toJSON());LSset('pushEnabled','true');alert('Benachrichtigungen aktiviert!');if(document.getElementById('pushBtn')){document.getElementById('pushBtn').textContent='✅ Aktiviert';document.getElementById('pushBtn').style.background='#10B981';document.getElementById('pushBtn').disabled=true;}}catch(e){alert('Fehler: '+e.message);}}
 async function unsubscribeFromPush(){try{const r=await navigator.serviceWorker.ready;const s=await r.pushManager.getSubscription();if(s){const k=btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);await db.ref('/pushSubscriptions/'+k).remove();await s.unsubscribe();}LSset('pushEnabled','false');alert('Deaktiviert.');}catch(e){alert('Fehler: '+e.message);}}
 
 // ---- NOTIFICATIONS ----
