@@ -664,11 +664,16 @@ function renderHome() {
     </div>`;
   });
 
-  if(banners.length === 0 && pid && upcomingTrainings.length > 0) {
-    // Alles beantwortet — kleine grüne Bestätigung
-    html += `<div style="background:#F0FDF4;border-top:1px solid #BBF7D0;padding:10px 16px;display:flex;align-items:center;gap:8px">
-      <i class="fas fa-circle-check" style="color:#10B981;font-size:16px"></i>
-      <span style="font-size:13px;font-weight:600;color:#065F46">Alle Rückmeldungen erledigt ✓</span>
+  // Grüne Bestätigung: unabhängig von anderen Bannern zeigen wenn alle RSVP erledigt
+  if(pid && upcomingTrainings.length > 0 && openRsvp === 0) {
+    html += `<div style="background:linear-gradient(135deg,#059669,#10B981);padding:11px 16px;display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="fas fa-check" style="color:#fff;font-size:14px"></i>
+      </div>
+      <div>
+        <div style="font-weight:800;font-size:13px;color:#fff">Keine offenen Rückmeldungen</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.8);margin-top:1px">Du hast alle Trainings beantwortet ✓</div>
+      </div>
     </div>`;
   }
 
