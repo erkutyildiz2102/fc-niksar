@@ -347,8 +347,8 @@ function initListeners() {
 
 function onDataChange() {
   updateHeader();
-  renderHome();    // immer aktuell halten (auch wenn nicht aktiv)
-  if(currentPage==='termine') renderTermine();
+  renderHome();
+  renderTermine();
   if(currentPage==='trainer') renderTrainer();
   if(document.getElementById('profileSetup').style.display !== 'none') renderSetupPlayers();
 }
@@ -889,7 +889,7 @@ let selectedDay = null;
 
 function renderTermine() {
   const page = document.getElementById('terminePage');
-  if(!page || !page.classList.contains('active')) return;
+  if(!page) return;
 
   const todayDate = new Date();
   const firstDay = new Date(calYear, calMonth, 1);
