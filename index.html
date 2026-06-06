@@ -644,16 +644,23 @@ function renderHome() {
     });
   }
 
-  banners.forEach(b => {
-    html += `<div style="background:${b.bg};padding:12px 16px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="document.getElementById('${b.target}')?.scrollIntoView({behavior:'smooth'})">
-      <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <i class="${b.icon}" style="color:#fff;font-size:15px"></i>
+  const dismissed = JSON.parse(LS('dismissedBanners') || '[]');
+  const activeBanners = banners.filter(b => !dismissed.includes(b.key || b.msg));
+
+  activeBanners.forEach(b => {
+    const key = encodeURIComponent(b.key || b.msg);
+    html += `<div style="background:${b.bg};padding:12px 16px;display:flex;align-items:center;gap:10px">
+      <div onclick="document.getElementById('${b.target}')?.scrollIntoView({behavior:'smooth'})" style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;min-width:0">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="${b.icon}" style="color:#fff;font-size:15px"></i>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:800;font-size:14px;color:#fff">${b.msg}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.8);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.hint}</div>
+        </div>
+        <i class="fas fa-chevron-right" style="color:rgba(255,255,255,.5);font-size:12px;flex-shrink:0"></i>
       </div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:800;font-size:14px;color:#fff">${b.msg}</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.8);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.hint}</div>
-      </div>
-      <i class="fas fa-chevron-down" style="color:rgba(255,255,255,.6);font-size:14px;flex-shrink:0"></i>
+      <button onclick="dismissBanner('${key}')" style="width:28px;height:28px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
     </div>`;
   });
 
@@ -981,6 +988,16 @@ function changeCalMonth(delta) {
   if(calMonth > 11) { calMonth = 0; calYear++; }
   selectedDay = null;
   renderTermine();
+}
+
+function dismissBanner(key) {
+  const dismissed = JSON.parse(LS('dismissedBanners') || '[]');
+  const decoded = decodeURIComponent(key);
+  if(!dismissed.includes(decoded)) dismissed.push(decoded);
+  // Nur letzte 20 merken damit localStorage nicht voll wird
+  if(dismissed.length > 20) dismissed.splice(0, dismissed.length - 20);
+  LSset('dismissedBanners', JSON.stringify(dismissed));
+  renderHome();
 }
 
 function setRsvpHome(tid, pid, status) {
