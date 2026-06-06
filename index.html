@@ -346,7 +346,7 @@ function initListeners() {
 
 function onDataChange() {
   updateHeader();
-  if(currentPage==='home') renderHome();
+  renderHome();    // immer aktuell halten (auch wenn nicht aktiv)
   if(currentPage==='termine') renderTermine();
   if(currentPage==='trainer') renderTrainer();
   if(document.getElementById('profileSetup').style.display !== 'none') renderSetupPlayers();
@@ -513,7 +513,7 @@ function toggleRsvpEdit(tid) {
 
 function renderHome() {
   const page = document.getElementById('homePage');
-  if(!page || !page.classList.contains('active')) return;
+  if(!page) return;
   const profile = getProfile();
   const now = Date.now();
 
@@ -536,15 +536,18 @@ function renderHome() {
 
   const pid = profile?.playerId;
 
+  // Datum-only Vergleich (robuster — schließt heutige Termine nicht aus)
+  const dateOnly = s => s ? new Date(s + 'T00:00:00').getTime() : 0;
+
   const upcomingTrainings = STATE.trainings
     .map(t => ({...t, sortDate: parseSortDate(t.date, t.time)}))
-    .filter(t => t.sortDate >= todayMs)
+    .filter(t => t.date && dateOnly(t.date) >= todayMs)
     .sort((a,b) => a.sortDate - b.sortDate)
     .slice(0, 5);
 
   const upcomingGames = STATE.games
     .map(g => ({...g, sortDate: parseSortDate(g.date, g.time)}))
-    .filter(g => g.sortDate >= todayMs)
+    .filter(g => g.date && dateOnly(g.date) >= todayMs)
     .sort((a,b) => a.sortDate - b.sortDate)
     .slice(0, 5);
 
@@ -705,7 +708,13 @@ function renderHome() {
           <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
             ${dateBox(t.date, true)}
             <div style="flex:1;min-width:0">
-              <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">🏃 Training${isNew(t.createdAt)?' <span style="background:#EF4444;color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:4px">NEU</span>':''}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
+                <span style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em">🏃 Training</span>
+                ${isNew(t.createdAt)?'<span style="background:#EF4444;color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700">NEU</span>':''}
+                ${pid && (!st || st==='open') ? '<span style="background:#F59E0B;color:#fff;font-size:9px;padding:2px 8px;border-radius:4px;font-weight:800;letter-spacing:.02em">⚠ Rückmeldung offen</span>' : ''}
+                ${pid && st==='yes' ? '<span style="background:#10B981;color:#fff;font-size:9px;padding:2px 8px;border-radius:4px;font-weight:800">✓ Zugesagt</span>' : ''}
+                ${pid && st==='no'  ? '<span style="background:#EF4444;color:#fff;font-size:9px;padding:2px 8px;border-radius:4px;font-weight:800">✗ Abgesagt</span>' : ''}
+              </div>
               <div style="font-size:15px;font-weight:800;color:#fff;line-height:1.2">${fmtFull(t.date)}</div>
               <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:4px">
                 <i class="fas fa-clock" style="opacity:.7;margin-right:3px"></i>${t.time||'?'} Uhr
