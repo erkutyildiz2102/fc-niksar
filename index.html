@@ -609,21 +609,23 @@ function renderHome() {
 
   // Zeige Banner für offene RSVPs UND neue Einträge
   const banners = [];
-  if(openRsvp > 0) {
-    banners.push({
-      bg: 'linear-gradient(135deg,#F59E0B,#D97706)',
-      icon: 'fas fa-clipboard-list',
-      msg: `${openRsvp} ${openRsvp===1?'Training wartet':'Trainings warten'} auf deine Rückmeldung`,
-      hint: 'Jetzt im Training-Slider zusagen oder absagen ↓',
-      target: 'sliderTraining'
-    });
-  }
-  if(newTrainings.length > 0 && openRsvp === 0) {
+  // Neues Training Banner — immer zeigen wenn frisch eingetragen (unabhängig von openRsvp)
+  if(newTrainings.length > 0) {
     banners.push({
       bg: 'linear-gradient(135deg,#1D4ED8,#0A2540)',
       icon: 'fas fa-running',
       msg: newTrainings.length === 1 ? '🏃 Neues Training eingetragen!' : `🏃 ${newTrainings.length} neue Trainings eingetragen!`,
       hint: `${fmtFull(newTrainings[0].date)} · ${newTrainings[0].time||'?'} Uhr · ${newTrainings[0].location||''}`,
+      target: 'sliderTraining'
+    });
+  }
+  // Offene Rückmeldungen Banner — nur wenn KEIN neues Training (um Doppelbanner zu vermeiden)
+  if(openRsvp > 0 && newTrainings.length === 0) {
+    banners.push({
+      bg: 'linear-gradient(135deg,#F59E0B,#D97706)',
+      icon: 'fas fa-clipboard-list',
+      msg: `${openRsvp} ${openRsvp===1?'Training wartet':'Trainings warten'} auf deine Rückmeldung`,
+      hint: 'Jetzt im Training-Slider zusagen oder absagen ↓',
       target: 'sliderTraining'
     });
   }
