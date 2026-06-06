@@ -1068,42 +1068,162 @@ function getChatName() {
   return getProfile()?.name || chatName || '';
 }
 
+// ── CHAT EMOJIS ──
+const CHAT_EMOJIS = [
+  '⚽','🏆','🥅','🏃','💪','👏','🙌','🔥','⭐','🎯',
+  '👍','❤️','😊','😂','🎉','😎','🤙','✅','❌','⏰',
+  '📍','📢','💙','🌟','🤝','😄','🥳','😢','😮','💯',
+  '🙏','👶','🤞','🫶','🏅'
+];
+const QUICK_REACTIONS = ['👍','❤️','😂','😮','👏','🔥'];
+let emojiOpen = false;
+
 function renderChat() {
   const page = document.getElementById('chatPage');
   if(!page) return;
   const myName = getChatName();
-  const needsName = !myName;
+  const myReactions = JSON.parse(LS('myReactions') || '{}');
+
+  // Build messages HTML
+  const msgsHtml = STATE.chat.length === 0
+    ? `<div style="text-align:center;padding:40px 20px;color:#9CA3AF"><div style="font-size:40px;margin-bottom:8px">💬</div><div style="font-weight:600">Noch keine Nachrichten</div></div>`
+    : STATE.chat.map(m => {
+        const mine = myName && m.author === myName;
+        const reactions = m.reactions || {};
+        const hasReactions = Object.keys(reactions).some(e => reactions[e] > 0);
+
+        const bubbleContent = m.image
+          ? `<img src="${m.image}" style="max-width:200px;border-radius:10px;display:block;cursor:pointer" onclick="viewChatImage('${m.id}')">`
+          : `<span>${escHtml(m.text||'')}</span>`;
+
+        const reactionBar = hasReactions
+          ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;${mine?'justify-content:flex-end':''}">
+              ${Object.entries(reactions).filter(([,c])=>c>0).map(([e,c])=>{
+                const myKey = m.id+'_'+e;
+                const isMine = myReactions[myKey];
+                return `<button onclick="toggleReaction('${m.id}','${e}')" style="background:${isMine?'#DBEAFE':'#F3F4F6'};border:1.5px solid ${isMine?'#3B82F6':'#E5E7EB'};border-radius:20px;padding:2px 8px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px">${e}<span style="font-size:11px;font-weight:700;color:#374151">${c}</span></button>`;
+              }).join('')}
+             </div>` : '';
+
+        return `<div style="display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};position:relative" id="msg-${m.id}">
+          ${!mine ? `<div style="font-size:11px;color:#6B7280;margin-bottom:2px;padding:0 4px;font-weight:600">${escHtml(m.author||'?')}</div>` : ''}
+          <div style="display:flex;align-items:flex-end;gap:6px;${mine?'flex-direction:row-reverse':''}">
+            <div class="msg-bubble ${mine?'msg-mine':'msg-other'}" style="position:relative">${bubbleContent}</div>
+            <button onclick="openReactionPicker('${m.id}')" style="background:none;border:none;font-size:16px;cursor:pointer;opacity:.4;flex-shrink:0;padding:2px;line-height:1" title="Reaktion">😊</button>
+          </div>
+          ${reactionBar}
+          <div style="font-size:10px;color:#9CA3AF;margin-top:2px;padding:0 4px">${new Date(m.ts||0).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</div>
+        </div>`;
+      }).join('');
 
   page.innerHTML = `
-    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch">
-      ${STATE.chat.length === 0
-        ? `<div style="text-align:center;padding:40px 20px;color:#9CA3AF"><div style="font-size:40px;margin-bottom:8px">💬</div><div style="font-weight:600">Noch keine Nachrichten</div></div>`
-        : STATE.chat.map(m => {
-          const mine = myName && m.author === myName;
-          return `<div style="display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'}">
-            ${!mine ? `<div style="font-size:11px;color:#6B7280;margin-bottom:2px;padding:0 4px;font-weight:600">${escHtml(m.author||'Unbekannt')}</div>` : ''}
-            <div class="msg-bubble ${mine?'msg-mine':'msg-other'}">${escHtml(m.text||'')}</div>
-            <div style="font-size:10px;color:#9CA3AF;margin-top:2px;padding:0 4px">${new Date(m.ts||0).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</div>
-          </div>`;
-        }).join('')}
+    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch">
+      ${msgsHtml}
+    </div>
+    <!-- Emoji picker -->
+    <div id="emojiPicker" style="display:none;position:absolute;bottom:72px;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;padding:10px 12px;z-index:50">
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">
+        ${CHAT_EMOJIS.map(e=>`<button onclick="insertEmoji('${e}')" style="background:none;border:none;font-size:22px;cursor:pointer;padding:4px;border-radius:8px;line-height:1">${e}</button>`).join('')}
+      </div>
+    </div>
+    <!-- Reaction picker -->
+    <div id="reactionPicker" style="display:none;position:absolute;bottom:72px;left:50%;transform:translateX(-50%);background:#1f2937;border-radius:30px;padding:8px 12px;z-index:50;display:none;gap:6px;align-items:center">
+      ${QUICK_REACTIONS.map(e=>`<button onclick="pickReaction('${e}')" style="background:none;border:none;font-size:24px;cursor:pointer;padding:2px;transition:transform .1s" onmousedown="this.style.transform='scale(1.4)'" onmouseup="this.style.transform='scale(1)'">${e}</button>`).join('')}
     </div>
     <div style="padding:10px 12px;border-top:1px solid #e5e7eb;background:#fff;flex-shrink:0">
-      ${needsName ? `
+      ${!myName ? `
         <div style="margin-bottom:8px;background:#FEF3C7;border-radius:10px;padding:8px 12px;font-size:12px;color:#92400E;font-weight:600;display:flex;align-items:center;gap:8px">
           <i class="fas fa-user"></i>
           <input id="chatNameIn" placeholder="Dein Name eingeben..." style="border:none;background:none;flex:1;font-size:13px;font-weight:600;color:#92400E;outline:none" onkeydown="if(event.key==='Enter')setChatName()">
           <button onclick="setChatName()" style="background:#0A2540;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer">OK</button>
         </div>` : `
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-          <div style="width:24px;height:24px;border-radius:50%;background:#0A2540;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">${myName[0].toUpperCase()}</div>
-          <span style="font-size:12px;color:#6B7280;font-weight:600">${escHtml(myName)}</span>
+          <div style="width:22px;height:22px;border-radius:50%;background:#0A2540;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">${myName[0].toUpperCase()}</div>
+          <span style="font-size:11px;color:#6B7280;font-weight:600">${escHtml(myName)}</span>
         </div>`}
-      <div style="display:flex;gap:8px">
-        <input id="chatInput" class="input-field" placeholder="Nachricht schreiben..." style="flex:1;padding:10px 14px" onkeydown="if(event.key==='Enter')sendChat()">
-        <button onclick="sendChat()" style="background:#0A2540;color:#fff;border:none;border-radius:10px;padding:0 18px;font-size:18px;cursor:pointer;flex-shrink:0"><i class="fas fa-paper-plane"></i></button>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button onclick="toggleEmojiPicker()" style="width:38px;height:38px;border-radius:10px;border:none;background:#F3F4F6;font-size:20px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center">😊</button>
+        <label style="width:38px;height:38px;border-radius:10px;background:#F3F4F6;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+          <i class="fas fa-image" style="color:#6B7280;font-size:16px"></i>
+          <input type="file" accept="image/*" style="display:none" onchange="sendChatImage(this)">
+        </label>
+        <input id="chatInput" class="input-field" placeholder="Nachricht…" style="flex:1;padding:10px 12px" onkeydown="if(event.key==='Enter')sendChat()">
+        <button onclick="sendChat()" style="width:38px;height:38px;background:#0A2540;color:#fff;border:none;border-radius:10px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px"><i class="fas fa-paper-plane"></i></button>
       </div>
     </div>`;
+
+  // Scroll to bottom
   setTimeout(() => { const c = document.getElementById('chatMessages'); if(c) c.scrollTop = c.scrollHeight; }, 80);
+}
+
+let currentReactionMsgId = null;
+
+function toggleEmojiPicker() {
+  emojiOpen = !emojiOpen;
+  const ep = document.getElementById('emojiPicker');
+  const rp = document.getElementById('reactionPicker');
+  if(ep) ep.style.display = emojiOpen ? 'block' : 'none';
+  if(rp) rp.style.display = 'none';
+  currentReactionMsgId = null;
+}
+
+function insertEmoji(e) {
+  const inp = document.getElementById('chatInput');
+  if(inp){ inp.value += e; inp.focus(); }
+}
+
+function openReactionPicker(msgId) {
+  currentReactionMsgId = msgId;
+  const rp = document.getElementById('reactionPicker');
+  const ep = document.getElementById('emojiPicker');
+  if(ep) ep.style.display = 'none';
+  emojiOpen = false;
+  if(rp) { rp.style.display = 'flex'; }
+}
+
+function pickReaction(emoji) {
+  if(currentReactionMsgId) toggleReaction(currentReactionMsgId, emoji);
+  const rp = document.getElementById('reactionPicker');
+  if(rp) rp.style.display = 'none';
+  currentReactionMsgId = null;
+}
+
+function toggleReaction(msgId, emoji) {
+  const myReactions = JSON.parse(LS('myReactions') || '{}');
+  const key = msgId + '_' + emoji;
+  const msg = STATE.chat.find(m => m.id === msgId);
+  if(!msg) return;
+  const current = (msg.reactions || {})[emoji] || 0;
+  if(myReactions[key]) {
+    // Entfernen
+    delete myReactions[key];
+    db.ref('/chat/' + msgId + '/reactions/' + emoji).set(Math.max(0, current - 1));
+  } else {
+    // Hinzufügen
+    myReactions[key] = true;
+    db.ref('/chat/' + msgId + '/reactions/' + emoji).set(current + 1);
+  }
+  LSset('myReactions', JSON.stringify(myReactions));
+}
+
+function sendChatImage(input) {
+  const file = input.files[0]; if(!file) return;
+  const author = getChatName();
+  if(!author){ alert('Bitte zuerst Namen eingeben'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    compressImage(e.target.result, 600, 0.75, data => {
+      db.ref('/chat').push({ author, image: data, text: '', ts: Date.now() });
+    });
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function viewChatImage(id) {
+  const m = STATE.chat.find(x => x.id === id);
+  if(!m?.image) return;
+  showModal(`<div style="text-align:center"><img src="${m.image}" style="max-width:100%;max-height:70vh;border-radius:12px"></div>`);
 }
 
 function setChatName() {
@@ -1119,6 +1239,10 @@ function sendChat() {
   const author = getChatName();
   if(!author){ alert('Bitte zuerst deinen Namen eingeben'); return; }
   inp.value = '';
+  // Emoji picker schließen
+  const ep = document.getElementById('emojiPicker');
+  if(ep) ep.style.display = 'none';
+  emojiOpen = false;
   db.ref('/chat').push({ author, text, ts: Date.now() });
 }
 
