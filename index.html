@@ -971,7 +971,7 @@ function renderTermine() {
             : `<div style="margin-top:8px;background:rgba(239,68,68,.25);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#fff">❌ Diesmal nicht nominiert</div>`;
         }
       } else if(pid) {
-        const s = ev.attendances?.[pid];
+        const s = (window._localAtt?.[ev.id+'_'+pid]) ?? ev.attendances?.[pid];
         extra = `<div style="margin-top:8px;display:flex;gap:6px">
           <button onclick="setRsvp('${ev.id}','${pid}','yes')" style="flex:1;padding:8px 4px;border-radius:8px;border:2px solid ${s==='yes'?'#10B981':'rgba(255,255,255,.3)'};background:${s==='yes'?'rgba(16,185,129,.3)':'rgba(255,255,255,.1)'};color:#fff;font-size:12px;font-weight:700;cursor:pointer">Zusagen</button>
           <button onclick="setRsvp('${ev.id}','${pid}','open')" style="flex:1;padding:8px 4px;border-radius:8px;border:2px solid ${s==='open'||!s?'#F59E0B':'rgba(255,255,255,.3)'};background:${s==='open'||!s?'rgba(245,158,11,.3)':'rgba(255,255,255,.1)'};color:#fff;font-size:12px;font-weight:700;cursor:pointer">Offen</button>
