@@ -1961,7 +1961,7 @@ function requestNotifPermission() {
         <div style="font-size:52px;margin-bottom:12px">&#128276;</div>
         <div style="font-size:20px;font-weight:800;color:#0A2540;margin-bottom:8px">Benachrichtigungen</div>
         <div style="font-size:14px;color:#6B7280;margin-bottom:24px;line-height:1.5">Erhalte eine Nachricht wenn der Trainer ein neues Training oder Spiel eintr&#228;gt.</div>
-        <button onclick="subscribeToPush().then(()=>document.getElementById('notifPopup')?.remove())" style="width:100%;background:#0A2540;color:#fff;border:none;padding:14px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px">Ja, aktivieren &#128276;</button>
+        <button onclick="document.getElementById('notifPopup')?.remove();subscribeToPush()" style="width:100%;background:#0A2540;color:#fff;border:none;padding:14px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px">Ja, aktivieren &#128276;</button>
         <button onclick="LSset('pushEnabled','false');document.getElementById('notifPopup').remove()" style="width:100%;background:#f3f4f6;color:#6B7280;border:none;padding:12px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">Nein danke</button>
       </div>`;
       document.body.appendChild(el);
