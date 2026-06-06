@@ -1,0 +1,17 @@
+{
+  "name": "FC Niksar F1/U9",
+  "short_name": "FC Niksar",
+  "theme_color": "#0A2540",
+  "background_color": "#0A2540",
+  "display": "standalone",
+  "start_url": "/fc-niksar/",
+  "scope": "/fc-niksar/",
+  "icons": [
+    {
+      "src": "/fc-niksar/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
