@@ -679,7 +679,7 @@ function renderHome() {
       bg: 'linear-gradient(135deg,#B45309,#D97706)',
       icon: 'fas fa-futbol',
       msg: newGames.length === 1 ? `⚽ Neues Spiel eingetragen!` : `⚽ ${newGames.length} neue Spiele eingetragen!`,
-      hint: newGames[0].opponent ? `vs. ${newGames[0].opponent} · ${fmtFull(newGames[0].date)}` : fmtFull(newGames[0].date),
+      hint: newGames[0].opponent ? `${newGames[0].opponent} · ${fmtFull(newGames[0].date)}` : fmtFull(newGames[0].date),
       target: 'sliderGames'
     });
   }
@@ -837,6 +837,7 @@ function renderHome() {
               <div style="font-size:12px;color:rgba(0,0,0,.6);margin-top:4px">
                 <i class="fas fa-clock" style="opacity:.7;margin-right:3px"></i>Treffpunkt: ${g.time||'?'}
                 ${g.location ? ` · <i class="fas fa-location-dot" style="opacity:.7;margin-right:3px"></i>${escHtml(g.location)}` : ''}
+                ${g.notes ? `<div style="margin-top:4px;font-size:12px;opacity:.8"><i class="fas fa-circle-info" style="margin-right:3px"></i>${escHtml(g.notes)}</div>` : ''}
               </div>
             </div>
             <button onclick="event.stopPropagation();calBtn(this)" data-title="FC Niksar -${(g.opponent||'').replace(/"/g,'')}" data-date="${g.date||''}" data-time="${g.time||''}" data-loc="${(g.location||'').replace(/"/g,'')}" data-dur="120" style="background:rgba(0,0,0,.1);border:1.5px solid rgba(0,0,0,.15);border-radius:8px;padding:6px 8px;font-size:11px;color:rgba(0,0,0,.6);cursor:pointer;white-space:nowrap;flex-shrink:0">
@@ -1798,30 +1799,48 @@ function renderSpieleTab(c) {
         </div>
         <div style="display:flex;gap:6px">
           <button class="btn-sm" style="background:#EEF2FF;color:#0A2540;flex:1" onclick="gameDetailModal('${g.id}')"><i class="fa fa-users"></i> Kader / Ergebnis</button>
+          <button class="btn-sm" style="background:#EFF6FF;color:#1D4ED8" onclick="addGameModal('${g.id}')"><i class="fa fa-pen"></i></button>
           <button class="btn-sm" style="background:#FEE2E2;color:#991B1B" onclick="deleteGame('${g.id}')"><i class="fa fa-trash"></i></button>
         </div>
       </div>`;
     }).join('')}`;
 }
 
-function addGameModal() {
-  const today = new Date().toISOString().slice(0,10);
-  showModal(`<div class="modal-handle"></div>
-    <div style="font-size:18px;font-weight:700;margin-bottom:16px">Spiel hinzufügen</div>
-    <input id="gOpp" class="input-field" placeholder="Gegner" style="margin-bottom:10px">
-    <input id="gDate" class="input-field" type="date" value="${today}" style="margin-bottom:10px">
-    <input id="gTime" class="input-field" type="text" placeholder="Treffpunkt (z.B. 10:00 Uhr am Sportplatz)" style="margin-bottom:10px">
-    <input id="gLoc" class="input-field" placeholder="Ort" style="margin-bottom:16px">
-    <button class="btn-primary" onclick="saveGame()">Spiel speichern</button>`);
+function formatTreffpunkt(val) {
+  if (!val) return '';
+  val = val.trim();
+  // "10" → "10:00 Uhr", "10:30" → "10:30 Uhr", already has "Uhr" → keep
+  if (/^\d{1,2}$/.test(val)) return val.padStart(2,'0') + ':00 Uhr';
+  if (/^\d{1,2}:\d{2}$/.test(val)) return val + ' Uhr';
+  return val;
 }
 
-function saveGame() {
+function addGameModal(editId) {
+  const today = new Date().toISOString().slice(0,10);
+  const g = editId ? STATE.games.find(x => x.id === editId) : null;
+  showModal(`<div class="modal-handle"></div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:16px">${g ? 'Spiel bearbeiten' : 'Spiel hinzufügen'}</div>
+    <input id="gOpp" class="input-field" placeholder="Bezeichnung (z.B. Heimspiel FC Niksar)" value="${g ? escHtml(g.opponent||'') : ''}" style="margin-bottom:10px">
+    <input id="gDate" class="input-field" type="date" value="${g ? g.date : today}" style="margin-bottom:10px">
+    <input id="gTime" class="input-field" type="text" placeholder="Treffpunkt (z.B. 10 oder 10:30)" value="${g ? escHtml(g.time||'') : ''}" onblur="this.value=formatTreffpunkt(this.value)" style="margin-bottom:10px">
+    <input id="gLoc" class="input-field" placeholder="Ort" value="${g ? escHtml(g.location||'') : ''}" style="margin-bottom:10px">
+    <textarea id="gNotes" class="input-field" placeholder="Hinweise (optional)" rows="2" style="margin-bottom:16px;resize:none">${g ? escHtml(g.notes||'') : ''}</textarea>
+    <button class="btn-primary" onclick="saveGame('${editId||''}')">${g ? 'Änderungen speichern' : 'Spiel speichern'}</button>`);
+}
+
+function saveGame(editId) {
   const opponent = document.getElementById('gOpp')?.value.trim();
   const date = document.getElementById('gDate')?.value;
-  const time = document.getElementById('gTime')?.value;
+  const time = formatTreffpunkt(document.getElementById('gTime')?.value || '');
   const location = document.getElementById('gLoc')?.value.trim();
-  if(!opponent || !date){ alert('Gegner und Datum eingeben'); return; }
-  notifyAll('⚽ Neues Spiel!','vs. '+(opponent||'')+' am '+(date||''));db.ref('/games').push({ opponent, date, time:time||'', location:location||'', squad:{}, result:'', createdAt: Date.now() });
+  const notes = document.getElementById('gNotes')?.value.trim();
+  if(!opponent || !date){ alert('Bezeichnung und Datum eingeben'); return; }
+  if(editId) {
+    db.ref('/games/' + editId).update({ opponent, date, time, location:location||'', notes:notes||'' });
+  } else {
+    notifyAll('⚽ Neues Spiel!', opponent + ' am ' + date);
+    db.ref('/games').push({ opponent, date, time, location:location||'', notes:notes||'', squad:{}, result:'', createdAt: Date.now() });
+  }
   closeModal();
 }
 
