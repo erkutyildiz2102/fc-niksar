@@ -477,10 +477,22 @@ function showApp() {
 function fixChatHeight() {
   const nav = document.getElementById('bottomNav');
   const chat = document.getElementById('chatPage');
-  if (nav && chat) {
-    const h = nav.getBoundingClientRect().height;
-    chat.style.bottom = (h || 65) + 'px';
+  if (!nav || !chat) return;
+  const navH = nav.getBoundingClientRect().height || 65;
+  if (window.visualViewport) {
+    const vv = window.visualViewport;
+    const offsetFromBottom = window.innerHeight - vv.height - vv.offsetTop;
+    chat.style.top = '62px';
+    chat.style.bottom = Math.max(navH, offsetFromBottom + navH) + 'px';
+  } else {
+    chat.style.bottom = navH + 'px';
   }
+  const msgs = document.getElementById('chatMessages');
+  if (msgs) setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 50);
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', fixChatHeight);
+  window.visualViewport.addEventListener('scroll', fixChatHeight);
 }
 window.addEventListener('resize', fixChatHeight);
 [100, 300, 600, 1000].forEach(t => setTimeout(fixChatHeight, t));
