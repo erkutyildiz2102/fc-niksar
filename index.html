@@ -255,29 +255,7 @@ const APP_VERSION = '1.5';
 
 if ('serviceWorker' in navigator) {
   // Network-first Service Worker: immer frische HTML, Fallback auf Cache wenn offline
-  const swCode = `
-    const CACHE = 'fcn-${APP_VERSION}';
-    self.addEventListener('install', e => {
-      self.skipWaiting();
-      e.waitUntil(caches.open(CACHE).then(c => c.addAll([location.href])));
-    });
-    self.addEventListener('activate', e => {
-      e.waitUntil(
-        caches.keys().then(keys => Promise.all(
-          keys.filter(k => k !== CACHE).map(k => caches.delete(k))
-        )).then(() => self.clients.claim())
-      );
-    });
-    self.addEventListener('fetch', e => {
-      if(e.request.mode === 'navigate') {
-        // HTML immer frisch vom Netz holen
-        e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-      } else {
-        e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => new Response('Offline',{status:503}))));
-      }
-    });
-  `;
-  navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode],{type:'application/javascript'}))).then(reg => {
+    navigator.serviceWorker.register('/fc-niksar/sw.js').then(reg => {
     // Wenn neuer Service Worker wartet → Update-Banner zeigen
     reg.addEventListener('updatefound', () => {
       const newSW = reg.installing;
