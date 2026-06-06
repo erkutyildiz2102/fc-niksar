@@ -1057,18 +1057,18 @@ function setRsvpHome(tid, pid, status) {
   renderTermine();
   // Firebase schreiben (im Hintergrund)
   db.ref('/trainings/' + tid + '/attendances/' + pid).set(status).then(() => {
-    // Firebase bestätigt → lokalen Override entfernen
+    // Firebase bestätigt → STATE nochmal aktualisieren und neu rendern
+    const t2 = STATE.trainings.find(x => x.id === tid);
+    if (t2) { t2.attendances = t2.attendances || {}; t2.attendances[pid] = status; }
+    renderHome();
+    renderTermine();
+    // Erst jetzt lokalen Override entfernen
     if (window._localAtt) delete window._localAtt[tid + '_' + pid];
   });
 }
 
 function setRsvp(tid, pid, status) {
-  // Sofort lokal updaten
-  const t = STATE.trainings.find(x => x.id === tid);
-  if (t) { t.attendances = t.attendances || {}; t.attendances[pid] = status; }
-  renderTermine();
-  renderHome();
-  db.ref('/trainings/' + tid + '/attendances/' + pid).set(status);
+  setRsvpHome(tid, pid, status);
 }
 
 // ---- KALENDER EXPORT ----
