@@ -834,10 +834,10 @@ function renderHome() {
             <div style="flex:1;min-width:0">
               <div style="font-size:10px;font-weight:700;color:rgba(0,0,0,.45);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">⚽ Spiel${isNew(g.createdAt)?' <span style="background:#EF4444;color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:4px">NEU</span>':''}</div>
               <div style="font-size:15px;font-weight:800;color:#1F2937;line-height:1.2">${escHtml(g.opponent||'?')}</div>
-              <div style="font-size:12px;color:rgba(0,0,0,.6);margin-top:4px">
-                <i class="fas fa-clock" style="opacity:.7;margin-right:3px"></i>Treffpunkt: ${g.time||'?'}
-                ${g.location ? ` · <i class="fas fa-location-dot" style="opacity:.7;margin-right:3px"></i>${escHtml(g.location)}` : ''}
-                ${g.notes ? `<div style="margin-top:4px;font-size:12px;opacity:.8"><i class="fas fa-circle-info" style="margin-right:3px"></i>${escHtml(g.notes)}</div>` : ''}
+              <div style="font-size:12px;color:#fff;margin-top:4px;font-weight:700">
+                <i class="fas fa-clock" style="opacity:.8;margin-right:3px"></i>Treffpunkt: ${g.time||'?'}
+                ${g.location ? ` · <i class="fas fa-location-dot" style="opacity:.8;margin-right:3px"></i>${escHtml(g.location)}` : ''}
+                ${g.notes ? `<div style="margin-top:4px;font-size:12px;font-weight:400;opacity:.9"><i class="fas fa-circle-info" style="margin-right:3px"></i>${escHtml(g.notes)}</div>` : ''}
               </div>
             </div>
             <button onclick="event.stopPropagation();calBtn(this)" data-title="FC Niksar -${(g.opponent||'').replace(/"/g,'')}" data-date="${g.date||''}" data-time="${g.time||''}" data-loc="${(g.location||'').replace(/"/g,'')}" data-dur="120" style="background:rgba(0,0,0,.1);border:1.5px solid rgba(0,0,0,.15);border-radius:8px;padding:6px 8px;font-size:11px;color:rgba(0,0,0,.6);cursor:pointer;white-space:nowrap;flex-shrink:0">
