@@ -164,6 +164,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
   <div id="homePage" class="page active"></div>
   <div id="terminePage" class="page"></div>
+  <div id="teamPage" class="page"></div>
   <div id="chatPage"></div>
   <div id="galeriePage" class="page"></div>
   <div id="trainerPage" class="page" style="padding:0;gap:0"></div>
@@ -171,6 +172,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <nav id="bottomNav">
     <button class="nav-btn active" data-page="home" onclick="switchPage('home')"><i class="fa fa-home"></i><span>Start</span></button>
     <button class="nav-btn" data-page="termine" onclick="switchPage('termine')"><i class="fas fa-calendar-days"></i><span>Termine</span></button>
+    <button class="nav-btn" data-page="team" onclick="switchPage('team')"><i class="fas fa-shirt"></i><span>Team</span></button>
     <button class="nav-btn" data-page="chat" onclick="switchPage('chat')"><i class="fa fa-comments"></i><span>Chat</span><span id="chatBadge" class="badge" style="display:none">0</span></button>
     <button class="nav-btn" data-page="galerie" onclick="switchPage('galerie')"><i class="fa fa-images"></i><span>Galerie</span></button>
     <button class="nav-btn" data-page="trainer" onclick="switchPage('trainer')"><i class="fas fa-user-tie"></i><span>Trainer</span></button>
@@ -350,6 +352,7 @@ function onDataChange() {
   renderHome();
   renderTermine();
   if(currentPage==='trainer') renderTrainer();
+  if(currentPage==='team') renderTeam();
   if(document.getElementById('profileSetup').style.display !== 'none') renderSetupPlayers();
 }
 
@@ -523,6 +526,7 @@ function switchPage(page) {
     fixChatHeight();
     setTimeout(() => { fixChatHeight(); const c = document.getElementById('chatMessages'); if(c) c.scrollTop = c.scrollHeight; }, 100);
   }
+  else if(page === 'team') renderTeam();
   else if(page === 'galerie') renderGalerie();
   else if(page === 'trainer') renderTrainer();
 }
@@ -1383,6 +1387,81 @@ function sendChat() {
   notifyAll('💬 Neue Nachricht', author + ': ' + text);
 }
 
+// ---- TEAM ----
+function renderTeam() {
+  const page = document.getElementById('teamPage');
+  if(!page) return;
+
+  if(!STATE.players.length) {
+    page.innerHTML = `<div style="text-align:center;padding:60px 20px;color:#9CA3AF"><div style="font-size:48px">👕</div><div style="font-weight:700;margin-top:12px">Noch keine Spieler</div></div>`;
+    return;
+  }
+
+  // Spieler mit Geburtstag nach Datum sortieren, ohne Geburtstag nach Nummer
+  const withBirthday    = STATE.players.filter(p => p.birthday).sort((a,b) => a.birthday.localeCompare(b.birthday));
+  const withoutBirthday = STATE.players.filter(p => !p.birthday).sort((a,b) => (parseInt(a.number,10)||999)-(parseInt(b.number,10)||999));
+  const sorted = [...withBirthday, ...withoutBirthday];
+
+  const today = new Date();
+  const todayMMDD = String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+
+  function fmtBirthday(bd) {
+    if(!bd) return null;
+    const d = new Date(bd + 'T12:00:00');
+    const days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+    const months = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+    return `${d.getDate()}. ${months[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  function isToday(bd) {
+    if(!bd) return false;
+    return bd.slice(5) === todayMMDD;
+  }
+
+  function daysUntilBirthday(bd) {
+    if(!bd) return null;
+    const now = new Date(); now.setHours(0,0,0,0);
+    const mm = parseInt(bd.slice(5,7),10)-1;
+    const dd = parseInt(bd.slice(8,10),10);
+    let next = new Date(now.getFullYear(), mm, dd);
+    if(next < now) next = new Date(now.getFullYear()+1, mm, dd);
+    return Math.round((next - now) / 86400000);
+  }
+
+  page.innerHTML = `
+    <div style="padding:4px 0 8px">
+      <div class="section-title">Mannschaft (${sorted.length} Spieler)</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${sorted.map(p => {
+        const bd = fmtBirthday(p.birthday);
+        const today_bd = isToday(p.birthday);
+        const daysLeft = daysUntilBirthday(p.birthday);
+        const soonBirthday = daysLeft !== null && daysLeft <= 7 && daysLeft > 0;
+        return `<div style="background:#fff;border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 6px rgba(0,0,0,.07);${today_bd ? 'border:2px solid #F59E0B;' : ''}">
+          <div style="position:relative;flex-shrink:0">
+            <div style="width:58px;height:58px;border-radius:50%;overflow:hidden;border:2.5px solid ${today_bd ? '#F59E0B' : '#E5E7EB'}">
+              ${p.photo
+                ? `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">`
+                : `<div style="width:100%;height:100%;background:linear-gradient(135deg,#0A2540,#1e4d8c);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff">${(p.name||'?')[0].toUpperCase()}</div>`}
+            </div>
+            <div style="position:absolute;bottom:-3px;right:-3px;background:#0A2540;color:#fff;font-size:10px;font-weight:800;padding:2px 5px;border-radius:6px;line-height:1.2">${p.number||'?'}</div>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;font-weight:800;color:#1F2937;display:flex;align-items:center;gap:6px">
+              ${escHtml(p.name||'')}
+              ${today_bd ? '<span style="font-size:16px">🎉</span>' : ''}
+              ${soonBirthday ? `<span style="font-size:11px;background:#FEF3C7;color:#92400E;padding:2px 7px;border-radius:10px;font-weight:700">in ${daysLeft} Tag${daysLeft===1?'':'en'}</span>` : ''}
+            </div>
+            ${bd
+              ? `<div style="font-size:13px;color:#6B7280;margin-top:3px;display:flex;align-items:center;gap:4px"><i class="fas fa-cake-candles" style="font-size:12px;color:#F59E0B"></i>${bd}</div>`
+              : `<div style="font-size:12px;color:#D1D5DB;margin-top:3px;font-style:italic">Kein Geburtstag hinterlegt</div>`}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
 // ---- GALLERY ----
 function renderGalerie() {
   const page = document.getElementById('galeriePage');
@@ -1396,7 +1475,10 @@ function renderGalerie() {
       </label>
     </div>
     ${STATE.photos.length ? `<div class="photo-grid">${STATE.photos.map(p =>
-      `<img src="${p.data}" class="photo-thumb" onclick="viewPhoto('${p.id}')" alt="${escHtml(p.cap||'')}">`
+      `<div style="position:relative;display:inline-block;line-height:0">
+        <img src="${p.data}" class="photo-thumb" onclick="viewPhoto('${p.id}')" alt="${escHtml(p.cap||'')}">
+        ${trainerLoggedIn ? `<button onclick="event.stopPropagation();if(confirm('Foto löschen?'))deletePhoto('${p.id}')" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);border:none;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:11px"><i class="fa fa-trash"></i></button>` : ''}
+      </div>`
     ).join('')}</div>` :
     `<div style="text-align:center;padding:60px 20px;color:#9CA3AF"><div style="font-size:48px">📷</div><div style="font-weight:700;margin-top:12px">Noch keine Fotos</div><div style="font-size:13px;margin-top:4px">Lade das erste Foto hoch!</div></div>`}`;
 }
