@@ -1777,6 +1777,21 @@ function renderTrainerTab() {
   else if(tab==='einstellungen') renderEinstellungenTab(c);
 }
 
+// ---- ABWESENHEITEN TOGGLE ----
+if (window._absOverviewOpen === undefined) window._absOverviewOpen = true;
+function toggleAbsOverview() {
+  window._absOverviewOpen = !window._absOverviewOpen;
+  const body = document.getElementById('absOverviewBody');
+  const chevron = document.getElementById('absOverviewChevron');
+  if (body) {
+    body.style.maxHeight = window._absOverviewOpen ? '2000px' : '0';
+    body.style.marginTop = window._absOverviewOpen ? '10px' : '0';
+  }
+  if (chevron) {
+    chevron.className = 'fas fa-chevron-' + (window._absOverviewOpen ? 'up' : 'down');
+  }
+}
+
 // ---- SPIELER TAB ----
 function renderSpielerTab(c) {
   const sorted = [...STATE.players].sort((a,b) => (parseInt(a.number)||999) - (parseInt(b.number)||999));
@@ -1825,8 +1840,13 @@ function renderSpielerTab(c) {
     <button class="btn-primary" onclick="addPlayerModal()"><i class="fa fa-plus"></i> Spieler hinzufügen</button>
 
     <div style="background:#FFF8F0;border:1.5px solid #FED7AA;border-radius:14px;padding:14px;margin-bottom:4px">
-      <div style="font-size:14px;font-weight:800;color:#1F2937;margin-bottom:10px">🗓️ Abwesenheiten <span style="background:#F59E0B;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:4px">${upcomingAbs.length}</span></div>
-      ${absSection}
+      <div onclick="toggleAbsOverview()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none">
+        <div style="font-size:14px;font-weight:800;color:#1F2937">🗓️ Abwesenheiten <span style="background:#F59E0B;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:4px">${upcomingAbs.length}</span></div>
+        <i id="absOverviewChevron" class="fas fa-chevron-${window._absOverviewOpen===false?'down':'up'}" style="color:#9CA3AF;font-size:13px;transition:transform .2s"></i>
+      </div>
+      <div id="absOverviewBody" style="margin-top:${window._absOverviewOpen===false?'0':'10px'};overflow:hidden;max-height:${window._absOverviewOpen===false?'0':'2000px'};transition:max-height .3s ease,margin-top .3s ease">
+        ${absSection}
+      </div>
     </div>
     ${sorted.map(p => `
     <div class="card" style="padding:12px;display:flex;align-items:center;gap:12px">
