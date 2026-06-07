@@ -642,7 +642,7 @@ function renderHome() {
     .map(g => ({...g, sortDate: parseSortDate(g.date, g.time)}))
     .sort((a,b) => a.sortDate - b.sortDate);
 
-  let html = `<div style="display:flex;flex-direction:column;gap:0">`;
+  let html = `<div style="display:flex;flex-direction:column;gap:0;padding-bottom:16px">`;
 
   // ── PROFILE STRIP ──
   if(profile) {
@@ -939,6 +939,14 @@ function renderHome() {
 
   html += `</div></div>`;
   page.innerHTML = html;
+
+  // ── SLIDER: immer auf erstes Element zurücksetzen ──
+  requestAnimationFrame(() => {
+    ['sliderTraining', 'sliderGames'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.scrollLeft = 0;
+    });
+  });
 
   // ── SLIDER DOT LISTENERS ──
   ['Training', 'Games'].forEach(suffix => {
