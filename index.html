@@ -121,40 +121,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </button>
 </div>
 
-<div id="profileSetup" style="display:none;background:linear-gradient(160deg,#0A2540 0%,#1e4d8c 100%);overflow-y:auto">
+<div id="profileSetup" style="display:none;background:#fff;overflow-y:auto">
   <div style="width:100%;max-width:420px;margin:0 auto;padding:40px 24px 40px">
 
     <!-- Logo & Titel -->
-    <div style="text-align:center;margin-bottom:36px">
-      <div style="width:72px;height:72px;background:rgba(255,255,255,.12);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;border:2px solid rgba(255,255,255,.2)">
-        <span style="font-size:36px">⚽</span>
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="width:88px;height:88px;border-radius:50%;background:#F3F4F6;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;overflow:hidden;border:3px solid #E5E7EB">
+        <img id="setupLogoImg" src="" style="display:none;width:100%;height:100%;object-fit:cover">
+        <span id="setupLogoEmoji" style="font-size:40px">⚽</span>
       </div>
-      <div style="font-size:28px;font-weight:900;color:#fff;letter-spacing:-.01em">Willkommen!</div>
-      <div style="color:rgba(255,255,255,.6);margin-top:6px;font-size:14px">FC Niksar F1/U9 · Einmalige Einrichtung</div>
+      <div style="font-size:26px;font-weight:900;color:#0A2540;letter-spacing:-.01em">Willkommen!</div>
+      <div style="color:#6B7280;margin-top:6px;font-size:14px">FC Niksar F1/U9 · Einmalige Einrichtung</div>
     </div>
 
     <!-- Name -->
     <div style="margin-bottom:20px">
-      <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Dein Name</div>
-      <input id="setupName" type="text" placeholder='z.B. "Sabrina – Lukas Mama"'
-        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);border-radius:12px;padding:14px 16px;font-size:15px;color:#fff;outline:none;-webkit-appearance:none"
-        onfocus="this.style.borderColor='rgba(255,255,255,.6)'" onblur="this.style.borderColor='rgba(255,255,255,.2)'"
-      >
+      <div style="font-size:12px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Dein Name</div>
+      <input id="setupName" class="input-field" type="text" placeholder='z.B. "Sabrina – Lukas Mama"' style="margin-bottom:0">
     </div>
 
     <!-- Kind wählen -->
-    <div style="margin-bottom:24px">
-      <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Dein Kind wählen</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:12px">Optional – kann später geändert werden</div>
+    <div style="margin-bottom:28px">
+      <div style="font-size:12px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Dein Kind wählen</div>
+      <div style="font-size:12px;color:#9CA3AF;margin-bottom:12px">Optional – kann später geändert werden</div>
       <div id="setupPlayerGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"></div>
-      <div id="setupNoPlayers" style="display:none;background:rgba(255,193,7,.15);border:1px solid rgba(255,193,7,.3);border-radius:10px;padding:12px 14px;font-size:13px;color:#FCD34D;margin-top:8px">
+      <div id="setupNoPlayers" style="display:none;background:#FEF3C7;border-radius:10px;padding:12px 14px;font-size:13px;color:#92400E;margin-top:8px">
         ℹ️ Noch keine Spieler – der Trainer trägt sie nach dem ersten Login ein.
       </div>
     </div>
 
     <!-- Button -->
     <button onclick="saveProfile()"
-      style="width:100%;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:.02em;box-shadow:0 4px 20px rgba(37,99,235,.4)">
+      style="width:100%;background:linear-gradient(135deg,#0A2540,#1e4d8c);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:.02em;box-shadow:0 4px 20px rgba(10,37,64,.3)">
       Fertig &amp; loslegen →
     </button>
   </div>
@@ -392,6 +390,10 @@ function applyLogo(logo) {
   const hi = document.getElementById('headerLogoImg');
   const he = document.getElementById('headerLogoEmoji');
   if(hi && he){ hi.src = logo; hi.style.display=''; he.style.display='none'; }
+  // Setup-Seite
+  const si = document.getElementById('setupLogoImg');
+  const se = document.getElementById('setupLogoEmoji');
+  if(si && se){ si.src = logo; si.style.display=''; se.style.display='none'; }
   // PWA App-Icon (Homescreen)
   setPWAManifest(logo);
 }
@@ -480,11 +482,11 @@ function renderSetupPlayers() {
   grid.style.display = 'grid';
   if(noP) noP.style.display = 'none';
   grid.innerHTML = [...STATE.players].sort((a,b)=>(parseInt(a.number)||999)-(parseInt(b.number)||999)).map(p => `
-    <div onclick="selectSetupPlayer('${p.id}')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:14px;cursor:pointer;transition:all .15s;background:${selectedSetupPlayer===p.id?'rgba(59,130,246,.35)':'rgba(255,255,255,.07)'};border:2px solid ${selectedSetupPlayer===p.id?'#3B82F6':'rgba(255,255,255,.12)'}">
-      ${p.photo ? `<img src="${p.photo}" style="width:46px;height:46px;border-radius:50%;object-fit:cover;border:2px solid ${selectedSetupPlayer===p.id?'#3B82F6':'rgba(255,255,255,.2)'}">` : `<div style="width:46px;height:46px;border-radius:50%;background:${selectedSetupPlayer===p.id?'#3B82F6':'rgba(255,255,255,.15)'};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff">${(p.name||'?')[0].toUpperCase()}</div>`}
-      <div style="font-size:11px;font-weight:700;color:${selectedSetupPlayer===p.id?'#93C5FD':'rgba(255,255,255,.5)'}">#${p.number||'?'}</div>
-      <div style="font-size:11px;font-weight:600;color:${selectedSetupPlayer===p.id?'#fff':'rgba(255,255,255,.8)'};text-align:center;line-height:1.2">${escHtml(p.name||'')}</div>
-      ${selectedSetupPlayer===p.id?'<div style="font-size:10px;color:#3B82F6;font-weight:700">✓ Gewählt</div>':''}
+    <div onclick="selectSetupPlayer('${p.id}')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:14px;cursor:pointer;background:${selectedSetupPlayer===p.id?'#EFF6FF':'#F9FAFB'};border:2px solid ${selectedSetupPlayer===p.id?'#3B82F6':'#E5E7EB'}">
+      ${p.photo ? `<img src="${p.photo}" style="width:46px;height:46px;border-radius:50%;object-fit:cover;border:2px solid ${selectedSetupPlayer===p.id?'#3B82F6':'#E5E7EB'}">` : `<div style="width:46px;height:46px;border-radius:50%;background:${selectedSetupPlayer===p.id?'#3B82F6':'#0A2540'};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff">${(p.name||'?')[0].toUpperCase()}</div>`}
+      <div style="font-size:11px;font-weight:700;color:${selectedSetupPlayer===p.id?'#2563EB':'#6B7280'}">#${p.number||'?'}</div>
+      <div style="font-size:11px;font-weight:600;color:${selectedSetupPlayer===p.id?'#1D4ED8':'#374151'};text-align:center;line-height:1.2">${escHtml(p.name||'')}</div>
+      ${selectedSetupPlayer===p.id?'<div style="font-size:10px;color:#2563EB;font-weight:700">✓ Gewählt</div>':''}
     </div>`).join('');
 }
 
