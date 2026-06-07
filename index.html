@@ -517,27 +517,39 @@ function fixChatHeight() {
 
   if (window.visualViewport) {
     const vv = window.visualViewport;
-    // Wie weit die Tastatur von unten ragt
-    const keyboardH = Math.max(0, window.innerHeight - vv.offsetTop - vv.height);
+    const keyboardH = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
     const keyboardOpen = keyboardH > 80;
 
     if (keyboardOpen) {
-      // Tastatur offen: Nav verstecken, Chat füllt bis Tastatur-Oberkante
-      if (nav) nav.style.transform = `translateY(${navH + 10}px)`;
+      if (nav) nav.style.transform = `translateY(200px)`;
+      chat.style.top = (62 + vv.offsetTop) + 'px';
       chat.style.bottom = keyboardH + 'px';
     } else {
-      // Tastatur zu: Nav wieder zeigen, Chat über Nav
       if (nav) nav.style.transform = '';
+      chat.style.top = '62px';
       chat.style.bottom = navH + 'px';
     }
   } else {
     if (nav) nav.style.transform = '';
+    chat.style.top = '62px';
     chat.style.bottom = navH + 'px';
   }
 
   const msgs = document.getElementById('chatMessages');
   if (msgs) setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 50);
 }
+
+function setupChatKeyboard() {
+  const inp = document.getElementById('chatInput');
+  if (!inp) return;
+  inp.addEventListener('focus', () => {
+    [100, 300, 500, 700].forEach(t => setTimeout(fixChatHeight, t));
+  });
+  inp.addEventListener('blur', () => {
+    [100, 300].forEach(t => setTimeout(fixChatHeight, t));
+  });
+}
+
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', fixChatHeight);
   window.visualViewport.addEventListener('scroll', fixChatHeight);
@@ -1306,6 +1318,7 @@ function renderChat() {
     </div>`;
 
   setTimeout(() => { const c = document.getElementById('chatMessages'); if(c) c.scrollTop = c.scrollHeight; }, 80);
+  setTimeout(setupChatKeyboard, 100);
 }
 
 function toggleEmojiPicker() {
