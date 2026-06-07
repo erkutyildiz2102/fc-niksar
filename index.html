@@ -1765,10 +1765,44 @@ function renderTrainingTab(c) {
         </div>
         <div style="display:flex;gap:6px">
           <button class="btn-sm" style="background:#EEF2FF;color:#0A2540;flex:1" onclick="trainingDetailModal('${t.id}')"><i class="fa fa-eye"></i> Details</button>
+          <button class="btn-sm" style="background:#EFF6FF;color:#1D4ED8" onclick="editTrainingModal('${t.id}')"><i class="fa fa-pen"></i></button>
           <button class="btn-sm" style="background:#FEE2E2;color:#991B1B" onclick="deleteTraining('${t.id}')"><i class="fa fa-trash"></i></button>
         </div>
       </div>`;
     }).join('')}`;
+}
+
+function editTrainingModal(id) {
+  const t = STATE.trainings.find(x => x.id === id);
+  if(!t) return;
+  showModal(`<div class="modal-handle"></div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:16px">Training bearbeiten</div>
+    <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Datum</div>
+    <input id="etDate" class="input-field" type="date" value="${t.date||''}" style="margin-bottom:10px">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <div style="flex:1">
+        <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Von</div>
+        <input id="etTime" class="input-field" type="time" value="${t.time||'17:00'}">
+      </div>
+      <div style="flex:1">
+        <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Bis</div>
+        <input id="etTimeTo" class="input-field" type="time" value="${t.timeTo||'18:30'}">
+      </div>
+    </div>
+    <input id="etLocation" class="input-field" placeholder="Ort" value="${escHtml(t.location||'')}" style="margin-bottom:10px">
+    <textarea id="etNotes" class="input-field" placeholder="Hinweise (optional)" rows="2" style="margin-bottom:16px;resize:none">${escHtml(t.notes||'')}</textarea>
+    <button class="btn-primary" onclick="saveTrainingEdit('${id}')">Änderungen speichern</button>`);
+}
+
+function saveTrainingEdit(id) {
+  const date     = document.getElementById('etDate')?.value;
+  const time     = document.getElementById('etTime')?.value || '';
+  const timeTo   = document.getElementById('etTimeTo')?.value || '';
+  const location = document.getElementById('etLocation')?.value.trim() || '';
+  const notes    = document.getElementById('etNotes')?.value.trim() || '';
+  if(!date){ alert('Datum eingeben'); return; }
+  db.ref('/trainings/' + id).update({ date, time, timeTo, location, notes });
+  closeModal();
 }
 
 function addTrainingModal() {
