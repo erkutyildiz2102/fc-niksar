@@ -744,11 +744,12 @@ function renderHome() {
     const conf = g.squadConfirm?.[pid];
     return !conf || conf === 'open'; // nominiert aber noch nicht geantwortet
   }) : [];
-  if(openGameRsvp.length > 0 && newGames.length === 0) {
+  if(openGameRsvp.length > 0) {
     const first = openGameRsvp[0];
     banners.push({
       bg: 'linear-gradient(135deg,#B45309,#D97706)',
       icon: 'fas fa-futbol',
+      key: `gameRsvp_${first.id}`,
       msg: `⚽ Rückmeldung fürs Spiel offen!`,
       hint: `${escHtml(first.opponent||'?')} · ${fmtFull(first.date)} · ${first.time||'?'} Uhr`,
       target: 'sliderGames'
