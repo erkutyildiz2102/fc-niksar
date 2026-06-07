@@ -353,7 +353,11 @@ function initListeners() {
   });
   db.ref('/chat').on('value', s => {
     STATE.chat = toArr(s.val()).sort((a,b) => (a.ts||0) - (b.ts||0));
-    renderChat();
+    if (currentPage === 'chat' && chatInputWasFocused) {
+      appendNewChatMessages();
+    } else {
+      renderChat();
+    }
     updateChatBadge();
   });
   db.ref('/photos').on('value', s => { STATE.photos = toArr(s.val()).sort((a,b) => (b.ts||0)-(a.ts||0)); if(currentPage==='galerie') renderGalerie(); });
@@ -1211,7 +1215,50 @@ function getFileIcon(name) {
   return 'fas fa-file';
 }
 
+let _lastRenderedChatCount = 0;
+
+function appendNewChatMessages() {
+  const container = document.getElementById('chatMessages');
+  if (!container) { renderChat(); return; }
+
+  const myName = getChatName();
+  const myReactions = JSON.parse(LS('myReactions') || '{}');
+  const allMsgs = STATE.chat;
+  const newMsgs = allMsgs.slice(_lastRenderedChatCount);
+  if (!newMsgs.length) return;
+  _lastRenderedChatCount = allMsgs.length;
+
+  newMsgs.forEach(m => {
+    const mine = myName && m.author === myName;
+    const timeStr = new Date(m.ts||0).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    let content = '';
+    if (m.image) {
+      content = `<img src="${m.image}" onclick="viewChatImage('${m.id}')" style="max-width:220px;max-height:200px;border-radius:8px;display:block;cursor:pointer;object-fit:cover">`;
+    } else {
+      content = `<span style="font-size:14px;line-height:1.45;word-break:break-word">${escHtml(m.text||'')}</span>`;
+    }
+    const div = document.createElement('div');
+    div.style.cssText = `display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};max-width:85%;${mine?'align-self:flex-end':'align-self:flex-start'}`;
+    div.innerHTML = `
+      ${!mine?`<div style="font-size:12px;font-weight:700;color:#075E54;margin-bottom:3px;padding:0 4px">${escHtml(m.author||'?')}</div>`:''}
+      <div style="display:flex;align-items:flex-end;gap:5px;${mine?'flex-direction:row-reverse':''}">
+        <div class="${mine?'wa-mine':'wa-other'}" style="padding:8px 10px;position:relative;max-width:280px">
+          ${content}
+          <div style="display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-top:4px">
+            <span style="font-size:10px;color:${mine?'#667781':'#9CA3AF'}">${timeStr}</span>
+            ${mine?'<i class="fas fa-check-double" style="font-size:10px;color:#53bdeb"></i>':''}
+          </div>
+        </div>
+        <button onclick="openReactionPicker('${m.id}')" style="background:none;border:none;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.35;color:#666">😊</button>
+      </div>`;
+    container.appendChild(div);
+  });
+
+  container.scrollTop = container.scrollHeight;
+}
+
 function renderChat() {
+  _lastRenderedChatCount = 0;
   const page = document.getElementById('chatPage');
   if(!page) return;
   const myName = getChatName();
@@ -1320,15 +1367,9 @@ function renderChat() {
       <button onclick="sendChat()" style="width:44px;height:44px;border-radius:50%;border:none;background:#075E54;color:#fff;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px"><i class="fas fa-paper-plane"></i></button>
     </div>`;
 
+  _lastRenderedChatCount = STATE.chat.length;
   setTimeout(() => { const c = document.getElementById('chatMessages'); if(c) c.scrollTop = c.scrollHeight; }, 80);
   setTimeout(setupChatKeyboard, 100);
-  // Fokus wiederherstellen falls Tastatur offen war (z.B. nach Nachricht senden)
-  if (chatInputWasFocused) {
-    setTimeout(() => {
-      const inp = document.getElementById('chatInput');
-      if (inp) { inp.focus(); fixChatHeight(); }
-    }, 50);
-  }
 }
 
 function toggleEmojiPicker() {
