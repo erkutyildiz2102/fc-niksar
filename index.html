@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <title>FC Niksar · F1/U9</title>
 <meta name="theme-color" content="#0A2540">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -516,10 +516,15 @@ function showApp() {
 function fixChatHeight() {
   const chat = document.getElementById('chatPage');
   if (!chat || currentPage !== 'chat') return;
+  const mainHeader = document.querySelector('#app > header');
+  const headerH = mainHeader ? mainHeader.getBoundingClientRect().bottom : 62;
+  // Mit interactive-widget=resizes-content schrumpft window.innerHeight automatisch
+  // Fallback: visualViewport für ältere iOS
   const vv = window.visualViewport;
-  const kb = vv ? Math.max(0, window.innerHeight - vv.height) : 0;
-  chat.style.bottom = kb + 'px';
-  chat.style.height = '';
+  const visH = vv ? vv.height : window.innerHeight;
+  chat.style.top = headerH + 'px';
+  chat.style.height = (visH - headerH) + 'px';
+  chat.style.bottom = 'auto';
 }
 
 function setupChatKeyboard() {
@@ -553,10 +558,15 @@ function switchPage(page) {
   const nav = document.getElementById('bottomNav');
   const mainHeader = document.querySelector('#app > header');
   const chatPageEl = document.getElementById('chatPage');
-  // Im Chat: Nav + Hauptheader verstecken, chatPage auf top:0 setzen
+  // Im Chat: nur Nav verstecken, Hauptheader bleibt immer sichtbar
   if (nav) nav.style.display = page === 'chat' ? 'none' : '';
-  if (mainHeader) mainHeader.style.display = page === 'chat' ? 'none' : '';
-  if (chatPageEl) chatPageEl.style.top = page === 'chat' ? '0' : '62px';
+  if (chatPageEl) {
+    // Top dynamisch von echter Header-Höhe berechnen (nicht hartkodiert 62px)
+    const headerH = mainHeader ? mainHeader.getBoundingClientRect().bottom : 62;
+    chatPageEl.style.top = headerH + 'px';
+    chatPageEl.style.bottom = '0';
+    chatPageEl.style.height = 'auto';
+  }
   document.querySelectorAll('.page, #chatPage').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById(page + 'Page');
