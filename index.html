@@ -517,8 +517,9 @@ function fixChatHeight() {
   const chat = document.getElementById('chatPage');
   if (!chat || currentPage !== 'chat') return;
   const vv = window.visualViewport;
-  const h = vv ? vv.height : window.innerHeight;
-  chat.style.height = (h - 62) + 'px';
+  const kb = vv ? Math.max(0, window.innerHeight - vv.height) : 0;
+  chat.style.bottom = kb + 'px';
+  chat.style.height = '';
 }
 
 function setupChatKeyboard() {
