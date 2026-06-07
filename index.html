@@ -1605,10 +1605,9 @@ function renderSpielerTab(c) {
       </div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:15px">${escHtml(p.name||'')}</div>
-        <div style="font-size:12px;color:#6B7280">
-          #${p.number||'?'}
-          ${p.birthday ? ' · 🎂 '+new Date(p.birthday+'T12:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : ''}
-          ${p.passNr ? ' · 🪪 '+escHtml(p.passNr) : ''}
+        <div style="font-size:12px;color:#6B7280;line-height:1.6">
+          <div>Rückennummer #${p.number||'?'}${p.passNr ? ' · 🪪 '+escHtml(p.passNr) : ''}</div>
+          ${p.birthday ? `<div>🎂 ${new Date(p.birthday+'T12:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}</div>` : ''}
         </div>
       </div>
       <div style="background:#0A2540;color:#fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${p.number||'?'}</div>
