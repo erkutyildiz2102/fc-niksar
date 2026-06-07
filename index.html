@@ -517,14 +517,11 @@ function fixChatHeight() {
   const chat = document.getElementById('chatPage');
   if (!chat || currentPage !== 'chat') return;
   const mainHeader = document.querySelector('#app > header');
-  const headerH = mainHeader ? mainHeader.getBoundingClientRect().bottom : 62;
-  // Mit interactive-widget=resizes-content schrumpft window.innerHeight automatisch
-  // Fallback: visualViewport für ältere iOS
-  const vv = window.visualViewport;
-  const visH = vv ? vv.height : window.innerHeight;
+  // offsetHeight ist stabil – ändert sich NICHT wenn Tastatur aufgeht
+  const headerH = mainHeader ? mainHeader.offsetHeight : 62;
   chat.style.top = headerH + 'px';
-  chat.style.height = (visH - headerH) + 'px';
-  chat.style.bottom = 'auto';
+  chat.style.bottom = '0';
+  chat.style.height = 'auto';
 }
 
 function setupChatKeyboard() {
@@ -532,19 +529,14 @@ function setupChatKeyboard() {
   if (!inp) return;
   inp.addEventListener('focus', () => {
     chatInputWasFocused = true;
-    // Mehrfacher Retry damit iOS-Tastatur Zeit hat sich zu öffnen
-    setTimeout(fixChatHeight, 100);
-    setTimeout(fixChatHeight, 300);
-    setTimeout(fixChatHeight, 500);
+    // Nur scrollen – Höhe wird durch interactive-widget=resizes-content automatisch geregelt
     setTimeout(() => {
       const c = document.getElementById('chatMessages');
       if (c) c.scrollTop = c.scrollHeight;
-    }, 550);
+    }, 400);
   });
   inp.addEventListener('blur', () => {
     chatInputWasFocused = false;
-    setTimeout(fixChatHeight, 150);
-    setTimeout(fixChatHeight, 350);
   });
 }
 
@@ -561,8 +553,7 @@ function switchPage(page) {
   // Im Chat: nur Nav verstecken, Hauptheader bleibt immer sichtbar
   if (nav) nav.style.display = page === 'chat' ? 'none' : '';
   if (chatPageEl) {
-    // Top dynamisch von echter Header-Höhe berechnen (nicht hartkodiert 62px)
-    const headerH = mainHeader ? mainHeader.getBoundingClientRect().bottom : 62;
+    const headerH = mainHeader ? mainHeader.offsetHeight : 62;
     chatPageEl.style.top = headerH + 'px';
     chatPageEl.style.bottom = '0';
     chatPageEl.style.height = 'auto';
