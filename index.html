@@ -522,7 +522,7 @@ function fixChatHeight() {
 
     if (keyboardOpen) {
       if (nav) nav.style.transform = `translateY(200px)`;
-      chat.style.top = (62 + vv.offsetTop) + 'px';
+      chat.style.top = '62px';
       chat.style.bottom = keyboardH + 'px';
     } else {
       if (nav) nav.style.transform = '';
@@ -552,7 +552,7 @@ function setupChatKeyboard() {
 
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', fixChatHeight);
-  window.visualViewport.addEventListener('scroll', fixChatHeight);
+  // kein 'scroll' - das wuerde beim Chat-Scrollen alles verschieben
 }
 window.addEventListener('resize', fixChatHeight);
 [100, 300, 600, 1000].forEach(t => setTimeout(fixChatHeight, t));
