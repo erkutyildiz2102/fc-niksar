@@ -54,7 +54,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .wa-date-sep{text-align:center;margin:8px 0}
 .wa-date-sep span{background:rgba(255,255,255,.85);color:#667781;font-size:12px;font-weight:600;padding:4px 12px;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.1)}
 .wa-file{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.06);min-width:180px;cursor:pointer}
-.wa-input-bar{background:#F0F2F5;padding:8px 10px;display:flex;gap:6px;align-items:flex-end;flex-shrink:0}
+.wa-input-bar{background:#F0F2F5;padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;gap:6px;align-items:flex-end;flex-shrink:0}
 .wa-emoji-grid{display:none;background:#fff;border-top:1px solid #e5e7eb;padding:10px;flex-shrink:0}
 .wa-emoji-grid.open{display:block}
 /* legacy - keep for other pages */
@@ -527,11 +527,19 @@ function setupChatKeyboard() {
   if (!inp) return;
   inp.addEventListener('focus', () => {
     chatInputWasFocused = true;
+    // Mehrfacher Retry damit iOS-Tastatur Zeit hat sich zu öffnen
+    setTimeout(fixChatHeight, 100);
     setTimeout(fixChatHeight, 300);
+    setTimeout(fixChatHeight, 500);
+    setTimeout(() => {
+      const c = document.getElementById('chatMessages');
+      if (c) c.scrollTop = c.scrollHeight;
+    }, 550);
   });
   inp.addEventListener('blur', () => {
     chatInputWasFocused = false;
     setTimeout(fixChatHeight, 150);
+    setTimeout(fixChatHeight, 350);
   });
 }
 
@@ -1233,9 +1241,9 @@ function appendNewChatMessages() {
     container.appendChild(div);
   });
 
-  // Nur nach unten scrollen wenn User bereits unten war
-  const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
-  if (nearBottom) container.scrollTop = container.scrollHeight;
+  // Immer nach unten wenn Tastatur offen (Input fokussiert) oder User schon fast unten war
+  const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
+  if (nearBottom || chatInputWasFocused) container.scrollTop = container.scrollHeight;
 }
 
 function renderChat() {
@@ -1320,8 +1328,8 @@ function renderChat() {
   }
 
   page.innerHTML = `
-    <div style="background:#0A2540;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0">
-      <button onclick="switchPage('home')" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0;line-height:1;display:flex;align-items:center"><i class="fas fa-arrow-left"></i></button>
+    <div style="background:#0A2540;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;position:sticky;top:0;z-index:5">
+      <button onclick="switchPage('home')" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:4px 8px 4px 0;line-height:1;display:flex;align-items:center"><i class="fas fa-arrow-left"></i></button>
       <div style="flex:1;font-size:15px;font-weight:700;color:#fff">💬 Mannschafts-Chat</div>
     </div>
     <div id="chatMessages" style="flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch">
@@ -1473,6 +1481,11 @@ function sendChat() {
   emojiOpen = false;
   db.ref('/chat').push({ author, text, ts: Date.now() });
   notifyAll('💬 Neue Nachricht', author + ': ' + text);
+  // Sofort nach unten scrollen
+  setTimeout(() => {
+    const c = document.getElementById('chatMessages');
+    if (c) c.scrollTop = c.scrollHeight;
+  }, 80);
 }
 
 // ---- TEAM ----
