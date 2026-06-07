@@ -310,7 +310,7 @@ function showUpdateBanner() {
 
 // ---- Firebase Listeners ----
 function initListeners() {
-  db.ref('/players').on('value', s => { STATE.players = toArr(s.val()); onDataChange(); });
+  db.ref('/players').on('value', s => { STATE.players = toArr(s.val()).sort((a,b)=>(parseInt(a.number)||999)-(parseInt(b.number)||999)); onDataChange(); });
   db.ref('/trainings').on('value', s => {
     const arr = toArr(s.val()).sort((a,b)=>new Date(a.date)-new Date(b.date));
     if(prevTrainingCount >= 0 && arr.length > prevTrainingCount) {
@@ -456,7 +456,7 @@ function renderSetupPlayers() {
   }
   grid.style.display = 'grid';
   if(noP) noP.style.display = 'none';
-  grid.innerHTML = STATE.players.map(p => `
+  grid.innerHTML = [...STATE.players].sort((a,b)=>(parseInt(a.number)||999)-(parseInt(b.number)||999)).map(p => `
     <div class="player-chip ${selectedSetupPlayer===p.id?'selected':''}" onclick="selectSetupPlayer('${p.id}')">
       ${p.photo ? `<img src="${p.photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover">` : `<div class="avatar">${(p.name||'?')[0].toUpperCase()}</div>`}
       <div style="font-size:11px;font-weight:700">#${p.number||'?'}</div>
@@ -804,7 +804,7 @@ function renderHome() {
       const squadKeys    = Object.keys(g.squad||{}).filter(k=>g.squad[k]);
       const squadSet     = squadKeys.length > 0;
       const inSquad      = pid && squadKeys.includes(pid);
-      const squadPlayers = STATE.players.filter(p=>squadKeys.includes(p.id)).slice(0,6);
+      const squadPlayers = [...STATE.players].filter(p=>squadKeys.includes(p.id)).sort((a,b)=>(parseInt(a.number)||999)-(parseInt(b.number)||999)).slice(0,6);
       const extra        = squadKeys.length - squadPlayers.length;
 
       let childBadge = '';
@@ -1898,8 +1898,9 @@ function gameDetailModal(id) {
   const g = STATE.games.find(x => x.id === id);
   if(!g) return;
   const squadKeys = Object.keys(g.squad||{}).filter(k => g.squad[k]);
-  const inSquad   = STATE.players.filter(p => squadKeys.includes(p.id));
-  const notInSquad = STATE.players.filter(p => !squadKeys.includes(p.id));
+  const byNr = (a,b) => (parseInt(a.number)||999)-(parseInt(b.number)||999);
+  const inSquad    = [...STATE.players].filter(p =>  squadKeys.includes(p.id)).sort(byNr);
+  const notInSquad = [...STATE.players].filter(p => !squadKeys.includes(p.id)).sort(byNr);
 
   showModal(`<div class="modal-handle"></div>
     <div style="font-size:18px;font-weight:800;margin-bottom:2px;padding-right:36px">${escHtml(g.opponent||'?')}</div>
@@ -1962,7 +1963,7 @@ function renderStatistikTab(c) {
   if(!totalP) { c.innerHTML = `<div style="text-align:center;padding:40px;color:#9CA3AF"><div style="font-size:40px;margin-bottom:8px">📊</div><div>Noch keine Spieler</div></div>`; return; }
 
   // Per-player RSVP-based stats
-  const stats = STATE.players.map(p => {
+  const stats = [...STATE.players].sort((a,b)=>(parseInt(a.number)||999)-(parseInt(b.number)||999)).map(p => {
     const yesCount = STATE.trainings.filter(t => t.attendances?.[p.id] === 'yes').length;
     const noCount  = STATE.trainings.filter(t => t.attendances?.[p.id] === 'no').length;
     const gamesInSquad = STATE.games.filter(g => Object.keys(g.squad||{}).filter(k=>g.squad[k]).includes(p.id));
