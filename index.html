@@ -1511,20 +1511,25 @@ function renderTrainerTab() {
 
 // ---- SPIELER TAB ----
 function renderSpielerTab(c) {
+  const sorted = [...STATE.players].sort((a,b) => (parseInt(a.number)||999) - (parseInt(b.number)||999));
   c.innerHTML = `
     <button class="btn-primary" onclick="addPlayerModal()"><i class="fa fa-plus"></i> Spieler hinzufügen</button>
-    ${STATE.players.map(p => `
+    ${sorted.map(p => `
     <div class="card" style="padding:12px;display:flex;align-items:center;gap:12px">
-      <div style="position:relative;cursor:pointer;flex-shrink:0" onclick="editPlayerPhoto('${p.id}')">
+      <div style="position:relative;cursor:pointer;flex-shrink:0" onclick="editPlayer('${p.id}')">
         ${p.photo ? `<img src="${p.photo}" style="width:52px;height:52px;border-radius:50%;object-fit:cover">` :
           `<div class="avatar-lg">${(p.name||'?')[0].toUpperCase()}</div>`}
         <div style="position:absolute;bottom:0;right:0;background:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.25)">
-          <i class="fa fa-camera" style="font-size:9px;color:#0A2540"></i>
+          <i class="fa fa-pen" style="font-size:9px;color:#0A2540"></i>
         </div>
       </div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:15px">${escHtml(p.name||'')}</div>
-        <div style="font-size:12px;color:#6B7280">Rückennummer #${p.number||'?'}</div>
+        <div style="font-size:12px;color:#6B7280">
+          #${p.number||'?'}
+          ${p.birthday ? ' · 🎂 '+escHtml(p.birthday) : ''}
+          ${p.passNr ? ' · 🪪 '+escHtml(p.passNr) : ''}
+        </div>
       </div>
       <div style="background:#0A2540;color:#fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${p.number||'?'}</div>
       <button onclick="deletePlayer('${p.id}')" style="background:#FEE2E2;color:#991B1B;border:none;border-radius:8px;padding:8px 10px;cursor:pointer">
@@ -1545,7 +1550,10 @@ function addPlayerModal() {
       <input type="hidden" id="newPhotoData">
     </div>
     <input id="newPlayerName" class="input-field" placeholder="Name (z.B. Max Mustermann)" style="margin-bottom:10px">
-    <input id="newPlayerNumber" class="input-field" type="number" placeholder="Rückennummer" style="margin-bottom:16px">
+    <input id="newPlayerNumber" class="input-field" type="number" placeholder="Rückennummer" style="margin-bottom:10px">
+    <label style="font-size:12px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px">🎂 Geburtstag</label>
+    <input id="newPlayerBirthday" class="input-field" type="date" style="margin-bottom:10px">
+    <input id="newPlayerPassNr" class="input-field" placeholder="🪪 Passnummer (optional)" style="margin-bottom:16px">
     <button class="btn-primary" onclick="saveNewPlayer()">Spieler speichern</button>`);
 }
 
@@ -1567,37 +1575,67 @@ function saveNewPlayer() {
   const name = document.getElementById('newPlayerName')?.value.trim();
   const number = document.getElementById('newPlayerNumber')?.value.trim();
   const photo = document.getElementById('newPhotoData')?.value || null;
+  const birthday = document.getElementById('newPlayerBirthday')?.value || '';
+  const passNr = document.getElementById('newPlayerPassNr')?.value.trim() || '';
   if(!name){ alert('Name eingeben'); return; }
-  db.ref('/players').push({ name, number: number||'', photo, createdAt: Date.now() });
+  db.ref('/players').push({ name, number: number||'', photo, birthday, passNr, createdAt: Date.now() });
   closeModal();
 }
 
-function editPlayerPhoto(id) {
+function editPlayer(id) {
   const p = STATE.players.find(x => x.id === id);
   if(!p) return;
   showModal(`<div class="modal-handle"></div>
-    <div style="font-size:18px;font-weight:700;margin-bottom:16px">Foto: ${escHtml(p.name||'')}</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:16px">Spieler bearbeiten</div>
     <div style="text-align:center;margin-bottom:16px">
       <div id="editPhotoPreview" style="width:80px;height:80px;border-radius:50%;background:#e5e7eb;margin:0 auto;overflow:hidden">
         ${p.photo ? `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:32px">👤</div>'}
       </div>
       <label style="display:inline-block;margin-top:8px;color:#0A2540;font-size:13px;font-weight:600;cursor:pointer">
-        <i class="fa fa-camera"></i> Neues Foto
+        <i class="fa fa-camera"></i> Foto ändern
         <input type="file" accept="image/*" style="display:none" onchange="previewPhoto(this,'editPhotoPreview','editPhotoData')">
       </label>
       <input type="hidden" id="editPhotoData" value="${p.photo||''}">
     </div>
-    <button class="btn-primary" onclick="savePlayerPhoto('${id}')">Foto speichern</button>`);
+    <input id="editPlayerName" class="input-field" placeholder="Name" value="${escHtml(p.name||'')}" style="margin-bottom:10px">
+    <input id="editPlayerNumber" class="input-field" type="number" placeholder="Rückennummer" value="${escHtml(p.number||'')}" style="margin-bottom:10px">
+    <label style="font-size:12px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px">🎂 Geburtstag</label>
+    <input id="editPlayerBirthday" class="input-field" type="date" value="${p.birthday||''}" style="margin-bottom:10px">
+    <input id="editPlayerPassNr" class="input-field" placeholder="🪪 Passnummer (optional)" value="${escHtml(p.passNr||'')}" style="margin-bottom:16px">
+    <button class="btn-primary" onclick="savePlayerEdit('${id}')">Änderungen speichern</button>`);
 }
 
-function savePlayerPhoto(id) {
-  const data = document.getElementById('editPhotoData')?.value || null;
-  db.ref('/players/' + id + '/photo').set(data);
+function savePlayerEdit(id) {
+  const name = document.getElementById('editPlayerName')?.value.trim();
+  const number = document.getElementById('editPlayerNumber')?.value.trim();
+  const photo = document.getElementById('editPhotoData')?.value || null;
+  const birthday = document.getElementById('editPlayerBirthday')?.value || '';
+  const passNr = document.getElementById('editPlayerPassNr')?.value.trim() || '';
+  if(!name){ alert('Name eingeben'); return; }
+  db.ref('/players/' + id).update({ name, number: number||'', photo, birthday, passNr });
   closeModal();
 }
 
 function deletePlayer(id) {
-  if(confirm('Spieler wirklich löschen?')) db.ref('/players/' + id).remove();
+  if(!confirm('Spieler wirklich löschen? Alle Zu-/Absagen werden ebenfalls entfernt.')) return;
+  // Spieler löschen
+  db.ref('/players/' + id).remove();
+  // Attendances aus allen Trainings entfernen
+  STATE.trainings.forEach(t => {
+    if(t.attendances && t.attendances[id] !== undefined) {
+      db.ref('/trainings/' + t.id + '/attendances/' + id).remove();
+    }
+  });
+  // Squad-Einträge aus allen Spielen entfernen
+  STATE.games.forEach(g => {
+    if(g.squad && g.squad[id] !== undefined) {
+      db.ref('/games/' + g.id + '/squad/' + id).remove();
+    }
+  });
+  // Parent-Verknüpfung in Firebase entfernen
+  db.ref('/parentLinks').orderByValue().equalTo(id).once('value', snap => {
+    snap.forEach(child => child.ref.remove());
+  });
 }
 
 // ---- TRAINING TAB ----
