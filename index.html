@@ -862,9 +862,32 @@ function renderHome() {
 
       let childBadge = '';
       if(pid) {
-        if(!squadSet)    childBadge = `<div style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#fff;margin-top:10px">📋 Kader noch offen</div>`;
-        else if(inSquad) childBadge = `<div style="background:rgba(16,185,129,.4);border:1.5px solid rgba(16,185,129,.7);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;color:#fff;margin-top:10px">✅ Dein Kind spielt mit!</div>`;
-        else             childBadge = `<div style="background:rgba(239,68,68,.35);border:1.5px solid rgba(239,68,68,.6);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;color:#fff;margin-top:10px">❌ Nicht nominiert</div>`;
+        if(!squadSet) {
+          childBadge = `<div style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#fff;margin-top:10px">📋 Kader noch offen</div>`;
+        } else if(inSquad) {
+          const conf = g.squadConfirm?.[pid];
+          if(conf === 'yes') {
+            childBadge = `<div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+              <div style="background:rgba(16,185,129,.4);border:1.5px solid rgba(16,185,129,.7);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:800;color:#fff">✅ Nominiert · Zugesagt</div>
+              <button onclick="event.stopPropagation();setGameRsvp('${g.id}','${pid}','open')" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:5px 10px;font-size:11px;color:#fff;cursor:pointer">Ändern</button>
+            </div>`;
+          } else if(conf === 'no') {
+            childBadge = `<div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+              <div style="background:rgba(239,68,68,.35);border:1.5px solid rgba(239,68,68,.6);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:800;color:#fff">⚠️ Nominiert · Abgesagt</div>
+              <button onclick="event.stopPropagation();setGameRsvp('${g.id}','${pid}','open')" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:5px 10px;font-size:11px;color:#fff;cursor:pointer">Ändern</button>
+            </div>`;
+          } else {
+            childBadge = `<div style="margin-top:10px">
+              <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:6px">✅ Dein Kind spielt mit! Kannst du kommen?</div>
+              <div style="display:flex;gap:8px">
+                <button onclick="event.stopPropagation();setGameRsvp('${g.id}','${pid}','yes')" style="flex:1;padding:8px;border-radius:8px;border:2px solid rgba(255,255,255,.4);background:rgba(16,185,129,.3);color:#fff;font-size:12px;font-weight:700;cursor:pointer">✅ Zusagen</button>
+                <button onclick="event.stopPropagation();setGameRsvp('${g.id}','${pid}','no')" style="flex:1;padding:8px;border-radius:8px;border:2px solid rgba(255,255,255,.4);background:rgba(239,68,68,.25);color:#fff;font-size:12px;font-weight:700;cursor:pointer">❌ Absagen</button>
+              </div>
+            </div>`;
+          }
+        } else {
+          childBadge = `<div style="background:rgba(239,68,68,.35);border:1.5px solid rgba(239,68,68,.6);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;color:#fff;margin-top:10px">❌ Nicht nominiert</div>`;
+        }
       }
 
       let squadRow = '';
@@ -1020,9 +1043,30 @@ function renderTermine() {
         const squadKeys = Object.keys(ev.squad||{}).filter(k=>ev.squad[k]);
         if(pid && squadKeys.length > 0) {
           const inSquad = squadKeys.includes(pid);
-          extra = inSquad
-            ? `<div style="margin-top:8px;background:rgba(16,185,129,.3);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#fff">✅ Dein Kind spielt mit!</div>`
-            : `<div style="margin-top:8px;background:rgba(239,68,68,.25);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#fff">❌ Diesmal nicht nominiert</div>`;
+          if(inSquad) {
+            const conf = ev.squadConfirm?.[pid];
+            if(conf === 'yes') {
+              extra = `<div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+                <div style="background:rgba(16,185,129,.3);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#fff">✅ Nominiert · Zugesagt</div>
+                <button onclick="setGameRsvp('${ev.id}','${pid}','open')" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:5px 10px;font-size:11px;color:#fff;cursor:pointer">Ändern</button>
+              </div>`;
+            } else if(conf === 'no') {
+              extra = `<div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+                <div style="background:rgba(239,68,68,.25);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#fff">⚠️ Nominiert · Abgesagt</div>
+                <button onclick="setGameRsvp('${ev.id}','${pid}','open')" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:5px 10px;font-size:11px;color:#fff;cursor:pointer">Ändern</button>
+              </div>`;
+            } else {
+              extra = `<div style="margin-top:8px">
+                <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:6px">✅ Dein Kind spielt mit! Kannst du kommen?</div>
+                <div style="display:flex;gap:8px">
+                  <button onclick="setGameRsvp('${ev.id}','${pid}','yes')" style="flex:1;padding:8px;border-radius:8px;border:2px solid rgba(255,255,255,.4);background:rgba(16,185,129,.3);color:#fff;font-size:12px;font-weight:700;cursor:pointer">✅ Zusagen</button>
+                  <button onclick="setGameRsvp('${ev.id}','${pid}','no')" style="flex:1;padding:8px;border-radius:8px;border:2px solid rgba(255,255,255,.4);background:rgba(239,68,68,.25);color:#fff;font-size:12px;font-weight:700;cursor:pointer">❌ Absagen</button>
+                </div>
+              </div>`;
+            }
+          } else {
+            extra = `<div style="margin-top:8px;background:rgba(239,68,68,.25);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#fff">❌ Diesmal nicht nominiert</div>`;
+          }
         }
       } else if(pid) {
         const s = (window._localAtt?.[ev.id+'_'+pid]) ?? ev.attendances?.[pid];
@@ -2123,6 +2167,10 @@ function gameDetailModal(id) {
   const byNr = (a,b) => (parseInt(a.number)||999)-(parseInt(b.number)||999);
   const inSquad    = [...STATE.players].filter(p =>  squadKeys.includes(p.id)).sort(byNr);
   const notInSquad = [...STATE.players].filter(p => !squadKeys.includes(p.id)).sort(byNr);
+  const conf = g.squadConfirm || {};
+  const yesConf  = inSquad.filter(p => conf[p.id] === 'yes').length;
+  const noConf   = inSquad.filter(p => conf[p.id] === 'no').length;
+  const openConf = inSquad.length - yesConf - noConf;
 
   showModal(`<div class="modal-handle"></div>
     <div style="font-size:18px;font-weight:800;margin-bottom:2px;padding-right:36px">${escHtml(g.opponent||'?')}</div>
@@ -2135,22 +2183,40 @@ function gameDetailModal(id) {
     </div>
 
     <!-- Kader -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div style="font-size:14px;font-weight:800;color:#1F2937">Kader <span style="background:#0A2540;color:#fff;font-size:11px;padding:2px 8px;border-radius:12px;margin-left:4px">${inSquad.length}</span></div>
     </div>
+    ${inSquad.length ? `
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <div style="flex:1;background:#F0FDF4;border-radius:10px;padding:8px;text-align:center">
+        <div style="font-size:18px;font-weight:900;color:#10B981">${yesConf}</div>
+        <div style="font-size:10px;color:#6B7280;font-weight:600">Zugesagt</div>
+      </div>
+      <div style="flex:1;background:#FEF2F2;border-radius:10px;padding:8px;text-align:center">
+        <div style="font-size:18px;font-weight:900;color:#EF4444">${noConf}</div>
+        <div style="font-size:10px;color:#6B7280;font-weight:600">Abgesagt</div>
+      </div>
+      <div style="flex:1;background:#F9FAFB;border-radius:10px;padding:8px;text-align:center">
+        <div style="font-size:18px;font-weight:900;color:#9CA3AF">${openConf}</div>
+        <div style="font-size:10px;color:#6B7280;font-weight:600">Offen</div>
+      </div>
+    </div>` : ''}
     ${inSquad.length
       ? `<div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:20px">
-          ${inSquad.map(p => `
-            <div onclick="removeFromSquad('${id}','${p.id}')" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;width:72px" title="Tippen zum Entfernen">
-              <div style="position:relative">
-                ${playerCircle(p, 64)}
-                <div style="position:absolute;top:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:#10B981;border:2px solid #fff;display:flex;align-items:center;justify-content:center">
-                  <i class="fas fa-check" style="color:#fff;font-size:8px"></i>
-                </div>
-              </div>
+          ${inSquad.map(p => {
+            const c = conf[p.id];
+            const badge = c==='yes'
+              ? `<div style="position:absolute;top:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:#10B981;border:2px solid #fff;display:flex;align-items:center;justify-content:center"><i class="fas fa-check" style="color:#fff;font-size:8px"></i></div>`
+              : c==='no'
+              ? `<div style="position:absolute;top:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:#EF4444;border:2px solid #fff;display:flex;align-items:center;justify-content:center"><i class="fas fa-times" style="color:#fff;font-size:8px"></i></div>`
+              : `<div style="position:absolute;top:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:#E5E7EB;border:2px solid #fff;display:flex;align-items:center;justify-content:center"><i class="fas fa-question" style="color:#9CA3AF;font-size:8px"></i></div>`;
+            const statusTxt = c==='yes'?'<div style="font-size:9px;color:#10B981;font-weight:700">Zugesagt</div>':c==='no'?'<div style="font-size:9px;color:#EF4444;font-weight:700">Abgesagt</div>':'<div style="font-size:9px;color:#9CA3AF;font-weight:600">Offen</div>';
+            return `<div onclick="removeFromSquad('${id}','${p.id}')" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;width:72px" title="Tippen zum Entfernen">
+              <div style="position:relative">${playerCircle(p, 64)}${badge}</div>
               <div style="font-size:10px;font-weight:700;color:#1F2937;text-align:center;width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p.name||'')}</div>
-              <div style="font-size:9px;color:#10B981;font-weight:700">Im Kader</div>
-            </div>`).join('')}
+              ${statusTxt}
+            </div>`;
+          }).join('')}
          </div>`
       : `<div style="background:#F9FAFB;border-radius:12px;padding:16px;text-align:center;color:#9CA3AF;font-size:13px;margin-bottom:16px">Noch keine Spieler nominiert</div>`}
 
@@ -2175,7 +2241,16 @@ function gameDetailModal(id) {
 
 function saveResult(id){ const v=document.getElementById('gResultIn')?.value.trim()||''; db.ref('/games/'+id+'/result').set(v); closeModal(); setTimeout(()=>gameDetailModal(id),300); }
 function addToSquad(gid, pid){ db.ref('/games/'+gid+'/squad/'+pid).set(true); closeModal(); setTimeout(()=>gameDetailModal(gid),300); }
-function removeFromSquad(gid, pid){ db.ref('/games/'+gid+'/squad/'+pid).remove(); closeModal(); setTimeout(()=>gameDetailModal(gid),300); }
+function removeFromSquad(gid, pid){ db.ref('/games/'+gid+'/squad/'+pid).remove(); db.ref('/games/'+gid+'/squadConfirm/'+pid).remove(); closeModal(); setTimeout(()=>gameDetailModal(gid),300); }
+function setGameRsvp(gid, pid, status) {
+  if(status === 'open') {
+    db.ref('/games/'+gid+'/squadConfirm/'+pid).remove();
+  } else {
+    db.ref('/games/'+gid+'/squadConfirm/'+pid).set(status);
+  }
+  renderHome();
+  renderTermine();
+}
 
 // ---- STATISTIK TAB ----
 function renderStatistikTab(c) {
