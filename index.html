@@ -1147,6 +1147,8 @@ function renderTermine() {
     </div>
 
     <div style="padding:12px 12px 0">
+      ${renderAbsenceSection()}
+
       <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px">
         ${['Mo','Di','Mi','Do','Fr','Sa','So'].map(d => `<div style="text-align:center;font-size:12px;font-weight:700;color:#9CA3AF;padding:6px 0">${d}</div>`).join('')}
       </div>
@@ -1164,8 +1166,6 @@ function renderTermine() {
     <div style="padding:0 12px 16px">
       ${selectedDay ? `<div style="margin-top:16px"><div style="font-size:13px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">${new Date(selectedDay+'T12:00:00').toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}</div>${detailHtml}</div>` :
       `<div style="text-align:center;padding:28px;color:#D1D5DB"><i class="fas fa-hand-pointer" style="font-size:28px;display:block;margin-bottom:10px"></i><span style="font-size:14px">Tag antippen für Details</span></div>`}
-
-      ${renderAbsenceSection()}
     </div>`;
 }
 
@@ -1913,8 +1913,8 @@ function renderTrainingTab(c) {
     <button class="btn-primary" onclick="addTrainingModal()"><i class="fa fa-plus"></i> Training hinzufügen</button>
     ${sorted.map(t => {
       const atts = t.attendances || {};
-      const yes  = STATE.players.filter(p => atts[p.id] === 'yes').length;
-      const no   = STATE.players.filter(p => atts[p.id] === 'no' || isAbsent(p.id, t.date)).length;
+      const yes  = STATE.players.filter(p => !isAbsent(p.id, t.date) && atts[p.id] === 'yes').length;
+      const no   = STATE.players.filter(p => isAbsent(p.id, t.date) || atts[p.id] === 'no').length;
       const open = STATE.players.length - yes - no;
       return `<div class="card" style="padding:12px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
@@ -2083,8 +2083,8 @@ function trainingDetailModal(id) {
   const atts = t.attendances || {};
   const actual = t.actual || {};
   const activePids = new Set(STATE.players.map(p => p.id));
-  const yes  = STATE.players.filter(p => atts[p.id] === 'yes').length;
-  const no   = STATE.players.filter(p => atts[p.id] === 'no').length;
+  const yes  = STATE.players.filter(p => !isAbsent(p.id, t.date) && atts[p.id] === 'yes').length;
+  const no   = STATE.players.filter(p => isAbsent(p.id, t.date) || atts[p.id] === 'no').length;
   const open = STATE.players.length - yes - no;
   showModal(`<div class="modal-handle"></div>
     <div style="font-size:18px;font-weight:700;margin-bottom:4px">Training: ${fmt(t.date)}</div>
@@ -2098,20 +2098,22 @@ function trainingDetailModal(id) {
     </div>
     <div style="font-size:13px;font-weight:700;margin-bottom:10px">Spieler</div>
     ${[...STATE.players].sort((a,b)=>(parseInt(a.number)||999)-(parseInt(b.number)||999)).map(p => {
-      const att = atts[p.id] || 'open';
+      const absent = isAbsent(p.id, t.date);
+      const absInfo = absent ? getAbsence(p.id, t.date) : null;
+      const att = absent ? 'no' : (atts[p.id] || 'open');
       const was = actual[p.id] || false;
-      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f3f4f6">
+      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f3f4f6;${absent?'opacity:.65':''}">
         ${p.photo ? `<img src="${p.photo}" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0">` :
           `<div style="width:34px;height:34px;border-radius:50%;background:#0A2540;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0">${(p.name||'?')[0].toUpperCase()}</div>`}
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600">${escHtml(p.name||'')}</div>
-          <div style="font-size:11px;color:#9CA3AF">RSVP: ${att==='yes'?'✅ Zugesagt':att==='no'?'❌ Abgesagt':'🕐 Offen'}</div>
+          <div style="font-size:11px;color:${absent?'#F59E0B':'#9CA3AF'}">${absent ? (ABSENCE_LABELS[absInfo?.reason]||'🤒 Abwesend') : (att==='yes'?'✅ Zugesagt':att==='no'?'❌ Abgesagt':'🕐 Offen')}</div>
         </div>
-        <div style="display:flex;gap:3px">
+        ${absent ? '' : `<div style="display:flex;gap:3px">
           <button class="att-btn ${att==='yes'?'yes':''}" onclick="setAtt('${t.id}','${p.id}','yes')">✅</button>
           <button class="att-btn ${att==='open'?'opn':''}" onclick="setAtt('${t.id}','${p.id}','open')">🕐</button>
           <button class="att-btn ${att==='no'?'no':''}" onclick="setAtt('${t.id}','${p.id}','no')">❌</button>
-        </div>
+        </div>`}
         <button onclick="toggleActual('${t.id}','${p.id}',${!was})" style="padding:4px 8px;border-radius:6px;border:none;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;background:${was?'#D1FAE5':'#F3F4F6'};color:${was?'#065F46':'#6B7280'}">${was?'War da':'Fehlte'}</button>
       </div>`;
     }).join('')}`);
