@@ -2108,29 +2108,18 @@ function renderSpieleTab(c) {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
           <div style="flex:1;min-width:0">
             <div style="font-weight:700;font-size:15px">${escHtml(g.opponent||'?')}</div>
-            <div style="font-size:12px;color:#6B7280">${fmt(g.date)} · ${g.time||'?'} · ${escHtml(g.location||'?')}</div>
+            <div style="font-size:12px;color:#6B7280">${fmt(g.date)} · ${g.time||'?'} Uhr · ${escHtml(g.location||'?')}</div>
           </div>
-          ${g.result ? `<div style="font-size:17px;font-weight:800;color:#0A2540;margin-left:8px">${escHtml(g.result)}</div>` : ''}
+          <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;margin-left:8px">
+            ${g.result ? `<span style="background:#EEF2FF;color:#0A2540;font-size:11px;font-weight:800;padding:3px 8px;border-radius:6px">${escHtml(g.result)}</span>` : ''}
+            ${sq > 0 ? `
+              <span style="background:#D1FAE5;color:#065F46;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px">✅ ${yes}</span>
+              <span style="background:#FEE2E2;color:#991B1B;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px">❌ ${no}</span>
+              <span style="background:#F3F4F6;color:#374151;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px">🕐 ${open}</span>
+              <span style="background:#EEF2FF;color:#0A2540;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px">👥 ${sq}</span>
+            ` : `<span style="background:#F3F4F6;color:#9CA3AF;font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px">Kader offen</span>`}
+          </div>
         </div>
-        ${sq > 0 ? `
-        <div style="display:flex;gap:6px;margin-bottom:10px">
-          <div style="flex:1;background:#F0FDF4;border-radius:10px;padding:7px 4px;text-align:center">
-            <div style="font-size:17px;font-weight:900;color:#10B981">${yes}</div>
-            <div style="font-size:10px;color:#6B7280;font-weight:600">Zugesagt</div>
-          </div>
-          <div style="flex:1;background:#FEF2F2;border-radius:10px;padding:7px 4px;text-align:center">
-            <div style="font-size:17px;font-weight:900;color:#EF4444">${no}</div>
-            <div style="font-size:10px;color:#6B7280;font-weight:600">Abgesagt</div>
-          </div>
-          <div style="flex:1;background:#F9FAFB;border-radius:10px;padding:7px 4px;text-align:center">
-            <div style="font-size:17px;font-weight:900;color:#9CA3AF">${open}</div>
-            <div style="font-size:10px;color:#6B7280;font-weight:600">Offen</div>
-          </div>
-          <div style="flex:1;background:#EEF2FF;border-radius:10px;padding:7px 4px;text-align:center">
-            <div style="font-size:17px;font-weight:900;color:#0A2540">${sq}</div>
-            <div style="font-size:10px;color:#6B7280;font-weight:600">Kader</div>
-          </div>
-        </div>` : `<div style="font-size:12px;color:#9CA3AF;margin-bottom:10px">Noch kein Kader nominiert</div>`}
         <div style="display:flex;gap:6px">
           <button class="btn-sm" style="background:#EEF2FF;color:#0A2540;flex:1" onclick="gameDetailModal('${g.id}')"><i class="fa fa-users"></i> Kader / Ergebnis</button>
           <button class="btn-sm" style="background:#EFF6FF;color:#1D4ED8" onclick="addGameModal('${g.id}')"><i class="fa fa-pen"></i></button>
