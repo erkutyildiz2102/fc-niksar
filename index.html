@@ -89,7 +89,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 @keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes slideUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}
 #chatMessages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
-#chatPage{display:none;flex-direction:column;position:fixed;left:0;right:0;top:62px;bottom:0;background:#ECE5DD;z-index:10;transition:bottom .05s}
+#chatPage{display:none;flex-direction:column;position:fixed;left:0;right:0;top:62px;bottom:65px;background:#ECE5DD;z-index:10}
 #chatPage.active{display:flex}
 #bottomNav{transition:transform .15s ease}
 </style>
@@ -517,31 +517,29 @@ function showApp() {
 function fixChatHeight() {
   const nav  = document.getElementById('bottomNav');
   const chat = document.getElementById('chatPage');
-  if (!chat) return;
+  if (!chat || currentPage !== 'chat') return;
   const navH = nav ? (nav.getBoundingClientRect().height || 65) : 65;
+  const vv   = window.visualViewport;
 
-  if (window.visualViewport) {
-    const vv = window.visualViewport;
-    const keyboardH = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-    const keyboardOpen = keyboardH > 80;
-
+  if (vv) {
+    const keyboardOpen = (window.innerHeight - vv.height) > 80;
     if (keyboardOpen) {
-      if (nav) nav.style.transform = `translateY(200px)`;
-      chat.style.top = '62px';
-      chat.style.bottom = keyboardH + 'px';
+      if (nav) nav.style.transform = 'translateY(200px)';
+      chat.style.top    = '62px';
+      chat.style.height = (vv.height - 62) + 'px';
+      chat.style.bottom = 'auto';
     } else {
       if (nav) nav.style.transform = '';
-      chat.style.top = '62px';
+      chat.style.top    = '62px';
+      chat.style.height = 'auto';
       chat.style.bottom = navH + 'px';
     }
   } else {
     if (nav) nav.style.transform = '';
-    chat.style.top = '62px';
+    chat.style.top    = '62px';
+    chat.style.height = 'auto';
     chat.style.bottom = navH + 'px';
   }
-
-  const msgs = document.getElementById('chatMessages');
-  if (msgs) setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 50);
 }
 
 function setupChatKeyboard() {
@@ -549,20 +547,18 @@ function setupChatKeyboard() {
   if (!inp) return;
   inp.addEventListener('focus', () => {
     chatInputWasFocused = true;
-    [100, 300, 500, 700].forEach(t => setTimeout(fixChatHeight, t));
+    setTimeout(fixChatHeight, 350);
   });
   inp.addEventListener('blur', () => {
     chatInputWasFocused = false;
-    [100, 300].forEach(t => setTimeout(fixChatHeight, t));
+    setTimeout(fixChatHeight, 100);
   });
 }
 
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', fixChatHeight);
-  // kein 'scroll' - das wuerde beim Chat-Scrollen alles verschieben
 }
 window.addEventListener('resize', fixChatHeight);
-[100, 300, 600, 1000].forEach(t => setTimeout(fixChatHeight, t));
 
 function switchPage(page) {
   currentPage = page;
@@ -581,8 +577,11 @@ function switchPage(page) {
     LSset('lastChatRead', String(lastChatRead));
     updateChatBadge();
     renderChat();
-    fixChatHeight();
-    setTimeout(() => { fixChatHeight(); const c = document.getElementById('chatMessages'); if(c) c.scrollTop = c.scrollHeight; }, 100);
+    setTimeout(() => {
+      fixChatHeight();
+      const c = document.getElementById('chatMessages');
+      if(c) c.scrollTop = c.scrollHeight;
+    }, 50);
   }
   else if(page === 'team') renderTeam();
   else if(page === 'galerie') renderGalerie();
