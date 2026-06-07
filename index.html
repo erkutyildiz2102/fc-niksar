@@ -240,6 +240,7 @@ let trainerLoggedIn = LS('trainerLoggedIn') === 'true';
 let selectedSetupPlayer = null;
 let trainerTab = 'spieler';
 let chatName = LS('chatName') || '';
+let chatInputWasFocused = false;
 let lastChatRead = parseInt(LS('lastChatRead') || '0');
 let prevTrainingCount = -1;
 let prevGameCount = -1;
@@ -543,9 +544,11 @@ function setupChatKeyboard() {
   const inp = document.getElementById('chatInput');
   if (!inp) return;
   inp.addEventListener('focus', () => {
+    chatInputWasFocused = true;
     [100, 300, 500, 700].forEach(t => setTimeout(fixChatHeight, t));
   });
   inp.addEventListener('blur', () => {
+    chatInputWasFocused = false;
     [100, 300].forEach(t => setTimeout(fixChatHeight, t));
   });
 }
@@ -1319,6 +1322,13 @@ function renderChat() {
 
   setTimeout(() => { const c = document.getElementById('chatMessages'); if(c) c.scrollTop = c.scrollHeight; }, 80);
   setTimeout(setupChatKeyboard, 100);
+  // Fokus wiederherstellen falls Tastatur offen war (z.B. nach Nachricht senden)
+  if (chatInputWasFocused) {
+    setTimeout(() => {
+      const inp = document.getElementById('chatInput');
+      if (inp) { inp.focus(); fixChatHeight(); }
+    }, 50);
+  }
 }
 
 function toggleEmojiPicker() {
