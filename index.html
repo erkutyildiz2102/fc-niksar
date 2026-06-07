@@ -1963,13 +1963,13 @@ function renderStatistikTab(c) {
   if(!totalP) { c.innerHTML = `<div style="text-align:center;padding:40px;color:#9CA3AF"><div style="font-size:40px;margin-bottom:8px">📊</div><div>Noch keine Spieler</div></div>`; return; }
 
   // Per-player RSVP-based stats
-  const stats = [...STATE.players].sort((a,b)=>(parseInt(a.number)||999)-(parseInt(b.number)||999)).map(p => {
+  const stats = [...STATE.players].sort((a,b)=>(parseInt(a.number,10)||999)-(parseInt(b.number,10)||999)).map(p => {
     const yesCount = STATE.trainings.filter(t => t.attendances?.[p.id] === 'yes').length;
     const noCount  = STATE.trainings.filter(t => t.attendances?.[p.id] === 'no').length;
     const gamesInSquad = STATE.games.filter(g => Object.keys(g.squad||{}).filter(k=>g.squad[k]).includes(p.id));
     const avgPctP = totalT ? Math.round(yesCount / totalT * 100) : 0;
     return { ...p, yesCount, noCount, gamesInSquad, avgPctP };
-  }).sort((a,b) => b.yesCount - a.yesCount);
+  });
 
   const avgPct = Math.round(stats.reduce((s,p)=>s+p.avgPctP,0)/totalP);
 
