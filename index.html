@@ -551,8 +551,12 @@ window.addEventListener('resize', fixChatHeight);
 function switchPage(page) {
   currentPage = page;
   const nav = document.getElementById('bottomNav');
-  // Nav ausblenden im Chat, sonst immer zeigen
+  const mainHeader = document.querySelector('#app > header');
+  const chatPageEl = document.getElementById('chatPage');
+  // Im Chat: Nav + Hauptheader verstecken, chatPage auf top:0 setzen
   if (nav) nav.style.display = page === 'chat' ? 'none' : '';
+  if (mainHeader) mainHeader.style.display = page === 'chat' ? 'none' : '';
+  if (chatPageEl) chatPageEl.style.top = page === 'chat' ? '0' : '62px';
   document.querySelectorAll('.page, #chatPage').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById(page + 'Page');
