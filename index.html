@@ -1780,8 +1780,54 @@ function renderTrainerTab() {
 // ---- SPIELER TAB ----
 function renderSpielerTab(c) {
   const sorted = [...STATE.players].sort((a,b) => (parseInt(a.number)||999) - (parseInt(b.number)||999));
+  const today = new Date().toISOString().slice(0,10);
+
+  // Kommende Abwesenheiten (ab heute), nach Startdatum sortiert
+  const upcomingAbs = STATE.absences
+    .filter(a => (a.toDate || a.fromDate) >= today)
+    .sort((a,b) => a.fromDate.localeCompare(b.fromDate));
+
+  const fmtD = d => new Date(d+'T12:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'});
+  const fmtDY = d => new Date(d+'T12:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+  const absSection = upcomingAbs.length === 0
+    ? `<div style="text-align:center;padding:14px;color:#9CA3AF;font-size:13px;background:#F9FAFB;border-radius:10px">Keine bevorstehenden Abwesenheiten 👍</div>`
+    : upcomingAbs.map(a => {
+        const player = STATE.players.find(p => p.id === a.playerId);
+        if(!player) return '';
+        const sameDay = !a.toDate || a.fromDate === a.toDate;
+        const dateLabel = sameDay ? fmtDY(a.fromDate) : `${fmtD(a.fromDate)} – ${fmtDY(a.toDate)}`;
+        const label = ABSENCE_LABELS[a.reason] || '📋 Abwesend';
+        const affTrainings = STATE.trainings.filter(t => t.date >= a.fromDate && t.date <= (a.toDate||a.fromDate));
+        const affGames = STATE.games.filter(g => g.date >= a.fromDate && g.date <= (a.toDate||a.fromDate));
+        const chips = [
+          ...affTrainings.map(t => `<span style="background:#DBEAFE;color:#1D4ED8;font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px">🏃 ${fmtD(t.date)}</span>`),
+          ...affGames.map(g => `<span style="background:#FEF3C7;color:#B45309;font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px">⚽ ${escHtml(g.opponent||fmtD(g.date))}</span>`)
+        ].join('');
+        return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border-radius:12px;border:1px solid #F3F4F6;margin-bottom:8px">
+          ${player.photo
+            ? `<img src="${player.photo}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+            : `<div style="width:40px;height:40px;border-radius:50%;background:#0A2540;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:700;flex-shrink:0">${(player.name||'?')[0].toUpperCase()}</div>`}
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span style="font-size:13px;font-weight:700;color:#1F2937">${escHtml(player.name||'?')}</span>
+              <span style="font-size:11px;font-weight:700;color:#F59E0B">${label}</span>
+            </div>
+            <div style="font-size:12px;color:#6B7280;margin-top:1px">${dateLabel}</div>
+            ${a.note ? `<div style="font-size:11px;color:#9CA3AF;margin-top:1px">${escHtml(a.note)}</div>` : ''}
+            ${chips ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px">${chips}</div>` : '<div style="font-size:11px;color:#9CA3AF;margin-top:3px">Keine Trainings/Spiele betroffen</div>'}
+          </div>
+          <button onclick="db.ref('/absences/${a.id}').remove()" style="width:30px;height:30px;border-radius:8px;border:none;background:#FEE2E2;color:#991B1B;cursor:pointer;font-size:13px;flex-shrink:0">🗑</button>
+        </div>`;
+      }).join('');
+
   c.innerHTML = `
     <button class="btn-primary" onclick="addPlayerModal()"><i class="fa fa-plus"></i> Spieler hinzufügen</button>
+
+    <div style="background:#FFF8F0;border:1.5px solid #FED7AA;border-radius:14px;padding:14px;margin-bottom:4px">
+      <div style="font-size:14px;font-weight:800;color:#1F2937;margin-bottom:10px">🗓️ Abwesenheiten <span style="background:#F59E0B;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:4px">${upcomingAbs.length}</span></div>
+      ${absSection}
+    </div>
     ${sorted.map(p => `
     <div class="card" style="padding:12px;display:flex;align-items:center;gap:12px">
       <div style="position:relative;cursor:pointer;flex-shrink:0" onclick="editPlayer('${p.id}')">
