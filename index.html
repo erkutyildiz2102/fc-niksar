@@ -353,7 +353,7 @@ function initListeners() {
   });
   db.ref('/chat').on('value', s => {
     STATE.chat = toArr(s.val()).sort((a,b) => (a.ts||0) - (b.ts||0));
-    if (currentPage === 'chat' && chatInputWasFocused) {
+    if (currentPage === 'chat' && document.getElementById('chatMessages')) {
       appendNewChatMessages();
     } else {
       renderChat();
@@ -1254,7 +1254,9 @@ function appendNewChatMessages() {
     container.appendChild(div);
   });
 
-  container.scrollTop = container.scrollHeight;
+  // Nur nach unten scrollen wenn User bereits unten war
+  const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+  if (nearBottom) container.scrollTop = container.scrollHeight;
 }
 
 function renderChat() {
