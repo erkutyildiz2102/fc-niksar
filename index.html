@@ -3123,6 +3123,7 @@ function deleteAbsence(id) {
 
 // ---- STATISTIK TAB ----
 let statsTab = 'training';
+let statsDateCols = 5; // Anzahl der letzten Termine als Spalten
 
 function renderStatistikTab(c) {
   const totalT = STATE.trainings.length;
@@ -3147,54 +3148,91 @@ function renderStatistikTab(c) {
 
   const tabBtn = (key, label) =>
     `<button onclick="statsTab='${key}';renderStatistikTab(document.getElementById('trainerContent'))"
-      style="flex:1;padding:9px 4px;border:none;border-bottom:2px solid ${statsTab===key?'#0A2540':'transparent'};background:transparent;font-size:13px;font-weight:${statsTab===key?'800':'600'};color:${statsTab===key?'#0A2540':'#9CA3AF'};cursor:pointer">${label}</button>`;
+      style="flex:1;padding:10px 4px;border:none;border-bottom:2px solid ${statsTab===key?'#0A2540':'transparent'};background:transparent;font-size:13px;font-weight:${statsTab===key?'800':'600'};color:${statsTab===key?'#0A2540':'#9CA3AF'};cursor:pointer">${label}</button>`;
 
   const playerAvatar = p =>
     p.photo
-      ? `<img src="${p.photo}" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid #E5E7EB;flex-shrink:0">`
-      : `<div style="width:34px;height:34px;border-radius:50%;background:#0A2540;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0">${(p.name||'?')[0].toUpperCase()}</div>`;
+      ? `<img src="${p.photo}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid #E5E7EB;flex-shrink:0">`
+      : `<div style="width:32px;height:32px;border-radius:50%;background:#0A2540;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0">${(p.name||'?')[0].toUpperCase()}</div>`;
 
-  const pctColor = pct => pct >= 75 ? '#059669' : pct >= 50 ? '#D97706' : '#DC2626';
-  const pctBg    = pct => pct >= 75 ? '#D1FAE5' : pct >= 50 ? '#FEF3C7' : '#FEE2E2';
+  const pctColor = pct => pct >= 75 ? '#059669' : pct >= 40 ? '#D97706' : '#DC2626';
 
-  // Tabellen-Zeilen
+  const shortDate = d => {
+    if(!d) return '';
+    const dt = new Date(d + 'T12:00:00');
+    return (dt.getDate()+'').padStart(2,'0') + '.' + ((dt.getMonth()+1)+'').padStart(2,'0');
+  };
+
   let rows = '';
+  let dateCols = [];
+  let dateHeader = '';
+
   if(statsTab === 'training') {
-    rows = playerStats.map(p => `
-      <tr style="border-bottom:1px solid #F3F4F6">
-        <td style="padding:10px 8px;display:flex;align-items:center;gap:10px">
-          ${playerAvatar(p)}
-          <div>
-            <div style="font-size:13px;font-weight:700;color:#1F2937">${escHtml(p.name||'')}</div>
-            <div style="font-size:11px;color:#9CA3AF">#${p.number||'?'}</div>
+    // Letzte N Trainings als Spalten (neueste rechts)
+    const sorted = [...STATE.trainings].sort((a,b)=> a.date > b.date ? 1 : -1);
+    dateCols = sorted.slice(-statsDateCols);
+    dateHeader = dateCols.map(t =>
+      `<th style="padding:6px 4px;text-align:center;font-size:10px;font-weight:700;color:#6B7280;min-width:36px">
+        <div style="font-size:9px;opacity:.6;margin-bottom:2px">🏃</div>
+        ${shortDate(t.date)}
+      </th>`).join('');
+
+    rows = playerStats.map(p => {
+      const dateCells = dateCols.map(t => {
+        const att = t.attendances?.[p.id];
+        const icon = att === 'yes' ? `<span style="color:#059669;font-size:16px">👍</span>`
+                   : att === 'no'  ? `<span style="color:#DC2626;font-size:16px">👎</span>`
+                   : `<span style="color:#D1D5DB;font-size:16px">○</span>`;
+        return `<td style="padding:8px 4px;text-align:center">${icon}</td>`;
+      }).join('');
+      return `<tr style="border-bottom:1px solid #F3F4F6">
+        <td style="padding:8px 6px">
+          <div style="display:flex;align-items:center;gap:8px">
+            ${playerAvatar(p)}
+            <div style="min-width:0">
+              <div style="font-size:13px;font-weight:700;color:#1F2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px">${escHtml(p.name||'')}</div>
+            </div>
           </div>
         </td>
-        <td style="padding:10px 8px;text-align:center">
-          <span style="font-size:13px;font-weight:800;color:${pctColor(p.trainPct)};background:${pctBg(p.trainPct)};padding:3px 9px;border-radius:20px">${p.trainPct}%</span>
-          <div style="font-size:10px;color:#9CA3AF;margin-top:2px">${p.yesCount}/${totalT}</div>
+        <td style="padding:8px 6px;text-align:center;white-space:nowrap">
+          <span style="font-size:12px;font-weight:800;color:${pctColor(p.trainPct)}">${p.yesCount} (${p.trainPct}%)</span>
         </td>
-        <td style="padding:10px 8px;text-align:center">
-          <span style="font-size:18px">${p.trainPct >= 75 ? '👍' : p.trainPct >= 50 ? '➡️' : '👎'}</span>
-        </td>
-      </tr>`).join('');
+        ${dateCells}
+      </tr>`;
+    }).join('');
+
   } else {
-    rows = playerStats.map(p => `
-      <tr style="border-bottom:1px solid #F3F4F6">
-        <td style="padding:10px 8px;display:flex;align-items:center;gap:10px">
-          ${playerAvatar(p)}
-          <div>
-            <div style="font-size:13px;font-weight:700;color:#1F2937">${escHtml(p.name||'')}</div>
-            <div style="font-size:11px;color:#9CA3AF">#${p.number||'?'}</div>
+    // Letzte N Spiele als Spalten
+    const sortedG = [...STATE.games].sort((a,b)=> a.date > b.date ? 1 : -1);
+    dateCols = sortedG.slice(-statsDateCols);
+    dateHeader = dateCols.map(g =>
+      `<th style="padding:6px 4px;text-align:center;font-size:10px;font-weight:700;color:#6B7280;min-width:36px">
+        <div style="font-size:9px;opacity:.6;margin-bottom:2px">⚽</div>
+        ${shortDate(g.date)}
+      </th>`).join('');
+
+    rows = playerStats.map(p => {
+      const dateCells = dateCols.map(g => {
+        const inSquad = g.squad?.[p.id] === true;
+        const icon = inSquad ? `<span style="color:#059669;font-size:16px">👍</span>`
+                             : `<span style="color:#D1D5DB;font-size:16px">○</span>`;
+        return `<td style="padding:8px 4px;text-align:center">${icon}</td>`;
+      }).join('');
+      return `<tr style="border-bottom:1px solid #F3F4F6">
+        <td style="padding:8px 6px">
+          <div style="display:flex;align-items:center;gap:8px">
+            ${playerAvatar(p)}
+            <div style="min-width:0">
+              <div style="font-size:13px;font-weight:700;color:#1F2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px">${escHtml(p.name||'')}</div>
+            </div>
           </div>
         </td>
-        <td style="padding:10px 8px;text-align:center">
-          <span style="font-size:13px;font-weight:800;color:${pctColor(p.gamePct)};background:${pctBg(p.gamePct)};padding:3px 9px;border-radius:20px">${p.gamePct}%</span>
-          <div style="font-size:10px;color:#9CA3AF;margin-top:2px">${p.gamesInSquad.length}/${totalG}</div>
+        <td style="padding:8px 6px;text-align:center;white-space:nowrap">
+          <span style="font-size:12px;font-weight:800;color:${pctColor(p.gamePct)}">${p.gamesInSquad.length} (${p.gamePct}%)</span>
         </td>
-        <td style="padding:10px 8px;text-align:center">
-          <span style="font-size:18px">${p.gamePct >= 75 ? '👍' : p.gamePct >= 50 ? '➡️' : '👎'}</span>
-        </td>
-      </tr>`).join('');
+        ${dateCells}
+      </tr>`;
+    }).join('');
   }
 
   c.innerHTML = `
@@ -3205,36 +3243,21 @@ function renderStatistikTab(c) {
     </div>
 
     <!-- Zusammenfassung -->
-    <div style="background:#F8FAFC;border:1px solid #E5E7EB;border-radius:12px;padding:10px 14px;margin-bottom:14px;display:flex;gap:0;justify-content:space-around">
-      <div style="text-align:center">
-        <div style="font-size:18px;font-weight:900;color:#0A2540">${totalT}</div>
-        <div style="font-size:11px;color:#6B7280">Trainings</div>
-      </div>
-      <div style="width:1px;background:#E5E7EB"></div>
-      <div style="text-align:center">
-        <div style="font-size:18px;font-weight:900;color:#0A2540">${totalG}</div>
-        <div style="font-size:11px;color:#6B7280">Spiele</div>
-      </div>
-      <div style="width:1px;background:#E5E7EB"></div>
-      <div style="text-align:center">
-        <div style="font-size:18px;font-weight:900;color:#0A2540">${totalP}</div>
-        <div style="font-size:11px;color:#6B7280">Spieler</div>
-      </div>
-      <div style="width:1px;background:#E5E7EB"></div>
-      <div style="text-align:center">
-        <div style="font-size:18px;font-weight:900;color:${pctColor(statsTab==='training'?avgTrainPct:avgGamePct)}">${statsTab==='training'?avgTrainPct:avgGamePct}%</div>
-        <div style="font-size:11px;color:#6B7280">Ø Teilnahme</div>
-      </div>
+    <div style="font-size:12px;color:#6B7280;padding:8px 2px;margin-bottom:10px;border-bottom:1px solid #F3F4F6">
+      <b style="color:#0A2540">${totalT}</b> Trainings &nbsp;|&nbsp;
+      <b style="color:#0A2540">${totalG}</b> Spiele &nbsp;|&nbsp;
+      <b style="color:#0A2540">${totalP}</b> Spieler &nbsp;|&nbsp;
+      Ø <b style="color:${pctColor(statsTab==='training'?avgTrainPct:avgGamePct)}">${statsTab==='training'?avgTrainPct:avgGamePct}%</b>
     </div>
 
-    <!-- Tabelle -->
-    <div style="background:#fff;border-radius:12px;border:1px solid #E5E7EB;overflow:hidden">
-      <table style="width:100%;border-collapse:collapse">
+    <!-- Scrollbare Tabelle -->
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;border:1px solid #E5E7EB;background:#fff">
+      <table style="width:100%;border-collapse:collapse;min-width:300px">
         <thead>
           <tr style="background:#F8FAFC;border-bottom:2px solid #E5E7EB">
-            <th style="padding:10px 8px;text-align:left;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.05em">Spieler</th>
-            <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.05em">Teilnahme</th>
-            <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:#6B7280;width:44px"></th>
+            <th style="padding:8px 6px;text-align:left;font-size:11px;font-weight:700;color:#6B7280;position:sticky;left:0;background:#F8FAFC;min-width:110px">Spieler</th>
+            <th style="padding:8px 6px;text-align:center;font-size:11px;font-weight:700;color:#6B7280;white-space:nowrap">Teilnahme</th>
+            ${dateHeader}
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -3242,10 +3265,8 @@ function renderStatistikTab(c) {
     </div>
 
     <!-- Legende -->
-    <div style="display:flex;gap:12px;justify-content:center;margin-top:12px;flex-wrap:wrap">
-      <span style="font-size:12px;color:#6B7280">👍 ≥ 75%</span>
-      <span style="font-size:12px;color:#6B7280">➡️ 50–74%</span>
-      <span style="font-size:12px;color:#6B7280">👎 &lt; 50%</span>
+    <div style="display:flex;gap:14px;margin-top:10px;font-size:11px;color:#9CA3AF">
+      <span>👍 Dabei</span><span>👎 Abgesagt</span><span>○ Offen</span>
     </div>`;
 }
 
