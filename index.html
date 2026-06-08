@@ -415,7 +415,9 @@ function initListeners() {
 
 function onDataChange() {
   updateHeader();
-  renderHome();
+  if(!window._suppressHomeRender || Date.now() > window._suppressHomeRender) {
+    renderHome();
+  }
   renderTermine();
   if(currentPage==='trainer') renderTrainer();
   if(currentPage==='team') renderTeam();
@@ -880,6 +882,7 @@ function toggleRsvpEdit(tid) {
   window._localAtt[tid + '_' + pid] = 'open';
   const _t = STATE.trainings.find(x => x.id === tid);
   if(_t) { _t.attendances = _t.attendances || {}; _t.attendances[pid] = 'open'; }
+  window._suppressHomeRender = Date.now() + 3000;
   db.ref('/trainings/' + tid + '/attendances/' + pid).set('open');
   window._rsvpEdit = window._rsvpEdit || {};
   window._rsvpEdit[tid] = true;
@@ -2055,6 +2058,7 @@ function setRsvpHome(tid, pid, status) {
   if (_t) { _t.attendances = _t.attendances || {}; _t.attendances[pid] = status; }
   if(status === 'yes') showToast('✅ Zusage gespeichert!');
   else if(status === 'no') showToast('❌ Absage gespeichert!');
+  window._suppressHomeRender = Date.now() + 3000;
   if(!_patchRsvpDiv('trsvp-' + tid, _buildTrainingRsvpHtml(tid, pid))) { renderHome(); }
   renderTermine();
   db.ref('/trainings/' + tid + '/attendances/' + pid).set(status).then(() => {
@@ -3447,7 +3451,8 @@ function toggleGameRsvpEdit(gid) {
   window._gameRsvpEdit = window._gameRsvpEdit || {};
   window._gameRsvpEdit[gid] = true;
   const _g = STATE.games.find(x => x.id === gid);
-  if(_g) { _g.squadConfirm = _g.squadConfirm || {}; _g.squadConfirm[pid] = 'open'; }
+  if(_g) { _g.squadConfirm = _g.squadConfirm || {}; delete _g.squadConfirm[pid]; }
+  window._suppressHomeRender = Date.now() + 3000;
   db.ref('/games/'+gid+'/squadConfirm/'+pid).remove();
   if(!_patchRsvpDiv('grsvp-' + gid, _buildGameRsvpHtml(gid, pid))) { renderHome(); }
   renderTermine();
@@ -3457,9 +3462,10 @@ function setGameRsvp(gid, pid, status) {
   window._gameRsvpEdit = window._gameRsvpEdit || {};
   delete window._gameRsvpEdit[gid];
   const _g = STATE.games.find(x => x.id === gid);
-  if(_g) { _g.squadConfirm = _g.squadConfirm || {}; _g.squadConfirm[pid] = status === 'open' ? undefined : status; }
+  if(_g) { _g.squadConfirm = _g.squadConfirm || {}; if(status==='open') delete _g.squadConfirm[pid]; else _g.squadConfirm[pid] = status; }
   if(status === 'yes') showToast('✅ Zusage gespeichert!');
   else if(status === 'no') showToast('❌ Absage gespeichert!');
+  window._suppressHomeRender = Date.now() + 3000;
   if(!_patchRsvpDiv('grsvp-' + gid, _buildGameRsvpHtml(gid, pid))) { renderHome(); }
   renderTermine();
   if(status === 'open') {
