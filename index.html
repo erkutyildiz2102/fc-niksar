@@ -88,9 +88,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* New event banner */
 @keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes slideUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}
-#chatMessages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-#chatPage{display:none;flex-direction:column;position:fixed;left:0;right:0;top:0;height:100%;background:#ECE5DD;z-index:100}
+#chatPage{display:none;flex-direction:column;position:fixed;left:0;right:0;top:0;height:100svh;background:#ECE5DD;z-index:100;overflow:hidden}
 #chatPage.active{display:flex}
+#chatPageHeader{flex-shrink:0;background:#0A2540;display:flex;align-items:center;gap:12px;padding:max(env(safe-area-inset-top),14px) 16px 12px}
+#chatMessages{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.wa-input-bar{flex-shrink:0}
 </style>
 </head>
 <body>
@@ -443,20 +445,7 @@ window.addEventListener('load', () => {
   }, hasProfile ? 600 : 1800);
   requestNotifPermission();
 
-  // iOS Keyboard Fix: Chat-Höhe anpassen wenn Tastatur erscheint
-  if(window.visualViewport) {
-    const adjustChat = () => {
-      const chat = document.getElementById('chatPage');
-      if(!chat) return;
-      const vvh = window.visualViewport.height;
-      const navH = 68;
-      const headerH = document.querySelector('header')?.offsetHeight || 62;
-      chat.style.bottom = (window.innerHeight - vvh) + navH + 'px';
-      chat.style.top = headerH + 'px';
-    };
-    window.visualViewport.addEventListener('resize', adjustChat);
-    window.visualViewport.addEventListener('scroll', adjustChat);
-  }
+  // iOS Keyboard Fix: wird durch fixChatHeight() + visualViewport-Listener gehandhabt
 });
 
 function afterSplash() {
@@ -518,13 +507,15 @@ function fixChatHeight() {
   const chat = document.getElementById('chatPage');
   if (!chat || currentPage !== 'chat') return;
   const vv = window.visualViewport;
-  // Exakt den sichtbaren Bereich einnehmen (vv.offsetTop + vv.height = sichtbarer Bildschirm)
-  // Das verhindert den grauen Bereich unter dem Input wenn Tastatur offen ist
+  // Exakt den sichtbaren Bereich einnehmen – verhindert grauer Bereich wenn Tastatur offen (iOS)
   const top = vv ? vv.offsetTop : 0;
   const h   = vv ? vv.height   : window.innerHeight;
   chat.style.top    = top + 'px';
   chat.style.height = h + 'px';
   chat.style.bottom = 'auto';
+  // Nach Layout-Änderung (z.B. Keyboard öffnet) immer nach unten scrollen
+  const msgs = document.getElementById('chatMessages');
+  if (msgs) requestAnimationFrame(() => { msgs.scrollTop = msgs.scrollHeight; });
 }
 
 function setupChatKeyboard() {
@@ -532,11 +523,10 @@ function setupChatKeyboard() {
   if (!inp) return;
   inp.addEventListener('focus', () => {
     chatInputWasFocused = true;
-    // Nur scrollen – Höhe wird durch interactive-widget=resizes-content automatisch geregelt
-    setTimeout(() => {
-      const c = document.getElementById('chatMessages');
-      if (c) c.scrollTop = c.scrollHeight;
-    }, 400);
+    // Sofort + nochmal nach Keyboard-Animation nach unten scrollen
+    const c = document.getElementById('chatMessages');
+    if (c) c.scrollTop = c.scrollHeight;
+    setTimeout(() => { if (c) c.scrollTop = c.scrollHeight; }, 350);
   });
   inp.addEventListener('blur', () => {
     chatInputWasFocused = false;
@@ -1414,7 +1404,7 @@ function renderChat() {
   }
 
   page.innerHTML = `
-    <div style="background:#0A2540;padding:max(env(safe-area-inset-top),14px) 16px 12px;display:flex;align-items:center;gap:12px;flex-shrink:0">
+    <div id="chatPageHeader">
       <button onclick="switchPage('home')" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 10px 4px 0;line-height:1;display:flex;align-items:center;-webkit-tap-highlight-color:transparent"><i class="fas fa-arrow-left"></i></button>
       <div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">⚽</div>
       <div style="flex:1">
@@ -1422,7 +1412,7 @@ function renderChat() {
         <div style="font-size:11px;color:rgba(255,255,255,.6)">Mannschafts-Chat</div>
       </div>
     </div>
-    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch">
+    <div id="chatMessages">
       ${msgsHtml}
     </div>
     <div class="wa-emoji-grid ${emojiOpen?'open':''}" id="emojiPicker">
