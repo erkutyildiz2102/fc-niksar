@@ -2527,10 +2527,36 @@ function renderTrainingTab(c) {
 function editTrainingModal(id) {
   const t = STATE.trainings.find(x => x.id === id);
   if(!t) return;
+  // Wenn Serientermin: erst fragen ob nur dieser oder alle
+  if(t.seriesId) {
+    const seriesCount = STATE.trainings.filter(x => x.seriesId === t.seriesId).length;
+    showModal(`<div class="modal-handle"></div>
+      <div style="font-size:18px;font-weight:800;color:#0A2540;margin-bottom:6px">Training bearbeiten</div>
+      <div style="font-size:13px;color:#6B7280;margin-bottom:20px">Dieser Termin gehört zu einer Serie (${seriesCount} Termine). Was möchtest du ändern?</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button onclick="openTrainingEditForm('${id}','single')" style="display:flex;align-items:center;gap:14px;background:#F0F9FF;border:1.5px solid #BAE6FD;border-radius:14px;padding:14px 16px;cursor:pointer;text-align:left;width:100%">
+          <span style="font-size:24px">📅</span>
+          <div><div style="font-size:14px;font-weight:700;color:#0369A1">Nur diesen Termin</div><div style="font-size:12px;color:#6B7280">Nur das Training am ${fmtDate(t.date)} ändern</div></div>
+        </button>
+        <button onclick="openTrainingEditForm('${id}','all')" style="display:flex;align-items:center;gap:14px;background:#F5F3FF;border:1.5px solid #C4B5FD;border-radius:14px;padding:14px 16px;cursor:pointer;text-align:left;width:100%">
+          <span style="font-size:24px">📆</span>
+          <div><div style="font-size:14px;font-weight:700;color:#5B21B6">Alle Serientermine</div><div style="font-size:12px;color:#6B7280">Alle ${seriesCount} Termine der Serie anpassen</div></div>
+        </button>
+      </div>`);
+  } else {
+    openTrainingEditForm(id, 'single');
+  }
+}
+
+function openTrainingEditForm(id, scope) {
+  const t = STATE.trainings.find(x => x.id === id);
+  if(!t) return;
+  const seriesNote = scope === 'all' ? `<div style="background:#F5F3FF;border-radius:10px;padding:8px 12px;font-size:12px;color:#5B21B6;margin-bottom:12px">📆 Änderungen gelten für alle Serientermine (Datum wird nicht geändert)</div>` : '';
   showModal(`<div class="modal-handle"></div>
-    <div style="font-size:18px;font-weight:700;margin-bottom:16px">Training bearbeiten</div>
-    <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Datum</div>
-    <input id="etDate" class="input-field" type="date" value="${t.date||''}" style="margin-bottom:10px">
+    <div style="font-size:18px;font-weight:700;margin-bottom:12px">Training bearbeiten</div>
+    ${seriesNote}
+    ${scope === 'single' ? `<div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Datum</div>
+    <input id="etDate" class="input-field" type="date" value="${t.date||''}" style="margin-bottom:10px">` : `<input id="etDate" type="hidden" value="${t.date||''}">`}
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <div style="flex:1">
         <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Von</div>
@@ -2543,17 +2569,29 @@ function editTrainingModal(id) {
     </div>
     <input id="etLocation" class="input-field" placeholder="Ort" value="${escHtml(t.location||'')}" style="margin-bottom:10px">
     <textarea id="etNotes" class="input-field" placeholder="Hinweise (optional)" rows="2" style="margin-bottom:16px;resize:none">${escHtml(t.notes||'')}</textarea>
-    <button class="btn-primary" onclick="saveTrainingEdit('${id}')">Änderungen speichern</button>`);
+    <button class="btn-primary" onclick="saveTrainingEdit('${id}','${scope}')">Änderungen speichern</button>`);
 }
 
-function saveTrainingEdit(id) {
+function saveTrainingEdit(id, scope) {
   const date     = document.getElementById('etDate')?.value;
   const time     = document.getElementById('etTime')?.value || '';
   const timeTo   = document.getElementById('etTimeTo')?.value || '';
   const location = document.getElementById('etLocation')?.value.trim() || '';
   const notes    = document.getElementById('etNotes')?.value.trim() || '';
   if(!date){ alert('Datum eingeben'); return; }
-  db.ref('/trainings/' + id).update({ date, time, timeTo, location, notes });
+
+  if(scope === 'all') {
+    // Alle Serientermine aktualisieren (außer Datum — jeder hat sein eigenes)
+    const t = STATE.trainings.find(x => x.id === id);
+    const seriesTrainings = STATE.trainings.filter(x => x.seriesId === t?.seriesId);
+    seriesTrainings.forEach(st => {
+      db.ref('/trainings/' + st.id).update({ time, timeTo, location, notes });
+    });
+    showToast(`✅ ${seriesTrainings.length} Termine aktualisiert`);
+  } else {
+    db.ref('/trainings/' + id).update({ date, time, timeTo, location, notes });
+    showToast('✅ Training aktualisiert');
+  }
   closeModal();
 }
 
@@ -2647,8 +2685,9 @@ function saveTraining() {
     if (dates.length === 0) { alert('Kein passender Wochentag im gewählten Zeitraum'); return; }
     if (dates.length > 52) { alert('Maximal 52 Termine pro Serie'); return; }
 
+    const seriesId = 'serie_' + Date.now();
     dates.forEach(date => {
-      db.ref('/trainings').push({ date, time, timeTo, location, notes, attendances, actual:{}, createdAt: Date.now() });
+      db.ref('/trainings').push({ date, time, timeTo, location, notes, attendances, actual:{}, seriesId, createdAt: Date.now() });
     });
     notifyAll('🏃 Neue Trainingsserie!', dates.length + ' Termine · ' + time + (timeTo?' - '+timeTo:'') + ' Uhr · ' + location, false, 'termine');
     closeModal();
@@ -2662,7 +2701,39 @@ function saveTraining() {
   }
 }
 
-function deleteTraining(id){ if(confirm('Training löschen?')){ db.ref('/trainings/' + id).remove(); notifyAll('🗑️ Training abgesagt', 'Ein Training wurde vom Trainer abgesagt.', false, 'termine'); } }
+function deleteTraining(id) {
+  const t = STATE.trainings.find(x => x.id === id);
+  if(!t) return;
+  if(t.seriesId) {
+    const seriesCount = STATE.trainings.filter(x => x.seriesId === t.seriesId).length;
+    showModal(`<div class="modal-handle"></div>
+      <div style="font-size:18px;font-weight:800;color:#0A2540;margin-bottom:6px">Training löschen</div>
+      <div style="font-size:13px;color:#6B7280;margin-bottom:20px">Dieser Termin gehört zu einer Serie (${seriesCount} Termine). Was möchtest du löschen?</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button onclick="closeModal();db.ref('/trainings/${id}').remove();notifyAll('🗑️ Training abgesagt','Ein Training wurde abgesagt.',false,'termine');showToast('🗑️ Termin gelöscht')" style="display:flex;align-items:center;gap:14px;background:#FFF7ED;border:1.5px solid #FED7AA;border-radius:14px;padding:14px 16px;cursor:pointer;text-align:left;width:100%">
+          <span style="font-size:24px">📅</span>
+          <div><div style="font-size:14px;font-weight:700;color:#C2410C">Nur diesen Termin</div><div style="font-size:12px;color:#6B7280">Nur das Training am ${fmtDate(t.date)} löschen</div></div>
+        </button>
+        <button onclick="deleteTrainingSeries('${t.seriesId}',${seriesCount})" style="display:flex;align-items:center;gap:14px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:14px;padding:14px 16px;cursor:pointer;text-align:left;width:100%">
+          <span style="font-size:24px">🗑️</span>
+          <div><div style="font-size:14px;font-weight:700;color:#991B1B">Alle Serientermine</div><div style="font-size:12px;color:#6B7280">Alle ${seriesCount} Termine der Serie löschen</div></div>
+        </button>
+      </div>`);
+  } else {
+    if(confirm('Training löschen?')) {
+      db.ref('/trainings/' + id).remove();
+      notifyAll('🗑️ Training abgesagt', 'Ein Training wurde vom Trainer abgesagt.', false, 'termine');
+    }
+  }
+}
+
+function deleteTrainingSeries(seriesId, count) {
+  closeModal();
+  const seriesTrainings = STATE.trainings.filter(x => x.seriesId === seriesId);
+  seriesTrainings.forEach(st => db.ref('/trainings/' + st.id).remove());
+  notifyAll('🗑️ Trainingsserie abgesagt', count + ' Termine wurden abgesagt.', false, 'termine');
+  showToast(`🗑️ ${seriesTrainings.length} Termine gelöscht`);
+}
 
 function trainingDetailModal(id) {
   const t = STATE.trainings.find(x => x.id === id);
