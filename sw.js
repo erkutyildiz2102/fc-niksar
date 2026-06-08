@@ -99,9 +99,16 @@ self.addEventListener('push', e => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  e.waitUntil(clients.matchAll({ type: 'window' }).then(wins => {
+  const targetUrl = e.notification.data?.url || './';
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(wins => {
     const w = wins.find(w => w.url.includes('fc-niksar'));
-    if (w) { w.focus(); return; }
-    return clients.openWindow(e.notification.data?.url || './');
+    if (w) {
+      w.focus();
+      // App ist bereits offen → Seite per postMessage wechseln
+      w.postMessage({ type: 'NAVIGATE', url: targetUrl });
+      return;
+    }
+    // App war geschlossen → mit Ziel-URL öffnen
+    return clients.openWindow(targetUrl);
   }));
 });

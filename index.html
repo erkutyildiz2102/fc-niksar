@@ -484,6 +484,24 @@ document.addEventListener('DOMContentLoaded', () => {
     sessionStorage.removeItem('swUpdated');
     setTimeout(() => showToast('✅ App aktualisiert'), 1000);
   }
+
+  // Push-Benachrichtigung angeklickt → Seite aus URL-Parameter lesen
+  const urlPage = new URLSearchParams(window.location.search).get('page');
+  if (urlPage) {
+    // URL sauber halten (ohne ?page=...)
+    history.replaceState(null, '', window.location.pathname);
+    setTimeout(() => navTap(urlPage), 800);
+  }
+
+  // Push-Benachrichtigung angeklickt während App offen war → postMessage vom SW
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data?.type === 'NAVIGATE' && e.data.url) {
+        const p = new URL(e.data.url).searchParams.get('page');
+        if (p) navTap(p);
+      }
+    });
+  }
 });
 
 function activateSWUpdate() {
@@ -1528,7 +1546,7 @@ async function savePoll() {
   if(!question) { showToast('Bitte eine Frage eingeben'); return; }
   if(options.length < 2) { showToast('Mindestens 2 Optionen eingeben'); return; }
   await db.ref('/polls').push({ question, options, deadline, votes:{}, createdAt: Date.now() });
-  notifyAll('🗳️ Neue Abstimmung!', question);
+  notifyAll('🗳️ Neue Abstimmung!', question, false, 'termine');
   closeModal();
   activeTermineTab = 'abstimmung';
   renderTermine();
@@ -2013,7 +2031,7 @@ function sendChat() {
   if(ep) ep.style.display = 'none';
   emojiOpen = false;
   db.ref('/chat').push({ author, text, ts: Date.now() });
-  notifyAllExceptMe('💬 Neue Nachricht', author + ': ' + text);
+  notifyAll('💬 Neue Nachricht', author + ': ' + text, true, 'chat');
   // Sofort nach unten scrollen
   setTimeout(() => {
     const c = document.getElementById('chatMessages');
@@ -2604,19 +2622,19 @@ function saveTraining() {
     dates.forEach(date => {
       db.ref('/trainings').push({ date, time, timeTo, location, notes, attendances, actual:{}, createdAt: Date.now() });
     });
-    notifyAll('🏃 Neue Trainingsserie!', dates.length + ' Termine · ' + time + (timeTo?' - '+timeTo:'') + ' Uhr · ' + location);
+    notifyAll('🏃 Neue Trainingsserie!', dates.length + ' Termine · ' + time + (timeTo?' - '+timeTo:'') + ' Uhr · ' + location, false, 'termine');
     closeModal();
     alert('✅ ' + dates.length + ' Trainingstermine erstellt!');
   } else {
     const date = document.getElementById('tDate')?.value;
     if (!date) { alert('Datum eingeben'); return; }
-    notifyAll('🏃 Neues Training!', date + ' · ' + time + (timeTo?' - '+timeTo:'') + ' Uhr · ' + location);
+    notifyAll('🏃 Neues Training!', date + ' · ' + time + (timeTo?' - '+timeTo:'') + ' Uhr · ' + location, false, 'termine');
     db.ref('/trainings').push({ date, time, timeTo, location, notes, attendances, actual:{}, createdAt: Date.now() });
     closeModal();
   }
 }
 
-function deleteTraining(id){ if(confirm('Training löschen?')){ db.ref('/trainings/' + id).remove(); notifyAll('🗑️ Training abgesagt', 'Ein Training wurde vom Trainer abgesagt.'); } }
+function deleteTraining(id){ if(confirm('Training löschen?')){ db.ref('/trainings/' + id).remove(); notifyAll('🗑️ Training abgesagt', 'Ein Training wurde vom Trainer abgesagt.', false, 'termine'); } }
 
 function trainingDetailModal(id) {
   const t = STATE.trainings.find(x => x.id === id);
@@ -2732,13 +2750,13 @@ function saveGame(editId) {
   if(editId) {
     db.ref('/games/' + editId).update({ opponent, date, time, location:location||'', notes:notes||'' });
   } else {
-    notifyAll('⚽ Neues Spiel!', opponent + ' am ' + date);
+    notifyAll('⚽ Neues Spiel!', opponent + ' am ' + date, false, 'termine');
     db.ref('/games').push({ opponent, date, time, location:location||'', notes:notes||'', squad:{}, result:'', createdAt: Date.now() });
   }
   closeModal();
 }
 
-function deleteGame(id){ if(confirm('Spiel löschen?')){ db.ref('/games/' + id).remove(); notifyAll('🗑️ Spiel abgesagt', 'Ein Spiel wurde vom Trainer abgesagt.'); } }
+function deleteGame(id){ if(confirm('Spiel löschen?')){ db.ref('/games/' + id).remove(); notifyAll('🗑️ Spiel abgesagt', 'Ein Spiel wurde vom Trainer abgesagt.', false, 'termine'); } }
 
 function playerCircle(p, size=68) {
   return `<div style="position:relative;width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;flex-shrink:0">
@@ -3154,7 +3172,8 @@ function compressImage(dataUrl, maxW, quality, cb) {
 }
 
 function urlBase64ToUint8Array(b64){const pad='='.repeat((4-b64.length%4)%4);const raw=atob((b64+pad).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));}
-async function notifyAll(title,body,excludeSelf=false){try{const excludeKey=excludeSelf?(LS('myPushKey')||null):null;await fetch(PUSH_API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,body,excludeKey})});}catch(e){}}
+async function notifyAll(title,body,excludeSelf=false,page=''){try{const excludeKey=excludeSelf?(LS('myPushKey')||null):null;await fetch(PUSH_API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,body,excludeKey,page})});}catch(e){}}
+async function notifyAllExceptMePage(title,body,page){return notifyAll(title,body,true,page);}
 async function notifyAllExceptMe(title,body){return notifyAll(title,body,true);}
 async function subscribeToPush(){if(!('PushManager'in window)){alert('Push-Benachrichtigungen werden auf diesem Geraet nicht unterstuetzt.');return;}const p=await Notification.requestPermission();if(p!=='granted'){alert('Bitte erlaube Benachrichtigungen in den Einstellungen.');return;}try{const r=await navigator.serviceWorker.ready;const old=await r.pushManager.getSubscription();if(old)await old.unsubscribe();const s=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});const k=btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(-28);await db.ref('/pushSubscriptions/'+k).set(s.toJSON());LSset('pushEnabled','true');LSset('myPushKey',k);alert('✅ Benachrichtigungen aktiviert!');if(document.getElementById('pushBtn')){document.getElementById('pushBtn').textContent='✅ Aktiviert';document.getElementById('pushBtn').style.background='#10B981';document.getElementById('pushBtn').disabled=true;}}catch(e){alert('FEHLER bei Schritt: '+e.message);}}
 async function resubscribePush(){
