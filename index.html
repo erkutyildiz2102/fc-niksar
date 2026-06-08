@@ -238,6 +238,7 @@ const LS = k => localStorage.getItem('fcniksar_' + k);
 const LSset = (k, v) => localStorage.setItem('fcniksar_' + k, typeof v === 'string' ? v : JSON.stringify(v));
 const toArr = val => Object.entries(val || {}).map(([id, v]) => ({ ...v, id }));
 const escHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const linkify = s => escHtml(s).replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:#60A5FA;text-decoration:underline;word-break:break-all">$1</a>');
 const fmt = d => { try { return new Date(d).toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'}); } catch(e){ return d; }};
 const fmtFull = d => { try { return new Date(d).toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long'}); } catch(e){ return d; }};
 const isNew = ts => ts && (Date.now() - ts) < 7200000; // 2 Stunden
@@ -1088,7 +1089,7 @@ function renderHome() {
               <i class="fas fa-calendar-plus"></i>
             </button>
           </div>
-          ${t.notes ? `<div style="font-size:11px;color:rgba(255,255,255,.55);font-style:italic;margin-bottom:6px;word-break:break-word;overflow-wrap:break-word">${escHtml(t.notes)}</div>` : ''}
+          ${t.notes ? `<div style="font-size:11px;color:rgba(255,255,255,.55);font-style:italic;margin-bottom:6px;word-break:break-word;overflow-wrap:break-word">${linkify(t.notes)}</div>` : ''}
           ${rsvpSection}
         </div>
       </div>`;
@@ -1172,7 +1173,7 @@ function renderHome() {
               <div style="font-size:12px;color:#fff;margin-top:4px;font-weight:700">
                 <i class="fas fa-clock" style="opacity:.8;margin-right:3px"></i>Treffpunkt: ${g.time||'?'}
                 ${g.location ? ` · <i class="fas fa-location-dot" style="opacity:.8;margin-right:3px"></i>${escHtml(g.location)}` : ''}
-                ${g.notes ? `<div style="margin-top:4px;font-size:12px;font-weight:400;opacity:.9"><i class="fas fa-circle-info" style="margin-right:3px"></i>${escHtml(g.notes)}</div>` : ''}
+                ${g.notes ? `<div style="margin-top:4px;font-size:12px;font-weight:400;opacity:.9"><i class="fas fa-circle-info" style="margin-right:3px"></i>${linkify(g.notes)}</div>` : ''}
               </div>
             </div>
             <button onclick="event.stopPropagation();calBtn(this)" data-title="FC Niksar -${(g.opponent||'').replace(/"/g,'')}" data-date="${g.date||''}" data-time="${g.time||''}" data-loc="${(g.location||'').replace(/"/g,'')}" data-dur="120" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 8px;font-size:11px;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">
