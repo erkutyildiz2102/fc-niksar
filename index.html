@@ -1620,19 +1620,16 @@ function addToCalendar(title, dateStr, timeStr, location, durationMin) {
     'END:VEVENT',
     'END:VCALENDAR'
   ].join('\r\n');
+  const blob = new Blob([ics], {type:'text/calendar;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  // Kein download-Attribut auf iOS → iOS öffnet direkt mit Kalender-App
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  if (isIOS) {
-    // iOS: direkt als data URI öffnen → iOS fragt "Zum Kalender hinzufügen?"
-    window.location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
-  } else {
-    // Android/Desktop: als .ics herunterladen
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([ics], {type:'text/calendar;charset=utf-8'}));
-    a.download = title.replace(/\s+/g,'-') + '.ics';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
-  }
+  if (!isIOS) a.download = title.replace(/\s+/g,'-') + '.ics';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 2000);
 }
 
 function editProfile() {
