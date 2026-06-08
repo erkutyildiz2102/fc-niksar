@@ -2684,8 +2684,8 @@ function gameDetailModal(id) {
 }
 
 function saveResult(id){ const v=document.getElementById('gResultIn')?.value.trim()||''; db.ref('/games/'+id+'/result').set(v); closeModal(); setTimeout(()=>gameDetailModal(id),300); }
-function addToSquad(gid, pid){ db.ref('/games/'+gid+'/squad/'+pid).set(true); closeModal(); setTimeout(()=>gameDetailModal(gid),300); }
-function removeFromSquad(gid, pid){ db.ref('/games/'+gid+'/squad/'+pid).remove(); db.ref('/games/'+gid+'/squadConfirm/'+pid).remove(); closeModal(); setTimeout(()=>gameDetailModal(gid),300); }
+function addToSquad(gid, pid){ db.ref('/games/'+gid+'/squad/'+pid).set(true); gameDetailModal(gid); }
+function removeFromSquad(gid, pid){ db.ref('/games/'+gid+'/squad/'+pid).remove(); db.ref('/games/'+gid+'/squadConfirm/'+pid).remove(); gameDetailModal(gid); }
 function setGameRsvp(gid, pid, status) {
   if(status === 'open') {
     db.ref('/games/'+gid+'/squadConfirm/'+pid).remove();
