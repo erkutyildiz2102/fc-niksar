@@ -785,9 +785,19 @@ function dateBox(dateStr, dark) {
 window._rsvpEdit = window._rsvpEdit || {};
 
 function toggleRsvpEdit(tid) {
+  const profile = getProfile();
+  const pid = profile?.playerId;
+  if(!pid) return;
+  // Sofort auf "offen" setzen → Trainer sieht offene Rückmeldung
+  window._localAtt = window._localAtt || {};
+  window._localAtt[tid + '_' + pid] = 'open';
+  const _t = STATE.trainings.find(x => x.id === tid);
+  if(_t) { _t.attendances = _t.attendances || {}; _t.attendances[pid] = 'open'; }
+  db.ref('/trainings/' + tid + '/attendances/' + pid).set('open');
   window._rsvpEdit = window._rsvpEdit || {};
-  window._rsvpEdit[tid] = !window._rsvpEdit[tid];
+  window._rsvpEdit[tid] = true;
   renderHome();
+  renderTermine();
 }
 
 function renderHome() {
@@ -1951,7 +1961,6 @@ function setRsvpHome(tid, pid, status) {
   if (_t) { _t.attendances = _t.attendances || {}; _t.attendances[pid] = status; }
   if(status === 'yes') showToast('✅ Zusage gespeichert!');
   else if(status === 'no') showToast('❌ Absage gespeichert!');
-  else showToast('↩️ Antwort zurückgesetzt');
   renderHome();
   renderTermine();
 
