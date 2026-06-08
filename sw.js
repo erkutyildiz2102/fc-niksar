@@ -1,22 +1,19 @@
-// FC Niksar Service Worker v7 - Cache-First für schnellen Start
-const CACHE = 'fcn-v7';
-
-// App-Shell Dateien beim Install direkt cachen
-const APP_SHELL = [
-  '/fc-niksar/',
-  '/fc-niksar/index.html',
-  '/fc-niksar/manifest.json',
-  '/fc-niksar/icon-192.png',
-  '/fc-niksar/icon-512.png'
-];
+// FC Niksar Service Worker v8
+// index.html: Network-First (immer aktuell), Bilder/Icons: Cache-First (schnell)
+const CACHE = 'fcn-v8';
 
 self.addEventListener('message', e => {
   if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('install', e => {
+  // Icons sofort cachen, dann sofort aktiv werden
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(APP_SHELL)).then(() => self.skipWaiting())
+    caches.open(CACHE).then(c => c.addAll([
+      '/fc-niksar/icon-192.png',
+      '/fc-niksar/icon-512.png',
+      '/fc-niksar/manifest.json'
+    ])).catch(() => {}).then(() => self.skipWaiting())
   );
 });
 
@@ -31,7 +28,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Firebase, Vercel, CDN immer live laden (keine Daten cachen)
+  // Firebase, Vercel, CDN: immer live, nie cachen
   if (url.hostname.includes('firebase') ||
       url.hostname.includes('vercel') ||
       url.hostname.includes('gstatic') ||
@@ -41,35 +38,33 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Navigation (index.html): Cache-First → sofortiger Start
-  // Im Hintergrund wird der Cache aktualisiert (Stale-While-Revalidate)
+  // index.html: Network-First → immer aktuelle Version
+  // Fallback auf Cache wenn offline
   if (e.request.mode === 'navigate') {
     e.respondWith(
-      caches.open(CACHE).then(async cache => {
-        const cached = await cache.match(e.request);
-        // Hintergrund-Update starten
-        const fetchPromise = fetch(e.request).then(res => {
-          if (res.ok) cache.put(e.request, res.clone());
+      fetch(e.request).then(res => {
+        if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+        return res;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Bilder & Icons: Cache-First (ändern sich selten)
+  if (e.request.destination === 'image') {
+    e.respondWith(
+      caches.match(e.request).then(cached => {
+        if (cached) return cached;
+        return fetch(e.request).then(res => {
+          if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
           return res;
-        }).catch(() => null);
-        // Sofort aus Cache antworten wenn vorhanden, sonst warten
-        return cached || fetchPromise;
+        });
       })
     );
     return;
   }
 
-  // Alles andere: Cache-First, im Hintergrund updaten
-  e.respondWith(
-    caches.open(CACHE).then(async cache => {
-      const cached = await cache.match(e.request);
-      const fetchPromise = fetch(e.request).then(res => {
-        if (res.ok) cache.put(e.request, res.clone());
-        return res;
-      }).catch(() => null);
-      return cached || fetchPromise;
-    })
-  );
+  // Alles andere: live laden
 });
 
 // Push Notifications
