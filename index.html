@@ -3225,7 +3225,8 @@ function renderStatistikTab(c) {
           </div>
         </td>
         <td style="padding:8px 6px;text-align:center;white-space:nowrap">
-          <span style="font-size:12px;font-weight:800;color:${pctColor(p.trainPct)}">${p.yesCount} (${p.trainPct}%)</span>
+          <span style="font-size:12px;font-weight:800;color:${pctColor(p.trainPct)}">${p.yesCount}/${totalT}</span>
+          <div style="font-size:10px;color:#9CA3AF;margin-top:1px">${p.trainPct}%</div>
         </td>
         ${dateCells}
       </tr>`;
@@ -3261,7 +3262,8 @@ function renderStatistikTab(c) {
           </div>
         </td>
         <td style="padding:8px 6px;text-align:center;white-space:nowrap">
-          <span style="font-size:12px;font-weight:800;color:${pctColor(p.gamePct)}">${p.gamesInSquad.length} (${p.gamePct}%)</span>
+          <span style="font-size:12px;font-weight:800;color:${pctColor(p.gamePct)}">${p.gamesInSquad.length}/${totalG}</span>
+          <div style="font-size:10px;color:#9CA3AF;margin-top:1px">${p.gamePct}%</div>
         </td>
         ${dateCells}
       </tr>`;
