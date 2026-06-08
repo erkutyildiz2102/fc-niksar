@@ -1228,7 +1228,7 @@ function renderHome() {
 // ---- TERMINE / CALENDAR ----
 let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
-let activeTermineTab = 'kalender';
+let activeTermineTab = 'liste';
 let selectedDay = null;
 
 function renderTermine() {
@@ -1374,9 +1374,10 @@ function renderTermine() {
 
   // ── Icon Tab Bar ──
   const tabs = [
-    { id:'kalender',    icon:'fa-calendar-days',  label:'Kalender'     },
-    { id:'abwesenheit', icon:'fa-calendar-xmark',  label:'Abwesenheit'  },
-    { id:'abstimmung',  icon:'fa-square-poll-horizontal', label:'Abstimmung' },
+    { id:'liste',       icon:'fa-list',                   label:'Termine'    },
+    { id:'kalender',    icon:'fa-calendar-days',           label:'Kalender'   },
+    { id:'abwesenheit', icon:'fa-calendar-xmark',          label:'Abwesenheit'},
+    { id:'abstimmung',  icon:'fa-square-poll-horizontal',  label:'Abstimmung' },
   ];
   const tabBar = `<div style="display:flex;background:#fff;border-bottom:1px solid #F3F4F6;position:sticky;top:0;z-index:10;padding:0 8px">
     ${tabs.map(t => `
@@ -1388,7 +1389,197 @@ function renderTermine() {
 
   let tabContent = '';
 
-  if(activeTermineTab === 'kalender') {
+  if(activeTermineTab === 'liste') {
+    const pid = getProfile()?.playerId;
+    const isTrainer = STATE.config?.trainerId && !pid;
+    const today = new Date().toISOString().slice(0,10);
+    const DAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+    const MONTHS = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+    // Alle Events chronologisch mischen
+    const allEvents = [
+      ...STATE.trainings.map(t => ({...t, _type:'training'})),
+      ...STATE.games.map(g => ({...g, _type:'game'}))
+    ].filter(e => e.date).sort((a,b) => a.date > b.date ? 1 : a.date < b.date ? -1 : 0);
+
+    const upcoming = allEvents.filter(e => e.date >= today);
+    const past = allEvents.filter(e => e.date < today).slice(-3).reverse();
+
+    const fmtDay = dateStr => {
+      const d = new Date(dateStr + 'T12:00:00');
+      return DAYS[d.getDay()];
+    };
+    const fmtDayNum = dateStr => {
+      const d = new Date(dateStr + 'T12:00:00');
+      return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0');
+    };
+
+    const renderListCard = ev => {
+      const isT = ev._type === 'training';
+      const isPast = ev.date < today;
+      const headerBg = isT
+        ? (isPast ? 'linear-gradient(135deg,#4A7068,#375c54)' : 'linear-gradient(135deg,#0A2540,#1e4d8c)')
+        : (isPast ? 'linear-gradient(135deg,#78520a,#a06810)' : 'linear-gradient(135deg,#B45309,#d97706)');
+
+      // Zeiten
+      const beginTime = isT ? (ev.time || '-:-') : '-:-';
+      const endTime   = isT ? (ev.timeTo || '-:-') : '-:-';
+      const treffTime = !isT ? (ev.time || '-:-') : '-:-';
+
+      // Titel & Subtitle
+      const title    = isT ? 'Training' : escHtml(ev.opponent || 'Spiel');
+      const subtitle = isT
+        ? (ev.location ? `<div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:2px">📍 ${escHtml(ev.location)}</div>` : '')
+        : (ev.location ? `<div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:2px">📍 ${escHtml(ev.location)}</div>` : '');
+
+      // Abstimmungs-Zähler (Training)
+      let rsvpRow = '';
+      if(isT) {
+        const yesN  = Object.values(ev.attendances||{}).filter(v=>v==='yes').length;
+        const noN   = Object.values(ev.attendances||{}).filter(v=>v==='no').length;
+        const total = STATE.players.length;
+        const myVote = pid ? ((window._localAtt?.[ev.id+'_'+pid]) ?? ev.attendances?.[pid]) : null;
+
+        if(pid && !isPast && myVote !== 'yes' && myVote !== 'no') {
+          // Noch nicht abgestimmt → Buttons zeigen
+          rsvpRow = `<div style="display:flex;gap:8px;padding:10px 12px">
+            <button onclick="setRsvp('${ev.id}','${pid}','yes')" style="flex:1;padding:10px 6px;border-radius:12px;border:2px solid #D1FAE5;background:#F0FDF4;color:#065F46;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">👍 Zusagen</button>
+            <button onclick="setRsvp('${ev.id}','${pid}','no')" style="flex:1;padding:10px 6px;border-radius:12px;border:2px solid #FEE2E2;background:#FEF2F2;color:#991B1B;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">👎 Absagen</button>
+          </div>`;
+        } else {
+          const yesActive = myVote==='yes';
+          const noActive  = myVote==='no';
+          rsvpRow = `<div style="display:flex;align-items:center;padding:8px 12px;gap:6px">
+            <button onclick="${pid&&!isPast?`setRsvp('${ev.id}','${pid}',${yesActive?`'open'`:`'yes'`})`:'void 0'}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 4px;border-radius:12px;border:2px solid ${yesActive?'#10B981':'#E5E7EB'};background:${yesActive?'#D1FAE5':'#F9FAFB'};cursor:${pid&&!isPast?'pointer':'default'}">
+              <span style="font-size:17px">👍</span>
+              <span style="font-size:14px;font-weight:800;color:${yesActive?'#065F46':'#6B7280'}">${yesN}</span>
+            </button>
+            <button onclick="${pid&&!isPast?`setRsvp('${ev.id}','${pid}','open')`:'void 0'}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 4px;border-radius:12px;border:2px solid #E5E7EB;background:#F9FAFB;cursor:default">
+              <span style="font-size:17px">❓</span>
+              <span style="font-size:14px;font-weight:800;color:#6B7280">${total-yesN-noN}</span>
+            </button>
+            <button onclick="${pid&&!isPast?`setRsvp('${ev.id}','${pid}',${noActive?`'open'`:`'no'`})`:'void 0'}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 4px;border-radius:12px;border:2px solid ${noActive?'#EF4444':'#E5E7EB'};background:${noActive?'#FEE2E2':'#F9FAFB'};cursor:${pid&&!isPast?'pointer':'default'}">
+              <span style="font-size:17px">👎</span>
+              <span style="font-size:14px;font-weight:800;color:${noActive?'#991B1B':'#6B7280'}">${noN}</span>
+            </button>
+            <div style="width:40px;display:flex;justify-content:center">
+              <i class="fas fa-users" style="font-size:18px;color:#9CA3AF"></i>
+            </div>
+          </div>`;
+        }
+      } else {
+        // Spiel RSVP
+        const squadKeys = Object.keys(ev.squad||{}).filter(k=>ev.squad[k]);
+        const inSquad = pid ? squadKeys.includes(pid) : false;
+        const conf = pid ? ev.squadConfirm?.[pid] : null;
+        const yesConf = squadKeys.filter(k => ev.squadConfirm?.[k]==='yes').length;
+        const noConf  = squadKeys.filter(k => ev.squadConfirm?.[k]==='no').length;
+
+        if(pid && inSquad && !isPast && conf !== 'yes' && conf !== 'no') {
+          rsvpRow = `<div style="padding:8px 12px">
+            <div style="font-size:11px;font-weight:700;color:#059669;margin-bottom:6px">✅ Du bist nominiert!</div>
+            <div style="display:flex;gap:8px">
+              <button onclick="setGameRsvp('${ev.id}','${pid}','yes')" style="flex:1;padding:10px;border-radius:12px;border:2px solid #D1FAE5;background:#F0FDF4;color:#065F46;font-size:13px;font-weight:800;cursor:pointer">👍 Zusagen</button>
+              <button onclick="setGameRsvp('${ev.id}','${pid}','no')" style="flex:1;padding:10px;border-radius:12px;border:2px solid #FEE2E2;background:#FEF2F2;color:#991B1B;font-size:13px;font-weight:800;cursor:pointer">👎 Absagen</button>
+            </div>
+          </div>`;
+        } else {
+          const confActive = conf === 'yes' ? 'yes' : conf === 'no' ? 'no' : null;
+          rsvpRow = `<div style="display:flex;align-items:center;padding:8px 12px;gap:6px">
+            <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 4px;border-radius:12px;border:2px solid ${confActive==='yes'?'#10B981':'#E5E7EB'};background:${confActive==='yes'?'#D1FAE5':'#F9FAFB'};">
+              <span style="font-size:17px">👍</span>
+              <span style="font-size:14px;font-weight:800;color:${confActive==='yes'?'#065F46':'#6B7280'}">${yesConf}</span>
+            </button>
+            <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 4px;border-radius:12px;border:2px solid #E5E7EB;background:#F9FAFB;">
+              <span style="font-size:17px">❓</span>
+              <span style="font-size:14px;font-weight:800;color:#6B7280">${squadKeys.length-yesConf-noConf}</span>
+            </button>
+            <button onclick="${pid&&inSquad&&!isPast?`setGameRsvp('${ev.id}','${pid}',${confActive==='no'?`'open'`:`'no'`})`:'void 0'}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 4px;border-radius:12px;border:2px solid ${confActive==='no'?'#EF4444':'#E5E7EB'};background:${confActive==='no'?'#FEE2E2':'#F9FAFB'};">
+              <span style="font-size:17px">👎</span>
+              <span style="font-size:14px;font-weight:800;color:${confActive==='no'?'#991B1B':'#6B7280'}">${noConf}</span>
+            </button>
+            <div onclick="${isTrainer?`gameDetailModal('${ev.id}')`:'void 0'}" style="width:40px;display:flex;justify-content:center;cursor:${isTrainer?'pointer':'default'}">
+              <i class="fas fa-users" style="font-size:18px;color:#9CA3AF"></i>
+            </div>
+          </div>`;
+        }
+      }
+
+      // Abgelaufen-Banner
+      const expiredBanner = isPast
+        ? `<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#FEF3C7;border-top:1px solid #FDE68A">
+            <i class="fas fa-clock" style="color:#D97706;font-size:11px"></i>
+            <span style="font-size:11px;font-weight:700;color:#92400E">Zeit zum Zu-/Absagen abgelaufen</span>
+           </div>`
+        : '';
+
+      const trainerActions = isTrainer && isT
+        ? `<div style="padding:0 12px 10px;display:flex;gap:8px">
+            <button onclick="editTrainingModal('${ev.id}')" style="flex:1;padding:8px;border-radius:10px;border:1px solid #E5E7EB;background:#F9FAFB;font-size:12px;font-weight:700;color:#374151;cursor:pointer"><i class="fas fa-pen" style="margin-right:4px"></i>Bearbeiten</button>
+            <button onclick="deleteTraining('${ev.id}')" style="padding:8px 12px;border-radius:10px;border:1px solid #FEE2E2;background:#FEF2F2;font-size:12px;color:#DC2626;cursor:pointer"><i class="fas fa-trash"></i></button>
+           </div>`
+        : isTrainer && !isT
+        ? `<div style="padding:0 12px 10px;display:flex;gap:8px">
+            <button onclick="gameDetailModal('${ev.id}')" style="flex:1;padding:8px;border-radius:10px;border:1px solid #E5E7EB;background:#F9FAFB;font-size:12px;font-weight:700;color:#374151;cursor:pointer"><i class="fas fa-users" style="margin-right:4px"></i>Kader verwalten</button>
+            <button onclick="editGameModal('${ev.id}')" style="padding:8px 12px;border-radius:10px;border:1px solid #E5E7EB;background:#F9FAFB;font-size:12px;color:#374151;cursor:pointer"><i class="fas fa-pen"></i></button>
+            <button onclick="deleteGame('${ev.id}')" style="padding:8px 12px;border-radius:10px;border:1px solid #FEE2E2;background:#FEF2F2;font-size:12px;color:#DC2626;cursor:pointer"><i class="fas fa-trash"></i></button>
+           </div>`
+        : '';
+
+      return `<div style="background:#fff;border-radius:16px;overflow:hidden;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.07)">
+        <!-- Kopf -->
+        <div style="background:${headerBg};padding:13px 16px;display:flex;align-items:center;gap:12px">
+          <div style="background:rgba(255,255,255,.18);border-radius:10px;padding:6px 10px;text-align:center;min-width:48px">
+            <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.75);line-height:1.2">${fmtDay(ev.date)}</div>
+            <div style="font-size:17px;font-weight:900;color:#fff;line-height:1.2">${fmtDayNum(ev.date)}</div>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:16px;font-weight:800;color:#fff;line-height:1.2">${isT ? '🏃 Training' : '⚽ '+title}</div>
+            ${subtitle}
+          </div>
+          <i class="fas fa-chevron-right" style="color:rgba(255,255,255,.5);font-size:13px;flex-shrink:0"></i>
+        </div>
+        <!-- Zeit -->
+        <div style="display:flex;border-bottom:1px solid #F3F4F6">
+          ${isT ? `
+          <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid #F3F4F6">
+            <div style="font-size:15px;font-weight:800;color:#1F2937">${beginTime}</div>
+            <div style="font-size:10px;color:#9CA3AF;margin-top:2px;font-weight:600">Beginn</div>
+          </div>
+          <div style="flex:1;padding:10px 6px;text-align:center">
+            <div style="font-size:15px;font-weight:800;color:#1F2937">${endTime}</div>
+            <div style="font-size:10px;color:#9CA3AF;margin-top:2px;font-weight:600">Ende</div>
+          </div>` : `
+          <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid #F3F4F6">
+            <div style="font-size:15px;font-weight:800;color:#1F2937">${treffTime}</div>
+            <div style="font-size:10px;color:#9CA3AF;margin-top:2px;font-weight:600">Treffpunkt</div>
+          </div>
+          <div style="flex:1;padding:10px 6px;text-align:center">
+            <div style="font-size:13px;font-weight:700;color:#6B7280">${escHtml(ev.location||'-')}</div>
+            <div style="font-size:10px;color:#9CA3AF;margin-top:2px;font-weight:600">Ort</div>
+          </div>`}
+        </div>
+        ${expiredBanner}
+        ${rsvpRow}
+        ${trainerActions}
+      </div>`;
+    };
+
+    const upcomingCards = upcoming.length
+      ? upcoming.map(renderListCard).join('')
+      : `<div style="text-align:center;padding:40px 20px;color:#9CA3AF"><i class="fas fa-calendar-check" style="font-size:36px;display:block;margin-bottom:12px;color:#D1D5DB"></i><div style="font-size:14px;font-weight:600">Keine Termine</div></div>`;
+
+    const pastSection = past.length
+      ? `<div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 10px">Vergangene Termine</div>${past.map(renderListCard).join('')}`
+      : '';
+
+    tabContent = `<div style="padding:12px 12px 80px;max-width:600px;margin:0 auto">
+      <div style="font-size:18px;font-weight:900;color:#0A2540;margin-bottom:14px">Nächste Termine</div>
+      ${upcomingCards}
+      ${pastSection}
+    </div>`;
+
+  } else if(activeTermineTab === 'kalender') {
     tabContent = `
     <div style="max-width:600px;margin:0 auto;width:100%">
     <div style="padding:12px 12px 0">
