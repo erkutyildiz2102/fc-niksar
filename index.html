@@ -1610,29 +1610,38 @@ function renderTermine() {
         const yesConf = squadKeys.filter(k => ev.squadConfirm?.[k]==='yes').length;
         const noConf  = squadKeys.filter(k => ev.squadConfirm?.[k]==='no').length;
 
-        if(pid && inSquad && !isPast && conf !== 'yes' && conf !== 'no') {
+        const gameEditMode = window._gameRsvpEdit?.[ev.id];
+        if(pid && inSquad && !isPast && (conf !== 'yes' && conf !== 'no' || gameEditMode)) {
           rsvpRow = `<div style="padding:8px 12px">
             <div style="font-size:11px;font-weight:700;color:#059669;margin-bottom:6px">✅ Du bist nominiert!</div>
             <div style="display:flex;gap:8px">
-              <button onclick="setGameRsvp('${ev.id}','${pid}','yes')" style="flex:1;padding:10px;border-radius:12px;border:2px solid #D1FAE5;background:#F0FDF4;color:#065F46;font-size:13px;font-weight:800;cursor:pointer">👍 Zusagen</button>
-              <button onclick="setGameRsvp('${ev.id}','${pid}','no')" style="flex:1;padding:10px;border-radius:12px;border:2px solid #FEE2E2;background:#FEF2F2;color:#991B1B;font-size:13px;font-weight:800;cursor:pointer">👎 Absagen</button>
+              <button onclick="setGameRsvp('${ev.id}','${pid}','yes')" style="flex:1;padding:10px;border-radius:12px;border:2px solid #6EE7B7;background:#F0FDF4;color:#065F46;font-size:13px;font-weight:800;cursor:pointer">👍 Zusagen</button>
+              <button onclick="setGameRsvp('${ev.id}','${pid}','no')" style="flex:1;padding:10px;border-radius:12px;border:2px solid #FCA5A5;background:#FEF2F2;color:#991B1B;font-size:13px;font-weight:800;cursor:pointer">👎 Absagen</button>
             </div>
           </div>`;
+        } else if(pid && inSquad && !isPast && (conf === 'yes' || conf === 'no')) {
+          const gbBg    = conf==='yes' ? '#D1FAE5' : '#FEE2E2';
+          const gbBord  = conf==='yes' ? '#6EE7B7' : '#FCA5A5';
+          const gbColor = conf==='yes' ? '#065F46' : '#991B1B';
+          const gbLabel = conf==='yes' ? '👍 Nominiert · Zugesagt' : '👎 Nominiert · Abgesagt';
+          rsvpRow = `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px 10px">
+            <div style="flex:1;background:${gbBg};border:1.5px solid ${gbBord};border-radius:10px;padding:9px 12px;font-size:13px;font-weight:800;color:${gbColor}">${gbLabel}</div>
+            <button onclick="toggleGameRsvpEdit('${ev.id}')" style="background:#F3F4F6;border:none;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;color:#374151;cursor:pointer;white-space:nowrap">Antwort ändern</button>
+          </div>`;
         } else {
-          const confActive = conf === 'yes' ? 'yes' : conf === 'no' ? 'no' : null;
           rsvpRow = `<div style="display:flex;align-items:center;padding:8px 12px;gap:6px">
-            <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 4px;border-radius:12px;border:2px solid ${confActive==='yes'?'#10B981':'#E5E7EB'};background:${confActive==='yes'?'#D1FAE5':'#F9FAFB'};">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 4px;border-radius:12px;border:2px solid #E5E7EB;background:#F9FAFB;">
               <span style="font-size:17px">👍</span>
-              <span style="font-size:14px;font-weight:800;color:${confActive==='yes'?'#065F46':'#6B7280'}">${yesConf}</span>
-            </button>
-            <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 4px;border-radius:12px;border:2px solid #E5E7EB;background:#F9FAFB;">
+              <span style="font-size:14px;font-weight:800;color:#6B7280">${yesConf}</span>
+            </div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 4px;border-radius:12px;border:2px solid #E5E7EB;background:#F9FAFB;">
               <span style="font-size:17px">❓</span>
               <span style="font-size:14px;font-weight:800;color:#6B7280">${squadKeys.length-yesConf-noConf}</span>
-            </button>
-            <button onclick="${pid&&inSquad&&!isPast?`setGameRsvp('${ev.id}','${pid}',${confActive==='no'?`'open'`:`'no'`})`:'void 0'}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 4px;border-radius:12px;border:2px solid ${confActive==='no'?'#EF4444':'#E5E7EB'};background:${confActive==='no'?'#FEE2E2':'#F9FAFB'};">
+            </div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 4px;border-radius:12px;border:2px solid #E5E7EB;background:#F9FAFB;">
               <span style="font-size:17px">👎</span>
-              <span style="font-size:14px;font-weight:800;color:${confActive==='no'?'#991B1B':'#6B7280'}">${noConf}</span>
-            </button>
+              <span style="font-size:14px;font-weight:800;color:#6B7280">${noConf}</span>
+            </div>
             <div onclick="${isTrainer?`gameDetailModal('${ev.id}')`:'void 0'}" style="width:40px;display:flex;justify-content:center;cursor:${isTrainer?'pointer':'default'}">
               <i class="fas fa-users" style="font-size:18px;color:#9CA3AF"></i>
             </div>
@@ -3353,14 +3362,36 @@ function gameDetailModal(id) {
 function saveResult(id){ const v=document.getElementById('gResultIn')?.value.trim()||''; db.ref('/games/'+id+'/result').set(v); closeModal(); setTimeout(()=>gameDetailModal(id),300); }
 function addToSquad(gid, pid){ db.ref('/games/'+gid+'/squad/'+pid).set(true); gameDetailModal(gid); }
 function removeFromSquad(gid, pid){ db.ref('/games/'+gid+'/squad/'+pid).remove(); db.ref('/games/'+gid+'/squadConfirm/'+pid).remove(); gameDetailModal(gid); }
+function toggleGameRsvpEdit(gid) {
+  const pid = getProfile()?.playerId;
+  if(!pid) return;
+  window._gameRsvpEdit = window._gameRsvpEdit || {};
+  window._gameRsvpEdit[gid] = true;
+  const _g = STATE.games.find(x => x.id === gid);
+  if(_g) { _g.squadConfirm = _g.squadConfirm || {}; _g.squadConfirm[pid] = 'open'; }
+  db.ref('/games/'+gid+'/squadConfirm/'+pid).remove();
+  const sy = window.scrollY || 0;
+  renderHome();
+  renderTermine();
+  requestAnimationFrame(() => window.scrollTo({top: sy, behavior: 'instant'}));
+}
+
 function setGameRsvp(gid, pid, status) {
+  window._gameRsvpEdit = window._gameRsvpEdit || {};
+  delete window._gameRsvpEdit[gid];
+  const _g = STATE.games.find(x => x.id === gid);
+  if(_g) { _g.squadConfirm = _g.squadConfirm || {}; _g.squadConfirm[pid] = status; }
+  if(status === 'yes') showToast('✅ Zusage gespeichert!');
+  else if(status === 'no') showToast('❌ Absage gespeichert!');
+  const sy = window.scrollY || 0;
+  renderHome();
+  renderTermine();
+  requestAnimationFrame(() => window.scrollTo({top: sy, behavior: 'instant'}));
   if(status === 'open') {
     db.ref('/games/'+gid+'/squadConfirm/'+pid).remove();
   } else {
     db.ref('/games/'+gid+'/squadConfirm/'+pid).set(status);
   }
-  renderHome();
-  renderTermine();
 }
 
 // ---- ABWESENHEITEN ----
