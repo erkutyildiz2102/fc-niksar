@@ -475,14 +475,12 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const sub = await reg.pushManager.getSubscription();
         if (sub) {
-          // Subscription existiert → Key speichern + in Firebase registrieren falls nötig
+          // Subscription existiert → IMMER in Firebase speichern
+          // Verhindert Pushlosigkeit wenn Firebase-Eintrag abgelaufen/gelöscht war
           const k = btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
           LSset('myPushKey', k);
-          if (LS('pushEnabled') !== 'true') {
-            // Nach Reinstall: neu in Firebase eintragen
-            await db.ref('/pushSubscriptions/' + k).set(sub.toJSON());
-            LSset('pushEnabled', 'true');
-          }
+          LSset('pushEnabled', 'true');
+          await db.ref('/pushSubscriptions/' + k).set(sub.toJSON());
         } else if (Notification.permission === 'granted' && LS('pushEnabled') !== 'false') {
           // Permission erteilt aber keine Subscription (nach Reinstall) → automatisch neu abonnieren
           const s = await reg.pushManager.subscribe({
