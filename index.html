@@ -3304,10 +3304,175 @@ function renderStatistikTab(c) {
       <span>👍 Dabei</span><span>👎 Abgesagt</span><span>○ Offen</span>
     </div>
 
-    <!-- Export -->
-    <button onclick="exportStatistikCSV('${statsTab}')" style="width:100%;margin-top:14px;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:12px;padding:12px;font-size:14px;font-weight:700;color:#065F46;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
-      📥 Als Excel exportieren (alle Termine)
-    </button>`;
+    <!-- Export Buttons -->
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+      <button onclick="exportStatistikPDF()" style="width:100%;background:linear-gradient(135deg,#0A2540,#1e4d8c);border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        📄 Als PDF exportieren (mit Diagrammen)
+      </button>
+      <button onclick="exportStatistikCSV('${statsTab}')" style="width:100%;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:12px;padding:12px;font-size:14px;font-weight:700;color:#065F46;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        📥 Als Excel exportieren (alle Termine)
+      </button>
+    </div>`;
+}
+
+function exportStatistikPDF() {
+  const players = [...STATE.players].sort((a,b)=>(parseInt(a.number,10)||999)-(parseInt(b.number,10)||999));
+  const totalT = STATE.trainings.length;
+  const totalG = STATE.games.length;
+  const today = new Date().toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'});
+  const logo = STATE.config?.logo || '';
+
+  const playerStats = players.map(p => {
+    const yes  = STATE.trainings.filter(t => t.attendances?.[p.id] === 'yes').length;
+    const no   = STATE.trainings.filter(t => t.attendances?.[p.id] === 'no').length;
+    const open = totalT - yes - no;
+    const games = STATE.games.filter(g => g.squad?.[p.id] === true).length;
+    const tPct = totalT ? Math.round(yes/totalT*100) : 0;
+    const gPct = totalG ? Math.round(games/totalG*100) : 0;
+    return { ...p, yes, no, open, games, tPct, gPct };
+  });
+
+  const barColor = pct => pct >= 75 ? '#059669' : pct >= 40 ? '#D97706' : '#DC2626';
+  const barSvg = (pct, color, label, sub) => {
+    const w = Math.max(pct, 2);
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:13px;font-weight:700;color:#1F2937">${label}</span>
+        <span style="font-size:13px;font-weight:800;color:${color}">${sub}</span>
+      </div>
+      <div style="background:#F3F4F6;border-radius:8px;height:18px;overflow:hidden">
+        <div style="width:${w}%;height:100%;background:${color};border-radius:8px;transition:width .5s;display:flex;align-items:center;justify-content:flex-end;padding-right:6px">
+          ${pct>10?`<span style="font-size:10px;font-weight:800;color:#fff">${pct}%</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  };
+
+  // Team-Donut SVG
+  const teamYes  = playerStats.reduce((s,p)=>s+p.yes,0);
+  const teamNo   = playerStats.reduce((s,p)=>s+p.no,0);
+  const teamOpen = playerStats.reduce((s,p)=>s+p.open,0);
+  const teamTotal = teamYes + teamNo + teamOpen || 1;
+  const donut = (vals, colors, r=54) => {
+    let offset = 0;
+    const circ = 2 * Math.PI * r;
+    return vals.map((v,i) => {
+      const dash = (v/teamTotal)*circ;
+      const el = `<circle cx="60" cy="60" r="${r}" fill="none" stroke="${colors[i]}" stroke-width="12"
+        stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 60 60)"/>`;
+      offset += dash;
+      return el;
+    }).join('');
+  };
+
+  // Spieler-Karten HTML
+  const cards = playerStats.map(p => `
+    <div style="background:#fff;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.08);break-inside:avoid">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:2px solid #F3F4F6">
+        ${p.photo
+          ? `<img src="${p.photo}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:3px solid #0A2540">`
+          : `<div style="width:52px;height:52px;border-radius:50%;background:#0A2540;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff">${(p.name||'?')[0].toUpperCase()}</div>`}
+        <div>
+          <div style="font-size:18px;font-weight:900;color:#0A2540">${p.name||''}</div>
+          <div style="font-size:12px;color:#9CA3AF;margin-top:2px">Nummer #${p.number||'?'}</div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-size:22px;font-weight:900;color:${barColor(p.tPct)}">${p.tPct}%</div>
+          <div style="font-size:10px;color:#9CA3AF">Ø Teilnahme</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">🏃 Training</div>
+          ${barSvg(p.tPct, barColor(p.tPct), 'Dabei', p.yes+'/'+totalT)}
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+            <span style="background:#D1FAE5;color:#065F46;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700">✅ ${p.yes} Dabei</span>
+            <span style="background:#FEE2E2;color:#991B1B;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700">❌ ${p.no} Abgesagt</span>
+            ${p.open>0?`<span style="background:#F3F4F6;color:#6B7280;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700">○ ${p.open} Offen</span>`:''}
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">⚽ Spiele</div>
+          ${barSvg(p.gPct, barColor(p.gPct), 'Im Kader', p.games+'/'+totalG)}
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+            <span style="background:#EEF2FF;color:#3730A3;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700">⚽ ${p.games} Spiele</span>
+            <span style="background:#F3F4F6;color:#6B7280;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700">○ ${totalG-p.games} Nicht</span>
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+
+  const html = `<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>FC Niksar – Statistik Auswertung</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0F4F8;padding:20px;color:#1F2937}
+    @media print{body{background:#fff;padding:0} .no-print{display:none} .page-break{page-break-after:always}}
+  </style>
+</head><body>
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#0A2540,#1e4d8c);border-radius:20px;padding:24px;margin-bottom:20px;color:#fff;display:flex;align-items:center;gap:16px">
+    ${logo ? `<img src="${logo}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.3)">` : '<div style="width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:28px">⚽</div>'}
+    <div>
+      <div style="font-size:24px;font-weight:900;letter-spacing:2px">FC NIKSAR</div>
+      <div style="font-size:13px;opacity:.7;margin-top:2px">F1 · U9 · Statistik Auswertung · ${today}</div>
+    </div>
+    <button class="no-print" onclick="window.print()" style="margin-left:auto;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);border-radius:12px;padding:10px 18px;color:#fff;font-size:14px;font-weight:700;cursor:pointer">📄 Als PDF speichern</button>
+  </div>
+
+  <!-- Team Übersicht -->
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px">
+    ${[
+      ['🏃', totalT, 'Trainings', '#0A2540'],
+      ['⚽', totalG, 'Spiele', '#0A2540'],
+      ['👥', players.length, 'Spieler', '#0A2540'],
+      ['✅', totalT>0?Math.round(playerStats.reduce((s,p)=>s+p.tPct,0)/players.length)+'%':'—', 'Ø Training', '#059669']
+    ].map(([ic,v,l,c])=>`
+      <div style="background:#fff;border-radius:14px;padding:16px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+        <div style="font-size:24px;margin-bottom:4px">${ic}</div>
+        <div style="font-size:28px;font-weight:900;color:${c}">${v}</div>
+        <div style="font-size:12px;color:#9CA3AF;margin-top:2px">${l}</div>
+      </div>`).join('')}
+  </div>
+
+  <!-- Team Donut -->
+  <div style="background:#fff;border-radius:16px;padding:20px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,.08)">
+    <div style="font-size:15px;font-weight:800;color:#0A2540;margin-bottom:16px">📊 Team Gesamt – Training</div>
+    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+      <svg width="120" height="120" viewBox="0 0 120 120">
+        ${donut([teamYes,teamNo,teamOpen],['#059669','#DC2626','#E5E7EB'])}
+        <text x="60" y="56" text-anchor="middle" style="font-size:16px;font-weight:900;fill:#0A2540">${totalT>0?Math.round(teamYes/(teamYes+teamNo||1)*100):0}%</text>
+        <text x="60" y="72" text-anchor="middle" style="font-size:10px;fill:#9CA3AF">Dabei</text>
+      </svg>
+      <div style="flex:1;min-width:140px">
+        ${[['#059669','✅ Dabei',teamYes],['#DC2626','❌ Abgesagt',teamNo],['#9CA3AF','○ Offen',teamOpen]]
+          .map(([c,l,v])=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="width:14px;height:14px;border-radius:3px;background:${c};flex-shrink:0"></div>
+            <span style="font-size:13px;color:#374151;flex:1">${l}</span>
+            <span style="font-size:14px;font-weight:800;color:#0A2540">${v}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>
+
+  <!-- Spieler Karten -->
+  <div style="font-size:16px;font-weight:900;color:#0A2540;margin-bottom:12px">👤 Auswertung pro Spieler</div>
+  ${cards}
+
+  <script>
+    // Auf Mobilgeräten: Print-Dialog automatisch öffnen nach 500ms
+    // setTimeout(() => window.print(), 500);
+  </script>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+  } else {
+    showToast('⚠️ Bitte Pop-ups erlauben und nochmal versuchen');
+  }
 }
 
 function exportStatistikCSV(tab) {
