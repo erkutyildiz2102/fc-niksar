@@ -1042,7 +1042,7 @@ function renderHome() {
 
   activeBanners.forEach(b => {
     const key = encodeURIComponent(b.key || b.msg);
-    html += `<div ${b.domId?`id="${b.domId}"`:''}style="background:${b.bg};padding:12px 16px;display:flex;align-items:center;gap:10px">
+    html += `<div ${b.domId?`id="${b.domId}" `:''}data-auto-banner="1" style="background:${b.bg};padding:12px 16px;display:flex;align-items:center;gap:10px;transition:opacity .4s ease,max-height .4s ease,padding .4s ease">
       <div onclick="document.getElementById('${b.target}')?.scrollIntoView({behavior:'smooth'})" style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;min-width:0">
         <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <i class="${b.icon}" style="color:#fff;font-size:15px"></i>
@@ -1270,6 +1270,17 @@ function renderHome() {
 
   html += `</div></div>`;
   page.innerHTML = html;
+  // Inline-Banner nach 5s automatisch ausblenden
+  setTimeout(() => {
+    page.querySelectorAll('[data-auto-banner]').forEach(el => {
+      el.style.transition = 'opacity .4s ease, max-height .4s ease, padding .4s ease';
+      el.style.opacity = '0';
+      el.style.maxHeight = '0';
+      el.style.padding = '0';
+      el.style.overflow = 'hidden';
+      setTimeout(() => el.remove(), 420);
+    });
+  }, 5000);
 }
 
 function _oldSlider_noop() { if(false) { [].forEach(t => {
