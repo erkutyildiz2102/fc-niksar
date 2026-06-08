@@ -1600,16 +1600,25 @@ function addToCalendar(title, dateStr, timeStr, location, durationMin) {
   const fmtIcs = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
   const start = new Date(dateStr + 'T' + (timeStr||'10:00'));
   const end   = new Date(start.getTime() + (durationMin||90) * 60000);
+  const fmtIcsUTC = d => { const u = new Date(d.getTime() - d.getTimezoneOffset()*60000); return u.toISOString().replace(/[-:]/g,'').replace('.000',''); };
   const ics = [
-    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//FC Niksar//App//DE',
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//FC Niksar//App//DE',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:FC Niksar',
+    'X-WR-TIMEZONE:Europe/Berlin',
     'BEGIN:VEVENT',
     'UID:' + Date.now() + '@fcniksar',
-    'DTSTART:' + fmtIcs(start),
-    'DTEND:'   + fmtIcs(end),
+    'DTSTART;TZID=Europe/Berlin:' + fmtIcs(start),
+    'DTEND;TZID=Europe/Berlin:'   + fmtIcs(end),
     'SUMMARY:' + title.replace(/[,;\\]/g,'\\$&'),
     'LOCATION:' + (location||'').replace(/[,;\\]/g,'\\$&'),
     'DESCRIPTION:FC Niksar F1/U9 – Saison 26/27',
-    'END:VEVENT','END:VCALENDAR'
+    'STATUS:CONFIRMED',
+    'TRANSP:OPAQUE',
+    'END:VEVENT',
+    'END:VCALENDAR'
   ].join('\r\n');
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   if (isIOS) {
