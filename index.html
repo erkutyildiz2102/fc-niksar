@@ -84,9 +84,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .section-title{font-size:13px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;padding:0 4px}
 .new-tag{background:#EF4444;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px}
 /* Event Slider */
-.event-slider{display:flex;overflow-x:auto;gap:12px;padding:0 16px 8px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.event-slider{display:flex;overflow-x:auto;overflow-y:visible;gap:12px;padding:0 16px 16px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .event-slider::-webkit-scrollbar{display:none}
-.event-slide{min-width:calc(100vw - 48px);max-width:420px;scroll-snap-align:start;border-radius:18px;overflow:visible;flex-shrink:0}
+.event-slide{min-width:calc(100vw - 48px);max-width:420px;scroll-snap-align:start;border-radius:18px;overflow:hidden;flex-shrink:0}
 /* New event banner */
 @keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes slideUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}
