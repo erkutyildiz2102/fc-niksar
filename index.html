@@ -1058,8 +1058,8 @@ function renderHome() {
       if(pid) {
         if(showButtons) {
           rsvpRow = `<div style="display:flex;gap:8px;padding:10px 12px 12px">
-            <button onclick="setRsvpHome('${ev.id}','${pid}','yes')" style="flex:1;padding:11px 4px;border-radius:12px;border:none;background:#0A2540;color:#fff;font-size:13px;font-weight:800;cursor:pointer">✅ Zusagen</button>
-            <button onclick="setRsvpHome('${ev.id}','${pid}','no')" style="flex:1;padding:11px 4px;border-radius:12px;border:1.5px solid #E5E7EB;background:#F9FAFB;color:#374151;font-size:13px;font-weight:700;cursor:pointer">❌ Absagen</button>
+            <button onclick="setRsvpHome('${ev.id}','${pid}','yes')" style="flex:1;padding:11px 4px;border-radius:12px;border:2px solid #6EE7B7;background:#F0FDF4;color:#065F46;font-size:13px;font-weight:800;cursor:pointer">✅ Zusagen</button>
+            <button onclick="setRsvpHome('${ev.id}','${pid}','no')" style="flex:1;padding:11px 4px;border-radius:12px;border:2px solid #FCA5A5;background:#FEF2F2;color:#991B1B;font-size:13px;font-weight:800;cursor:pointer">❌ Absagen</button>
           </div>`;
         } else if(absent) {
           const absInfo = getAbsence(pid, ev.date);
