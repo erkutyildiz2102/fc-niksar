@@ -3058,23 +3058,13 @@ async function autoSetupPush() {
     let sub = await reg.pushManager.getSubscription();
 
     if (sub) {
-      // Subscription vorhanden → alle 20 Tage automatisch erneuern
-      const lastRenew = parseInt(LS('pushRenewedAt') || '0');
-      const twentyDays = 20 * 24 * 60 * 60 * 1000;
-      if (Date.now() - lastRenew > twentyDays) {
-        // Alte Subscription löschen und neue erstellen
-        try {
-          const oldK = btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
-          await db.ref('/pushSubscriptions/' + oldK).remove();
-          await sub.unsubscribe();
-          sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
-          LSset('pushRenewedAt', String(Date.now()));
-        } catch(e) {}
-      }
+      // Subscription vorhanden → in Firebase sichern
       const k = btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
       LSset('myPushKey', k);
       LSset('pushEnabled', 'true');
       await db.ref('/pushSubscriptions/' + k).set(sub.toJSON());
+      // Timer setzen falls noch nicht gesetzt (für künftige Erneuerung)
+      if (!LS('pushRenewedAt')) LSset('pushRenewedAt', String(Date.now()));
       return;
     }
 
