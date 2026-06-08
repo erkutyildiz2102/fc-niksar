@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
@@ -711,387 +711,211 @@ function renderHome() {
   if(!page) return;
   const profile = getProfile();
   const now = Date.now();
-
-  // Robust date parsing – show everything from start of today onward
-  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-  const todayMs = todayStart.getTime();
+  const todayStr = new Date().toISOString().slice(0,10);
 
   function parseSortDate(dateStr, timeStr) {
     if(!dateStr) return 0;
-    try {
-      const t = timeStr || '00:00';
-      return new Date(dateStr + 'T' + t).getTime();
-    } catch(e) { return 0; }
+    try { return new Date(dateStr + 'T' + (timeStr||'00:00')).getTime(); } catch(e) { return 0; }
   }
 
-  const upcoming = [
-    ...STATE.trainings.map(t => ({...t, type:'training', sortDate: parseSortDate(t.date, t.time)})),
-    ...STATE.games.map(g => ({...g, type:'game', sortDate: parseSortDate(g.date, g.time)}))
-  ].filter(x => x.sortDate >= todayMs).sort((a,b) => a.sortDate - b.sortDate);
-
   const pid = profile?.playerId;
-
-  // Robust: Datum-String direkt vergleichen (keine Timezone-Probleme)
-  const todayStr = new Date().toISOString().slice(0, 10); // "2026-06-10"
+  const player = pid ? STATE.players.find(p => p.id === pid) : null;
 
   const upcomingTrainings = STATE.trainings
     .filter(t => t.date && t.date >= todayStr)
-    .map(t => ({...t, sortDate: parseSortDate(t.date, t.time)}))
+    .map(t => ({...t, type:'training', sortDate: parseSortDate(t.date, t.time)}))
     .sort((a,b) => a.sortDate - b.sortDate);
 
   const upcomingGames = STATE.games
     .filter(g => g.date && g.date >= todayStr)
-    .map(g => ({...g, sortDate: parseSortDate(g.date, g.time)}))
+    .map(g => ({...g, type:'game', sortDate: parseSortDate(g.date, g.time)}))
     .sort((a,b) => a.sortDate - b.sortDate);
 
-  let html = `<div style="display:flex;flex-direction:column;gap:0;padding-bottom:16px">`;
+  const allUpcoming = [...upcomingTrainings, ...upcomingGames].sort((a,b) => a.sortDate - b.sortDate);
+  const nextEvent = allUpcoming[0] || null;
 
-  // ── PROFILE STRIP ──
-  if(profile) {
-    const player = STATE.players.find(p => p.id === pid);
-    const yesCount = STATE.trainings.filter(t=>new Date(t.date+'T'+(t.time||'00:00')).getTime()>=now && t.attendances?.[pid]==='yes').length;
-    const noCount  = STATE.trainings.filter(t=>new Date(t.date+'T'+(t.time||'00:00')).getTime()>=now && t.attendances?.[pid]==='no').length;
-    html += `<div style="background:linear-gradient(135deg,#0A2540 0%,#1e3a5f 100%);padding:16px;cursor:pointer;margin-bottom:0" onclick="editProfile()">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:${pid?'12':'0'}px">
-        <div style="width:48px;height:48px;border-radius:50%;overflow:hidden;border:2.5px solid rgba(255,255,255,.35);flex-shrink:0">
-          ${player?.photo ? `<img src="${player.photo}" style="width:100%;height:100%;object-fit:cover">` :
-            `<div style="width:100%;height:100%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff">${(profile.name||'?')[0].toUpperCase()}</div>`}
-        </div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:16px;font-weight:800;color:#fff">Hallo, ${escHtml(profile.name)}! 👋</div>
-          <div style="font-size:12px;color:rgba(255,255,255,.65);margin-top:2px">
-            ${player ? `Kind: <b style="color:rgba(255,255,255,.9)">${escHtml(player.name)}</b> · Nr. ${player.number||'?'}` : '<span style="color:#FCD34D">Kind noch nicht zugeordnet → Profil bearbeiten</span>'}
-          </div>
-        </div>
-        <i class="fas fa-pen" style="color:rgba(255,255,255,.3);font-size:12px;flex-shrink:0"></i>
+  // Offene Rückmeldungen sammeln
+  const openTrainings = pid ? upcomingTrainings.filter(t => {
+    const s = window._localAtt?.[t.id+'_'+pid] ?? t.attendances?.[pid];
+    return (!s || s === 'open') && !isAbsent(pid, t.date);
+  }) : [];
+
+  const openGameRsvps = pid ? upcomingGames.filter(g => {
+    const squadKeys = Object.keys(g.squad||{}).filter(k=>g.squad[k]);
+    if(!squadKeys.includes(pid)) return false;
+    const conf = g.squadConfirm?.[pid];
+    return !conf || conf === 'open';
+  }) : [];
+
+  const greetHour = new Date().getHours();
+  const greet = greetHour < 12 ? 'Guten Morgen' : greetHour < 18 ? 'Hallo' : 'Guten Abend';
+  const todayFmt = new Date().toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'});
+
+  let html = `<div style="display:flex;flex-direction:column;gap:0;padding-bottom:24px">`;
+
+  // ── HERO HEADER ──
+  html += `<div style="background:linear-gradient(160deg,#0A2540 0%,#1a3a5c 100%);padding:20px 16px 24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div style="font-size:18px;font-weight:800;color:#fff">${greet}${profile ? ', ' + escHtml(profile.name.split(' ')[0]) : ''}! 👋</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:2px">${todayFmt}</div>
       </div>
-      ${pid ? `<div style="display:flex;gap:8px">
-        <div style="flex:1;background:rgba(255,255,255,.1);border-radius:10px;padding:8px;text-align:center">
-          <div style="font-size:18px;font-weight:900;color:#4ADE80">${yesCount}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:1px">Zugesagt</div>
+      <div onclick="editProfile()" style="cursor:pointer">
+        <div style="width:44px;height:44px;border-radius:50%;overflow:hidden;border:2.5px solid rgba(255,255,255,.3)">
+          ${player?.photo
+            ? `<img src="${player.photo}" style="width:100%;height:100%;object-fit:cover">`
+            : `<div style="width:100%;height:100%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff">${(profile?.name||'?')[0].toUpperCase()}</div>`}
         </div>
-        <div style="flex:1;background:rgba(255,255,255,.1);border-radius:10px;padding:8px;text-align:center">
-          <div style="font-size:18px;font-weight:900;color:#FCA5A5">${noCount}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:1px">Abgesagt</div>
-        </div>
-        <div style="flex:1;background:rgba(255,255,255,.1);border-radius:10px;padding:8px;text-align:center">
-          <div style="font-size:18px;font-weight:900;color:#fff">${STATE.games.filter(g=>Object.keys(g.squad||{}).filter(k=>g.squad[k]).includes(pid)).length}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:1px">Spiele</div>
-        </div>
-      </div>` : ''}
-    </div>`;
-  }
+      </div>
+    </div>
 
-  // ── TRAINER QUICK STATS ──
-  if(trainerLoggedIn) {
-    html += `<div style="background:#0A2540;padding:0 16px 14px;display:flex;gap:8px">
+    ${trainerLoggedIn ? `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
       ${[['fas fa-users',STATE.players.length,'Spieler'],['fas fa-running',STATE.trainings.length,'Trainings'],['fas fa-futbol',STATE.games.length,'Spiele']].map(([ic,val,lab])=>
-        `<div style="flex:1;background:rgba(255,255,255,.08);border-radius:10px;padding:10px;text-align:center">
+        `<div style="background:rgba(255,255,255,.1);border-radius:12px;padding:10px;text-align:center">
           <div style="font-size:20px;font-weight:900;color:#fff">${val}</div>
           <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:2px"><i class="${ic}"></i> ${lab}</div>
         </div>`).join('')}
-    </div>`;
-  }
-
-  // ── STATUS BANNER (sofort sichtbar ohne scrollen) ──
-  const openRsvp     = pid ? upcomingTrainings.filter(t => { const s = t.attendances?.[pid]; return !s || s === 'open'; }).length : 0;
-  const newTrainings = upcomingTrainings.filter(t => {
-    if(!isNew(t.createdAt)) return false;
-    if(!pid) return true;
-    const s = window._localAtt?.[t.id+'_'+pid] ?? t.attendances?.[pid];
-    return !s || s === 'open'; // NEU nur wenn noch nicht beantwortet
-  });
-  const newGames     = upcomingGames.filter(g => isNew(g.createdAt));
-
-  // Zeige Banner für offene RSVPs UND neue Einträge
-  const banners = [];
-  // Neues Training Banner — immer zeigen wenn frisch eingetragen (unabhängig von openRsvp)
-  if(newTrainings.length > 0) {
-    banners.push({
-      bg: 'linear-gradient(135deg,#1D4ED8,#0A2540)',
-      icon: 'fas fa-running',
-      msg: newTrainings.length === 1 ? '🏃 Neues Training eingetragen!' : `🏃 ${newTrainings.length} neue Trainings eingetragen!`,
-      hint: `${fmtFull(newTrainings[0].date)} · ${newTrainings[0].time||'?'} Uhr · ${newTrainings[0].location||''}`,
-      target: 'sliderTraining'
-    });
-  }
-  // Offene Rückmeldungen — eigener Banner mit Info zum ersten offenen Training
-  if(openRsvp > 0 && newTrainings.length === 0) {
-    const firstOpen = upcomingTrainings.find(t => {
-      const s = window._localAtt?.[t.id+'_'+pid] ?? t.attendances?.[pid];
-      return !s || s === 'open';
-    });
-    banners.push({
-      bg: 'linear-gradient(135deg,#F59E0B,#D97706)',
-      icon: 'fas fa-clipboard-list',
-      msg: `⚠️ Rückmeldung noch offen!`,
-      hint: firstOpen ? `${fmtFull(firstOpen.date)} · ${firstOpen.time||'?'} Uhr · ${firstOpen.location||''}` : `${openRsvp} Training${openRsvp>1?'s':''} warten auf Rückmeldung`,
-      target: 'sliderTraining'
-    });
-  }
-  if(newGames.length > 0) {
-    banners.push({
-      bg: 'linear-gradient(135deg,#B45309,#D97706)',
-      icon: 'fas fa-futbol',
-      msg: newGames.length === 1 ? `⚽ Neues Spiel eingetragen!` : `⚽ ${newGames.length} neue Spiele eingetragen!`,
-      hint: newGames[0].opponent ? `${newGames[0].opponent} · ${fmtFull(newGames[0].date)}` : fmtFull(newGames[0].date),
-      target: 'sliderGames'
-    });
-  }
-
-  // Offene Spiel-Nominierungs-Rückmeldung
-  const openGameRsvp = pid ? upcomingGames.filter(g => {
-    const squadKeys = Object.keys(g.squad||{}).filter(k=>g.squad[k]);
-    if(!squadKeys.includes(pid)) return false; // nicht nominiert
-    const conf = g.squadConfirm?.[pid];
-    return !conf || conf === 'open'; // nominiert aber noch nicht geantwortet
-  }) : [];
-  if(openGameRsvp.length > 0) {
-    const first = openGameRsvp[0];
-    banners.push({
-      bg: 'linear-gradient(135deg,#B45309,#D97706)',
-      icon: 'fas fa-futbol',
-      key: `gameRsvp_${first.id}`,
-      msg: `⚽ Rückmeldung fürs Spiel offen!`,
-      hint: `${escHtml(first.opponent||'?')} · ${fmtFull(first.date)} · ${first.time||'?'} Uhr`,
-      target: 'sliderGames'
-    });
-  }
-
-  const dismissed = JSON.parse(LS('dismissedBanners') || '[]');
-  const activeBanners = banners.filter(b => !dismissed.includes(b.key || b.msg));
-
-  activeBanners.forEach(b => {
-    const key = encodeURIComponent(b.key || b.msg);
-    html += `<div style="background:${b.bg};padding:12px 16px;display:flex;align-items:center;gap:10px">
-      <div onclick="document.getElementById('${b.target}')?.scrollIntoView({behavior:'smooth'})" style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;min-width:0">
-        <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <i class="${b.icon}" style="color:#fff;font-size:15px"></i>
-        </div>
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:800;font-size:14px;color:#fff">${b.msg}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,.8);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.hint}</div>
-        </div>
-        <i class="fas fa-chevron-right" style="color:rgba(255,255,255,.5);font-size:12px;flex-shrink:0"></i>
+    </div>` : pid ? `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:900;color:#4ADE80">${STATE.trainings.filter(t=>parseSortDate(t.date,t.time)>=now && (window._localAtt?.[t.id+'_'+pid] ?? t.attendances?.[pid])==='yes').length}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:2px">Zugesagt</div>
       </div>
-      <button onclick="dismissBanner('${key}')" style="width:28px;height:28px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
-    </div>`;
-  });
-
-  // Grüne Bestätigung: alle Training- UND Spiel-RSVPs erledigt
-  if(pid && upcomingTrainings.length > 0 && openRsvp === 0 && openGameRsvp.length === 0) {
-    html += `<div style="background:linear-gradient(135deg,#059669,#10B981);padding:11px 16px;display:flex;align-items:center;gap:10px">
-      <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <i class="fas fa-check" style="color:#fff;font-size:14px"></i>
+      <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:900;color:#FCA5A5">${STATE.trainings.filter(t=>parseSortDate(t.date,t.time)>=now && (window._localAtt?.[t.id+'_'+pid] ?? t.attendances?.[pid])==='no').length}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:2px">Abgesagt</div>
       </div>
+      <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:900;color:#fff">${STATE.games.filter(g=>Object.keys(g.squad||{}).filter(k=>g.squad[k]).includes(pid)).length}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:2px">Im Kader</div>
+      </div>
+    </div>` : `
+    <div onclick="editProfile()" style="background:rgba(255,193,7,.2);border:1.5px solid rgba(255,193,7,.5);border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px;cursor:pointer">
+      <i class="fas fa-exclamation-triangle" style="color:#FCD34D;font-size:16px"></i>
+      <span style="font-size:13px;font-weight:700;color:#fff">Kind noch nicht zugeordnet → Profil bearbeiten</span>
+    </div>`}
+  </div>`;
+
+  html += `<div style="padding:16px;display:flex;flex-direction:column;gap:16px">`;
+
+  // ── OFFENE AKTIONEN ──
+  const hasOpen = openTrainings.length > 0 || openGameRsvps.length > 0;
+  if(hasOpen) {
+    html += `<div>
+      <div style="font-size:12px;font-weight:800;color:#6B7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">⚡ Aktion erforderlich</div>
+      <div style="display:flex;flex-direction:column;gap:8px">`;
+
+    openTrainings.slice(0,2).forEach(t => {
+      const st = window._localAtt?.[t.id+'_'+pid] ?? t.attendances?.[pid] ?? 'open';
+      html += `<div style="background:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 2px 12px rgba(0,0,0,.07);border-left:4px solid #4F46E5">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#4F46E5;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">🏃 Training · Rückmeldung offen</div>
+            <div style="font-size:14px;font-weight:800;color:#1F2937">${fmtFull(t.date)}</div>
+            <div style="font-size:12px;color:#6B7280;margin-top:2px">${t.time||'?'} Uhr${t.location?' · '+escHtml(t.location):''}</div>
+          </div>
+          ${isNew(t.createdAt)?'<span style="background:#EF4444;color:#fff;font-size:10px;padding:3px 8px;border-radius:6px;font-weight:700;flex-shrink:0">NEU</span>':''}
+        </div>
+        <div style="display:flex;gap:6px">
+          <button onclick="setRsvpHome('${t.id}','${pid}','yes')" style="flex:1;padding:9px;border-radius:10px;border:2px solid ${st==='yes'?'#10B981':'#E5E7EB'};background:${st==='yes'?'#ECFDF5':'#F9FAFB'};color:${st==='yes'?'#059669':'#4B5563'};font-size:12px;font-weight:700;cursor:pointer">✅ Zusagen</button>
+          <button onclick="setRsvpHome('${t.id}','${pid}','open')" style="flex:1;padding:9px;border-radius:10px;border:2px solid ${st==='open'?'#F59E0B':'#E5E7EB'};background:${st==='open'?'#FFFBEB':'#F9FAFB'};color:${st==='open'?'#D97706':'#4B5563'};font-size:12px;font-weight:700;cursor:pointer">❓ Offen</button>
+          <button onclick="setRsvpHome('${t.id}','${pid}','no')" style="flex:1;padding:9px;border-radius:10px;border:2px solid ${st==='no'?'#EF4444':'#E5E7EB'};background:${st==='no'?'#FEF2F2':'#F9FAFB'};color:${st==='no'?'#DC2626':'#4B5563'};font-size:12px;font-weight:700;cursor:pointer">❌ Absagen</button>
+        </div>
+      </div>`;
+    });
+
+    openGameRsvps.slice(0,2).forEach(g => {
+      html += `<div style="background:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 2px 12px rgba(0,0,0,.07);border-left:4px solid #D97706">
+        <div style="margin-bottom:10px">
+          <div style="font-size:11px;font-weight:700;color:#D97706;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">⚽ Spiel · Du bist nominiert!</div>
+          <div style="font-size:14px;font-weight:800;color:#1F2937">${escHtml(g.opponent||'?')}</div>
+          <div style="font-size:12px;color:#6B7280;margin-top:2px">${fmtFull(g.date)}${g.time?' · '+g.time+' Uhr':''}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button onclick="setGameRsvp('${g.id}','${pid}','yes')" style="flex:1;padding:9px;border-radius:10px;border:2px solid #10B981;background:#ECFDF5;color:#059669;font-size:12px;font-weight:700;cursor:pointer">✅ Zusagen</button>
+          <button onclick="setGameRsvp('${g.id}','${pid}','no')" style="flex:1;padding:9px;border-radius:10px;border:2px solid #EF4444;background:#FEF2F2;color:#DC2626;font-size:12px;font-weight:700;cursor:pointer">❌ Absagen</button>
+        </div>
+      </div>`;
+    });
+
+    html += `</div></div>`;
+  } else if(pid && upcomingTrainings.length > 0) {
+    html += `<div style="background:#ECFDF5;border:1.5px solid #A7F3D0;border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px">
+      <i class="fas fa-check-circle" style="color:#059669;font-size:20px;flex-shrink:0"></i>
       <div>
-        <div style="font-weight:800;font-size:13px;color:#fff">Keine offenen Rückmeldungen</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.8);margin-top:1px">Du hast alle Trainings & Spiele beantwortet ✓</div>
+        <div style="font-size:13px;font-weight:800;color:#065F46">Alles erledigt ✓</div>
+        <div style="font-size:11px;color:#6B7280;margin-top:1px">Keine offenen Rückmeldungen</div>
       </div>
     </div>`;
   }
 
-  html += `<div style="padding:12px;display:flex;flex-direction:column;gap:14px">`;
-
-  // ── TRAINING SLIDER ──
-  if(upcomingTrainings.length > 0) {
+  // ── NÄCHSTER TERMIN (Hero) ──
+  if(nextEvent) {
+    const isT = nextEvent.type === 'training';
+    const accent = isT ? '#4F46E5' : '#D97706';
+    const bg = isT ? 'linear-gradient(135deg,#1D4ED8,#0A2540)' : 'linear-gradient(135deg,#B45309,#F59E0B)';
     html += `<div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <div style="width:28px;height:28px;border-radius:8px;background:#EEF2FF;display:flex;align-items:center;justify-content:center"><i class="fas fa-running" style="color:#4F46E5;font-size:13px"></i></div>
-        <span style="font-size:13px;font-weight:800;color:#1F2937">Trainings</span>
-      </div>
-      <div class="event-slider" id="sliderTraining">`;
-
-    upcomingTrainings.forEach(t => {
-      const localVal = window._localAtt?.[t.id + '_' + pid];
-      const absent = pid ? isAbsent(pid, t.date) : false;
-      const st = pid ? (absent ? 'no' : (localVal ?? t.attendances?.[pid] ?? 'open')) : null;
-      const inEditMode = window._rsvpEdit?.[t.id];
-      const showButtons = !pid ? false : (!absent && (st === 'open' || !st || inEditMode));
-
-      let rsvpSection = '';
-      if(pid) {
-        if(showButtons) {
-          rsvpSection = `<div style="display:flex;gap:6px;margin-top:14px">
-            <button onclick="event.stopPropagation();setRsvpHome('${t.id}','${pid}','yes')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='yes'?'#10B981':'rgba(255,255,255,.3)'};background:${st==='yes'?'rgba(16,185,129,.35)':'rgba(255,255,255,.1)'};color:#fff;font-size:12px;font-weight:700;cursor:pointer">Zusagen</button>
-            <button onclick="event.stopPropagation();setRsvpHome('${t.id}','${pid}','open')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='open'?'#F59E0B':'rgba(255,255,255,.3)'};background:${st==='open'?'rgba(245,158,11,.35)':'rgba(255,255,255,.1)'};color:#fff;font-size:12px;font-weight:700;cursor:pointer">Offen</button>
-            <button onclick="event.stopPropagation();setRsvpHome('${t.id}','${pid}','no')" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid ${st==='no'?'#EF4444':'rgba(255,255,255,.3)'};background:${st==='no'?'rgba(239,68,68,.3)':'rgba(255,255,255,.1)'};color:#fff;font-size:12px;font-weight:700;cursor:pointer">Absagen</button>
-          </div>`;
-        } else if(absent) {
-          const absInfo = getAbsence(pid, t.date);
-          rsvpSection = `<div style="margin-top:14px;background:rgba(245,158,11,.25);border:1.5px solid rgba(245,158,11,.5);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;color:#fff">
-            ${ABSENCE_LABELS[absInfo?.reason]||'🤒 Abwesend'} – automatisch abgesagt
-          </div>`;
-        } else {
-          const badgeBg = st==='yes' ? 'rgba(16,185,129,.35)' : 'rgba(239,68,68,.3)';
-          const badgeBorder = st==='yes' ? 'rgba(16,185,129,.6)' : 'rgba(239,68,68,.5)';
-          const badgeLabel = st==='yes' ? 'Zugesagt ✓' : 'Abgesagt ✗';
-          rsvpSection = `<div style="margin-top:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <div style="background:${badgeBg};border:1.5px solid ${badgeBorder};border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:#fff">${badgeLabel}</div>
-            <button onclick="event.stopPropagation();toggleRsvpEdit('${t.id}')" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:600;color:rgba(255,255,255,.85);cursor:pointer">Antwort ändern</button>
-          </div>`;
-        }
-      } else {
-        rsvpSection = `<div onclick="editProfile()" style="margin-top:14px;background:rgba(255,255,255,.1);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;color:rgba(255,255,255,.8);cursor:pointer;text-align:center">
-          ⚠️ Kind zuordnen → Profil bearbeiten
-        </div>`;
-      }
-
-      html += `<div class="event-slide" style="min-width:calc(90vw - 32px)">
-        <div style="background:linear-gradient(135deg,#0A2540,#1e4d8c);padding:18px;border-radius:18px;height:100%">
-          <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
-            ${dateBox(t.date, true)}
-            <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
-                <span style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em">🏃 Training</span>
-                ${isNew(t.createdAt)?'<span style="background:#EF4444;color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700">NEU</span>':''}
-              </div>
-              <div style="font-size:15px;font-weight:800;color:#fff;line-height:1.2">${fmtFull(t.date)}</div>
-              <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:4px">
-                <i class="fas fa-clock" style="opacity:.7;margin-right:3px"></i>${t.time||'?'}${t.timeTo?' - '+t.timeTo:''} Uhr
-                ${t.location ? ` · <i class="fas fa-location-dot" style="opacity:.7;margin-right:3px"></i>${escHtml(t.location)}` : ''}
-              </div>
+      <div style="font-size:12px;font-weight:800;color:#6B7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">📅 Nächster Termin</div>
+      <div style="background:${bg};border-radius:20px;padding:20px;position:relative;overflow:hidden">
+        <div style="position:absolute;right:-20px;top:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.06)"></div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">${isT ? '🏃 Training' : '⚽ Spiel'}</div>
+            <div style="font-size:22px;font-weight:900;color:#fff;line-height:1.1">${isT ? fmtFull(nextEvent.date) : escHtml(nextEvent.opponent||'?')}</div>
+            ${!isT ? `<div style="font-size:13px;color:rgba(255,255,255,.8);margin-top:4px;font-weight:600">${fmtFull(nextEvent.date)}</div>` : ''}
+            <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:6px">
+              <i class="fas fa-clock" style="margin-right:4px"></i>${nextEvent.time||'?'} Uhr
+              ${nextEvent.location ? `<span style="margin-left:8px"><i class="fas fa-location-dot" style="margin-right:4px"></i>${escHtml(nextEvent.location)}</span>` : ''}
             </div>
-            <button onclick="event.stopPropagation();calBtn(this)" data-title="FC Niksar Training" data-date="${t.date||''}" data-time="${t.time||''}" data-loc="${(t.location||'').replace(/"/g,'')}" data-dur="90" style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);border-radius:8px;padding:6px 8px;font-size:11px;color:rgba(255,255,255,.8);cursor:pointer;white-space:nowrap;flex-shrink:0">
-              <i class="fas fa-calendar-plus"></i>
-            </button>
           </div>
-          ${t.notes ? `<div style="font-size:11px;color:rgba(255,255,255,.55);font-style:italic;margin-bottom:6px">${escHtml(t.notes)}</div>` : ''}
-          ${rsvpSection}
+          <div style="background:rgba(255,255,255,.15);border-radius:14px;padding:10px 8px;text-align:center;min-width:48px;flex-shrink:0">
+            <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase">${new Date(nextEvent.date+'T12:00:00').toLocaleDateString('de-DE',{weekday:'short'}).toUpperCase()}</div>
+            <div style="font-size:26px;font-weight:900;color:#fff;line-height:1">${new Date(nextEvent.date+'T12:00:00').getDate()}</div>
+            <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.7)">${new Date(nextEvent.date+'T12:00:00').toLocaleDateString('de-DE',{month:'short'}).toUpperCase()}</div>
+          </div>
         </div>
+        ${isNew(nextEvent.createdAt) ? `<div style="display:inline-block;background:rgba(239,68,68,.85);color:#fff;font-size:10px;padding:3px 10px;border-radius:6px;font-weight:700;margin-bottom:10px">NEU</div>` : ''}
+        <button onclick="event.stopPropagation();calBtn(this)" data-title="${isT?'FC Niksar Training':'FC Niksar - '+(nextEvent.opponent||'').replace(/\"/g,'')}" data-date="${nextEvent.date||''}" data-time="${nextEvent.time||''}" data-loc="${(nextEvent.location||'').replace(/\"/g,'')}" data-dur="${isT?90:120}" style="background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.35);border-radius:10px;padding:8px 14px;font-size:12px;color:#fff;cursor:pointer;font-weight:600">
+          <i class="fas fa-calendar-plus" style="margin-right:6px"></i>Zum Kalender
+        </button>
+      </div>
+    </div>`;
+  }
+
+  // ── WEITERE TERMINE ──
+  const moreEvents = allUpcoming.slice(1, 6);
+  if(moreEvents.length > 0) {
+    html += `<div>
+      <div style="font-size:12px;font-weight:800;color:#6B7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">📋 Weitere Termine</div>
+      <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.07)">`;
+
+    moreEvents.forEach((ev, i) => {
+      const isT = ev.type === 'training';
+      const dot = isT ? '#4F46E5' : '#D97706';
+      html += `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;${i<moreEvents.length-1?'border-bottom:1px solid #F3F4F6':''}">
+        <div style="width:8px;height:8px;border-radius:50%;background:${dot};flex-shrink:0"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:#1F2937;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${isT ? '🏃 Training' : '⚽ '+escHtml(ev.opponent||'Spiel')}</div>
+          <div style="font-size:11px;color:#9CA3AF;margin-top:1px">${fmtFull(ev.date)}${ev.time?' · '+ev.time+' Uhr':''}</div>
+        </div>
+        ${isNew(ev.createdAt)?'<span style="background:#EF4444;color:#fff;font-size:9px;padding:2px 7px;border-radius:5px;font-weight:700;flex-shrink:0">NEU</span>':''}
       </div>`;
     });
 
-    html += `</div>`;
-    if(upcomingTrainings.length > 1) {
-      html += `<div id="sliderDots-training" style="display:flex;justify-content:center;gap:6px;margin-top:8px">
-        ${upcomingTrainings.map((_,i) => `<div style="width:${i===0?'18':'7'}px;height:7px;border-radius:4px;background:${i===0?'#4F46E5':'#D1D5DB'};transition:all .3s" data-idx="${i}"></div>`).join('')}
-      </div>`;
-    }
-    html += `</div>`;
+    html += `</div></div>`;
   }
 
-  // ── GAME SLIDER ──
-  if(upcomingGames.length > 0) {
-    html += `<div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <div style="width:28px;height:28px;border-radius:8px;background:#FEF3C7;display:flex;align-items:center;justify-content:center"><i class="fas fa-futbol" style="color:#D97706;font-size:13px"></i></div>
-        <span style="font-size:13px;font-weight:800;color:#1F2937">Spiele &amp; Turniere</span>
-      </div>
-      <div class="event-slider" id="sliderGames">`;
-
-    upcomingGames.forEach(g => {
-      const squadKeys    = Object.keys(g.squad||{}).filter(k=>g.squad[k]);
-      const squadSet     = squadKeys.length > 0;
-      const inSquad      = pid && squadKeys.includes(pid);
-      const squadPlayers = [...STATE.players].filter(p=>squadKeys.includes(p.id)).sort((a,b)=>(parseInt(a.number)||999)-(parseInt(b.number)||999)).slice(0,6);
-      const extra        = squadKeys.length - squadPlayers.length;
-
-      let childBadge = '';
-      if(pid) {
-        if(!squadSet) {
-          childBadge = `<div style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#fff;margin-top:10px">📋 Kader noch offen</div>`;
-        } else if(inSquad) {
-          const conf = g.squadConfirm?.[pid];
-          if(conf === 'yes') {
-            childBadge = `<div style="margin-top:10px;display:flex;gap:8px;align-items:center">
-              <div style="background:rgba(16,185,129,.4);border:1.5px solid rgba(16,185,129,.7);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:800;color:#fff">✅ Nominiert · Zugesagt</div>
-              <button onclick="event.stopPropagation();setGameRsvp('${g.id}','${pid}','open')" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:5px 10px;font-size:11px;color:#fff;cursor:pointer">Ändern</button>
-            </div>`;
-          } else if(conf === 'no') {
-            childBadge = `<div style="margin-top:10px;display:flex;gap:8px;align-items:center">
-              <div style="background:rgba(239,68,68,.35);border:1.5px solid rgba(239,68,68,.6);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:800;color:#fff">⚠️ Nominiert · Abgesagt</div>
-              <button onclick="event.stopPropagation();setGameRsvp('${g.id}','${pid}','open')" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:5px 10px;font-size:11px;color:#fff;cursor:pointer">Ändern</button>
-            </div>`;
-          } else {
-            childBadge = `<div style="margin-top:10px">
-              <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:6px">✅ Dein Kind spielt mit! Kannst du kommen?</div>
-              <div style="display:flex;gap:8px">
-                <button onclick="event.stopPropagation();setGameRsvp('${g.id}','${pid}','yes')" style="flex:1;padding:8px;border-radius:8px;border:2px solid rgba(255,255,255,.4);background:rgba(16,185,129,.3);color:#fff;font-size:12px;font-weight:700;cursor:pointer">✅ Zusagen</button>
-                <button onclick="event.stopPropagation();setGameRsvp('${g.id}','${pid}','no')" style="flex:1;padding:8px;border-radius:8px;border:2px solid rgba(255,255,255,.4);background:rgba(239,68,68,.25);color:#fff;font-size:12px;font-weight:700;cursor:pointer">❌ Absagen</button>
-              </div>
-            </div>`;
-          }
-        } else {
-          childBadge = `<div style="background:rgba(239,68,68,.35);border:1.5px solid rgba(239,68,68,.6);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;color:#fff;margin-top:10px">❌ Nicht nominiert</div>`;
-        }
-      }
-
-      let squadRow = '';
-      if(squadSet) {
-        squadRow = `<div style="display:flex;gap:3px;margin-top:10px;flex-wrap:wrap">
-          ${squadPlayers.map(p=>`<div style="position:relative">
-            <div style="width:30px;height:30px;border-radius:50%;overflow:hidden;border:2px solid rgba(0,0,0,.25)">
-              ${p.photo?`<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;background:#0A2540;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700">${(p.name||'?')[0].toUpperCase()}</div>`}
-            </div>
-            <div style="position:absolute;bottom:-1px;right:-2px;background:#0A2540;color:#fff;font-size:7px;font-weight:800;padding:1px 3px;border-radius:4px">${p.number||'?'}</div>
-          </div>`).join('')}
-          ${extra>0?`<div style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">+${extra}</div>`:''}
-        </div>`;
-      }
-
-      html += `<div class="event-slide" style="min-width:calc(90vw - 32px)">
-        <div style="background:linear-gradient(135deg,#B45309,#F59E0B);padding:18px;border-radius:18px;height:100%">
-          <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:8px">
-            ${dateBox(g.date, false)}
-            <div style="flex:1;min-width:0">
-              <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">⚽ Spiel${isNew(g.createdAt)?' <span style="background:#EF4444;color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:4px">NEU</span>':''}</div>
-              <div style="font-size:15px;font-weight:800;color:#fff;line-height:1.2">${escHtml(g.opponent||'?')}</div>
-              <div style="font-size:12px;color:#fff;margin-top:4px;font-weight:700">
-                <i class="fas fa-clock" style="opacity:.8;margin-right:3px"></i>Treffpunkt: ${g.time||'?'}
-                ${g.location ? ` · <i class="fas fa-location-dot" style="opacity:.8;margin-right:3px"></i>${escHtml(g.location)}` : ''}
-                ${g.notes ? `<div style="margin-top:4px;font-size:12px;font-weight:400;opacity:.9"><i class="fas fa-circle-info" style="margin-right:3px"></i>${escHtml(g.notes)}</div>` : ''}
-              </div>
-            </div>
-            <button onclick="event.stopPropagation();calBtn(this)" data-title="FC Niksar -${(g.opponent||'').replace(/"/g,'')}" data-date="${g.date||''}" data-time="${g.time||''}" data-loc="${(g.location||'').replace(/"/g,'')}" data-dur="120" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 8px;font-size:11px;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">
-              <i class="fas fa-calendar-plus"></i>
-            </button>
-          </div>
-          ${g.result ? `<div style="background:rgba(0,0,0,.2);display:inline-block;padding:3px 12px;border-radius:6px;font-size:18px;font-weight:900;color:#fff;margin-bottom:4px">${escHtml(g.result)}</div>` : ''}
-          ${childBadge}
-          ${squadRow}
-        </div>
-      </div>`;
-    });
-
-    html += `</div>`;
-    if(upcomingGames.length > 1) {
-      html += `<div id="sliderDots-games" style="display:flex;justify-content:center;gap:6px;margin-top:8px">
-        ${upcomingGames.map((_,i) => `<div style="width:${i===0?'18':'7'}px;height:7px;border-radius:4px;background:${i===0?'#D97706':'#D1D5DB'};transition:all .3s" data-idx="${i}"></div>`).join('')}
-      </div>`;
-    }
-    html += `</div>`;
+  if(allUpcoming.length === 0) {
+    html += `<div style="text-align:center;padding:40px 20px;color:#9CA3AF">
+      <div style="font-size:48px;margin-bottom:12px">📅</div>
+      <div style="font-size:15px;font-weight:700;color:#6B7280">Keine anstehenden Termine</div>
+      <div style="font-size:13px;margin-top:4px">Der Trainer trägt bald neue Trainings ein</div>
+    </div>`;
   }
-
 
   html += `</div></div>`;
   page.innerHTML = html;
-
-  // ── SLIDER: immer auf erstes Element zurücksetzen ──
-  requestAnimationFrame(() => {
-    ['sliderTraining', 'sliderGames'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.scrollLeft = 0;
-    });
-  });
-
-  // ── SLIDER DOT LISTENERS ──
-  ['Training', 'Games'].forEach(suffix => {
-    const slider = document.getElementById('slider' + suffix);
-    const dotsEl = document.getElementById('sliderDots-' + suffix.toLowerCase());
-    if(!slider || !dotsEl) return;
-    const dots = dotsEl.querySelectorAll('div[data-idx]');
-    const slideEls = slider.querySelectorAll('.event-slide');
-    const activeColor = suffix === 'Training' ? '#4F46E5' : '#D97706';
-    slider.addEventListener('scroll', () => {
-      if(!slideEls.length) return;
-      const idx = Math.round(slider.scrollLeft / (slideEls[0].offsetWidth + 12));
-      dots.forEach((d, i) => {
-        d.style.width = i === idx ? '18px' : '7px';
-        d.style.background = i === idx ? activeColor : '#D1D5DB';
-      });
-    }, {passive: true});
-  });
 }
 
 // ---- TERMINE / CALENDAR ----
