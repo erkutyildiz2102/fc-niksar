@@ -784,11 +784,98 @@ function dateBox(dateStr, dark) {
 // ── RSVP EDIT MAP ──
 window._rsvpEdit = window._rsvpEdit || {};
 
+function _buildTrainingRsvpHtml(tid, pid) {
+  const ev = STATE.trainings.find(x => x.id === tid);
+  if(!ev || !pid) return '';
+  const absent = isAbsent(pid, ev.date);
+  const localVal = window._localAtt?.[tid + '_' + pid];
+  const st = absent ? 'no' : (localVal ?? ev.attendances?.[pid] ?? 'open');
+  const inEditMode = window._rsvpEdit?.[tid];
+  const showButtons = !absent && (st === 'open' || !st || inEditMode);
+  if(showButtons) {
+    return `<div id="trsvp-${tid}" style="display:flex;gap:8px;padding:10px 12px 12px">
+      <button onclick="setRsvpHome('${tid}','${pid}','yes')" style="flex:1;padding:11px 4px;border-radius:12px;border:2px solid #6EE7B7;background:#F0FDF4;color:#065F46;font-size:13px;font-weight:800;cursor:pointer">✅ Zusagen</button>
+      <button onclick="setRsvpHome('${tid}','${pid}','no')" style="flex:1;padding:11px 4px;border-radius:12px;border:2px solid #FCA5A5;background:#FEF2F2;color:#991B1B;font-size:13px;font-weight:800;cursor:pointer">❌ Absagen</button>
+    </div>`;
+  } else if(absent) {
+    const absInfo = getAbsence(pid, ev.date);
+    return `<div id="trsvp-${tid}" style="padding:10px 12px 12px"><div style="background:#FEF3C7;border:1.5px solid #FDE68A;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;color:#92400E">${(window.ABSENCE_LABELS||{})[absInfo?.reason]||'🤒 Abwesend'} – automatisch abgesagt</div></div>`;
+  } else {
+    const badgeBg    = st==='yes' ? '#D1FAE5' : '#FEE2E2';
+    const badgeBorder= st==='yes' ? '#6EE7B7' : '#FCA5A5';
+    const badgeColor = st==='yes' ? '#065F46' : '#991B1B';
+    const badgeLabel = st==='yes' ? '✅ Zugesagt' : '❌ Abgesagt';
+    return `<div id="trsvp-${tid}" style="display:flex;align-items:center;gap:8px;padding:10px 12px 12px">
+      <div style="flex:1;background:${badgeBg};border:1.5px solid ${badgeBorder};border-radius:10px;padding:10px 14px;font-size:13px;font-weight:800;color:${badgeColor}">${badgeLabel}</div>
+      <button onclick="toggleRsvpEdit('${tid}')" style="background:#F3F4F6;border:none;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;color:#374151;cursor:pointer;white-space:nowrap">Antwort ändern</button>
+    </div>`;
+  }
+}
+
+function _buildGameRsvpHtml(gid, pid) {
+  const ev = STATE.games.find(x => x.id === gid);
+  if(!ev) return '';
+  const squadKeys = Object.keys(ev.squad||{}).filter(k=>ev.squad[k]);
+  const inSquad = pid && squadKeys.includes(pid);
+  const conf = pid ? ev.squadConfirm?.[pid] : null;
+  const yesConf = squadKeys.filter(k => ev.squadConfirm?.[k]==='yes').length;
+  const noConf  = squadKeys.filter(k => ev.squadConfirm?.[k]==='no').length;
+  const gameEditMode = window._gameRsvpEdit?.[gid];
+  const today = new Date().toISOString().slice(0,10);
+  const isPast = ev.date < today;
+  const squadPlayers = [...STATE.players].filter(p=>squadKeys.includes(p.id)).sort((a,b)=>(parseInt(a.number)||999)-(parseInt(b.number)||999));
+  const visiblePlayers = squadPlayers.slice(0,8);
+  const extraCount = squadPlayers.length - visiblePlayers.length;
+
+  let statusBadge = '';
+  if(pid) {
+    if(!squadKeys.length) {
+      statusBadge = `<div style="background:#F3F4F6;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;color:#6B7280;margin-bottom:${squadPlayers.length?'10px':'0'}">📋 Kader noch offen</div>`;
+    } else if(inSquad) {
+      if((conf==='yes' || conf==='no') && !gameEditMode) {
+        const gbBg    = conf==='yes' ? '#D1FAE5' : '#FEE2E2';
+        const gbBord  = conf==='yes' ? '#6EE7B7' : '#FCA5A5';
+        const gbColor = conf==='yes' ? '#065F46' : '#991B1B';
+        const gbLabel = conf==='yes' ? '✅ Nominiert · Zugesagt' : '⚠️ Nominiert · Abgesagt';
+        statusBadge = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:${squadPlayers.length?'10px':'0'}">
+          <div style="flex:1;background:${gbBg};border:1.5px solid ${gbBord};border-radius:10px;padding:10px 14px;font-size:12px;font-weight:800;color:${gbColor}">${gbLabel}</div>
+          <button onclick="toggleGameRsvpEdit('${gid}')" style="background:#F3F4F6;border:none;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;color:#374151;cursor:pointer;white-space:nowrap">Antwort ändern</button>
+        </div>`;
+      } else if(!isPast) {
+        statusBadge = `<div style="margin-bottom:${squadPlayers.length?'10px':'0'}">
+          <div style="font-size:12px;font-weight:700;color:#059669;margin-bottom:8px">✅ Dein Kind spielt mit! Kannst du kommen?</div>
+          <div style="display:flex;gap:8px">
+            <button onclick="setGameRsvp('${gid}','${pid}','yes')" style="flex:1;padding:10px;border-radius:12px;border:2px solid #6EE7B7;background:#F0FDF4;color:#065F46;font-size:13px;font-weight:800;cursor:pointer">✅ Zusagen</button>
+            <button onclick="setGameRsvp('${gid}','${pid}','no')" style="flex:1;padding:10px;border-radius:12px;border:2px solid #FCA5A5;background:#FEF2F2;color:#991B1B;font-size:13px;font-weight:800;cursor:pointer">❌ Absagen</button>
+          </div>
+        </div>`;
+      }
+    } else {
+      statusBadge = `<div style="background:#FEE2E2;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:800;color:#991B1B;margin-bottom:${squadPlayers.length?'10px':'0'}">❌ Nicht nominiert</div>`;
+    }
+  }
+  const avatarRow = squadPlayers.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap">
+    ${visiblePlayers.map(p=>`<div style="position:relative;width:36px;height:36px">
+      <div style="width:36px;height:36px;border-radius:50%;overflow:hidden;border:2px solid #E5E7EB">
+        ${p.photo?`<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;background:#0A2540;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700">${(p.name||'?')[0].toUpperCase()}</div>`}
+      </div>
+      <div style="position:absolute;bottom:-2px;right:-2px;background:#0A2540;color:#fff;font-size:7px;font-weight:800;padding:1px 3px;border-radius:4px;line-height:1.4">${p.number||'?'}</div>
+    </div>`).join('')}
+    ${extraCount>0?`<div style="width:36px;height:36px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#6B7280">+${extraCount}</div>`:''}
+  </div>` : '';
+  return `<div id="grsvp-${gid}" style="padding:10px 12px 12px">${statusBadge}${avatarRow}</div>`;
+}
+
+function _patchRsvpDiv(id, html) {
+  const el = document.getElementById(id);
+  if(el) { el.outerHTML = html; return true; }
+  return false;
+}
+
 function toggleRsvpEdit(tid) {
   const profile = getProfile();
   const pid = profile?.playerId;
   if(!pid) return;
-  // Sofort auf "offen" setzen → Trainer sieht offene Rückmeldung
   window._localAtt = window._localAtt || {};
   window._localAtt[tid + '_' + pid] = 'open';
   const _t = STATE.trainings.find(x => x.id === tid);
@@ -796,14 +883,13 @@ function toggleRsvpEdit(tid) {
   db.ref('/trainings/' + tid + '/attendances/' + pid).set('open');
   window._rsvpEdit = window._rsvpEdit || {};
   window._rsvpEdit[tid] = true;
-  renderHome();
+  if(!_patchRsvpDiv('trsvp-' + tid, _buildTrainingRsvpHtml(tid, pid))) { renderHome(); }
   renderTermine();
 }
 
 function renderHome() {
   const page = document.getElementById('homePage');
   if(!page) return;
-  const _sy = window.scrollY || 0;
   const profile = getProfile();
   const now = Date.now();
 
@@ -1058,19 +1144,19 @@ function renderHome() {
 
       if(pid) {
         if(showButtons) {
-          rsvpRow = `<div style="display:flex;gap:8px;padding:10px 12px 12px">
+          rsvpRow = `<div id="trsvp-${ev.id}" style="display:flex;gap:8px;padding:10px 12px 12px">
             <button onclick="setRsvpHome('${ev.id}','${pid}','yes')" style="flex:1;padding:11px 4px;border-radius:12px;border:2px solid #6EE7B7;background:#F0FDF4;color:#065F46;font-size:13px;font-weight:800;cursor:pointer">✅ Zusagen</button>
             <button onclick="setRsvpHome('${ev.id}','${pid}','no')" style="flex:1;padding:11px 4px;border-radius:12px;border:2px solid #FCA5A5;background:#FEF2F2;color:#991B1B;font-size:13px;font-weight:800;cursor:pointer">❌ Absagen</button>
           </div>`;
         } else if(absent) {
           const absInfo = getAbsence(pid, ev.date);
-          rsvpRow = `<div style="padding:10px 12px 12px"><div style="background:#FEF3C7;border:1.5px solid #FDE68A;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;color:#92400E">${ABSENCE_LABELS[absInfo?.reason]||'🤒 Abwesend'} – automatisch abgesagt</div></div>`;
+          rsvpRow = `<div id="trsvp-${ev.id}" style="padding:10px 12px 12px"><div style="background:#FEF3C7;border:1.5px solid #FDE68A;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;color:#92400E">${ABSENCE_LABELS[absInfo?.reason]||'🤒 Abwesend'} – automatisch abgesagt</div></div>`;
         } else {
           const badgeBg    = st==='yes' ? '#D1FAE5' : '#FEE2E2';
           const badgeBorder= st==='yes' ? '#6EE7B7' : '#FCA5A5';
           const badgeColor = st==='yes' ? '#065F46' : '#991B1B';
           const badgeLabel = st==='yes' ? '✅ Zugesagt' : '❌ Abgesagt';
-          rsvpRow = `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px 12px">
+          rsvpRow = `<div id="trsvp-${ev.id}" style="display:flex;align-items:center;gap:8px;padding:10px 12px 12px">
             <div style="flex:1;background:${badgeBg};border:1.5px solid ${badgeBorder};border-radius:10px;padding:10px 14px;font-size:13px;font-weight:800;color:${badgeColor}">${badgeLabel}</div>
             <button onclick="toggleRsvpEdit('${ev.id}')" style="background:#F3F4F6;border:none;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;color:#374151;cursor:pointer;white-space:nowrap">Antwort ändern</button>
           </div>`;
@@ -1127,7 +1213,7 @@ function renderHome() {
         ${extraCount>0?`<div style="width:36px;height:36px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#6B7280">+${extraCount}</div>`:''}
       </div>` : '';
 
-      rsvpRow = `<div style="padding:10px 12px 12px">${statusBadge}${avatarRow}</div>`;
+      rsvpRow = `<div id="grsvp-${ev.id}" style="padding:10px 12px 12px">${statusBadge}${avatarRow}</div>`;
     }
 
     const notesHtml = isT && ev.notes ? `<div style="padding:0 12px 8px;font-size:11px;color:#6B7280;font-style:italic">${linkify(ev.notes)}</div>` : !isT && ev.notes ? `<div style="padding:0 12px 8px;font-size:11px;color:#6B7280">${linkify(ev.notes)}</div>` : '';
@@ -1173,8 +1259,6 @@ function renderHome() {
 
   html += `</div></div>`;
   page.innerHTML = html;
-
-  requestAnimationFrame(() => requestAnimationFrame(() => { if(_sy > 0) window.scrollTo(0, _sy); }));
 }
 
 function _oldSlider_noop() { if(false) { [].forEach(t => {
@@ -1963,7 +2047,6 @@ function dismissBanner(key) {
 }
 
 function setRsvpHome(tid, pid, status) {
-  // Optimistic local update → UI reagiert sofort
   window._rsvpEdit = window._rsvpEdit || {};
   delete window._rsvpEdit[tid];
   window._localAtt = window._localAtt || {};
@@ -1972,19 +2055,13 @@ function setRsvpHome(tid, pid, status) {
   if (_t) { _t.attendances = _t.attendances || {}; _t.attendances[pid] = status; }
   if(status === 'yes') showToast('✅ Zusage gespeichert!');
   else if(status === 'no') showToast('❌ Absage gespeichert!');
-  renderHome();
+  if(!_patchRsvpDiv('trsvp-' + tid, _buildTrainingRsvpHtml(tid, pid))) { renderHome(); }
   renderTermine();
-
-  // Nach Zusage/Absage zum nächsten offenen Termin scrollen
-  requestAnimationFrame(() => scrollToNextOpenTraining(pid));
-
-  // Firebase schreiben (im Hintergrund)
   db.ref('/trainings/' + tid + '/attendances/' + pid).set(status).then(() => {
     const t2 = STATE.trainings.find(x => x.id === tid);
     if (t2) { t2.attendances = t2.attendances || {}; t2.attendances[pid] = status; }
-    renderHome();
-    renderTermine();
     if (window._localAtt) delete window._localAtt[tid + '_' + pid];
+    if(!_patchRsvpDiv('trsvp-' + tid, _buildTrainingRsvpHtml(tid, pid))) { renderHome(); }
   });
 }
 
@@ -3372,23 +3449,19 @@ function toggleGameRsvpEdit(gid) {
   const _g = STATE.games.find(x => x.id === gid);
   if(_g) { _g.squadConfirm = _g.squadConfirm || {}; _g.squadConfirm[pid] = 'open'; }
   db.ref('/games/'+gid+'/squadConfirm/'+pid).remove();
-  const sy = window.scrollY || 0;
-  renderHome();
+  if(!_patchRsvpDiv('grsvp-' + gid, _buildGameRsvpHtml(gid, pid))) { renderHome(); }
   renderTermine();
-  requestAnimationFrame(() => window.scrollTo({top: sy, behavior: 'instant'}));
 }
 
 function setGameRsvp(gid, pid, status) {
   window._gameRsvpEdit = window._gameRsvpEdit || {};
   delete window._gameRsvpEdit[gid];
   const _g = STATE.games.find(x => x.id === gid);
-  if(_g) { _g.squadConfirm = _g.squadConfirm || {}; _g.squadConfirm[pid] = status; }
+  if(_g) { _g.squadConfirm = _g.squadConfirm || {}; _g.squadConfirm[pid] = status === 'open' ? undefined : status; }
   if(status === 'yes') showToast('✅ Zusage gespeichert!');
   else if(status === 'no') showToast('❌ Absage gespeichert!');
-  const sy = window.scrollY || 0;
-  renderHome();
+  if(!_patchRsvpDiv('grsvp-' + gid, _buildGameRsvpHtml(gid, pid))) { renderHome(); }
   renderTermine();
-  requestAnimationFrame(() => window.scrollTo({top: sy, behavior: 'instant'}));
   if(status === 'open') {
     db.ref('/games/'+gid+'/squadConfirm/'+pid).remove();
   } else {
