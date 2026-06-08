@@ -1433,11 +1433,34 @@ function renderPollTab() {
       </div>`;
     }).join('');
 
-    const voteButtons = (!closed && !myVote && pid) ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
-      ${(poll.options||[]).map((opt,i) => `<button onclick="castVote('${poll.id}','${escHtml(opt)}')" style="padding:8px 16px;border-radius:10px;border:2px solid ${POLL_COLORS[i%POLL_COLORS.length]};background:${POLL_COLORS[i%POLL_COLORS.length]}18;color:${POLL_COLORS[i%POLL_COLORS.length]};font-size:13px;font-weight:700;cursor:pointer">${escHtml(opt)}</button>`).join('')}
+    const voteButtons = (!closed && pid) ? `<div style="margin-top:12px">
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${(poll.options||[]).map((opt,i) => {
+          const isSelected = myVote === opt;
+          return `<button onclick="castVote('${poll.id}','${escHtml(opt)}')" style="padding:8px 16px;border-radius:10px;border:2px solid ${POLL_COLORS[i%POLL_COLORS.length]};background:${isSelected ? POLL_COLORS[i%POLL_COLORS.length] : POLL_COLORS[i%POLL_COLORS.length]+'18'};color:${isSelected ? '#fff' : POLL_COLORS[i%POLL_COLORS.length]};font-size:13px;font-weight:700;cursor:pointer">${isSelected ? '✓ ' : ''}${escHtml(opt)}</button>`;
+        }).join('')}
+      </div>
+      ${myVote ? `<div style="font-size:11px;color:#9CA3AF;margin-top:6px">Tippe eine andere Option um deine Stimme zu ändern</div>` : ''}
     </div>` : '';
 
-    const alreadyVoted = myVote ? `<div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:#10B981;font-weight:700"><i class="fas fa-check-circle"></i> Abgestimmt: ${escHtml(myVote)}</div>` : '';
+    // Trainer: wer hat wie abgestimmt
+    const voterList = trainerLoggedIn ? (() => {
+      const votersByOption = {};
+      (poll.options||[]).forEach(o => { votersByOption[o] = []; });
+      Object.entries(poll.votes||{}).forEach(([vk, opt]) => {
+        const player = STATE.players.find(p => btoa(p.id).replace(/[^a-zA-Z0-9]/g,'').slice(0,16) === vk);
+        const name = player ? player.name : '?';
+        if (votersByOption[opt] !== undefined) votersByOption[opt].push(name);
+      });
+      const rows = (poll.options||[]).map((opt,i) => {
+        const names = votersByOption[opt] || [];
+        if(!names.length) return '';
+        return `<div style="margin-bottom:6px"><span style="font-size:11px;font-weight:700;color:${POLL_COLORS[i%POLL_COLORS.length]}">${escHtml(opt)}:</span> <span style="font-size:11px;color:#374151">${names.map(n=>escHtml(n)).join(', ')}</span></div>`;
+      }).join('');
+      return rows ? `<div style="background:#F9FAFB;border-radius:10px;padding:10px 12px;margin-top:8px">${rows}</div>` : '';
+    })() : '';
+
+    const alreadyVoted = '';
 
     return `<div style="background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.07)">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
@@ -1451,7 +1474,7 @@ function renderPollTab() {
       <div style="font-size:12px;color:#6B7280;margin-bottom:12px">${totalVotes} Stimme${totalVotes!==1?'n':''}</div>
       ${resultsHtml}
       ${voteButtons}
-      ${alreadyVoted}
+      ${voterList}
     </div>`;
   };
 
