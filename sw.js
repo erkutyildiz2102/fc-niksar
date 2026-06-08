@@ -1,6 +1,6 @@
-// FC Niksar Service Worker v8
+// FC Niksar Service Worker v9
 // index.html: Network-First (immer aktuell), Bilder/Icons: Cache-First (schnell)
-const CACHE = 'fcn-v8';
+const CACHE = 'fcn-v9';
 
 self.addEventListener('message', e => {
   if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
@@ -68,16 +68,33 @@ self.addEventListener('fetch', e => {
 });
 
 // Push Notifications
+const DB_URL = 'https://fc-niksar-default-rtdb.europe-west1.firebasedatabase.app';
+
 self.addEventListener('push', e => {
   let data = {};
   try { data = e.data ? e.data.json() : {}; } catch(err) {}
-  e.waitUntil(self.registration.showNotification(data.title || 'FC Niksar', {
+
+  const notifPromise = self.registration.showNotification(data.title || 'FC Niksar', {
     body: data.body || '',
     icon: './icon-192.png',
     badge: './icon-192.png',
     data: { url: data.url || './' },
     vibrate: [200, 100, 200]
-  }));
+  });
+
+  // Subscription bei jedem empfangenen Push in Firebase erneuern
+  // → hält Subscription aktiv auch ohne App zu öffnen
+  const refreshPromise = self.registration.pushManager.getSubscription().then(sub => {
+    if (!sub) return;
+    const k = btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
+    return fetch(`${DB_URL}/pushSubscriptions/${k}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sub.toJSON())
+    }).catch(() => {});
+  }).catch(() => {});
+
+  e.waitUntil(Promise.all([notifPromise, refreshPromise]));
 });
 
 self.addEventListener('notificationclick', e => {
