@@ -803,6 +803,7 @@ function toggleRsvpEdit(tid) {
 function renderHome() {
   const page = document.getElementById('homePage');
   if(!page) return;
+  const _sy = window.scrollY || 0;
   const profile = getProfile();
   const now = Date.now();
 
@@ -1086,27 +1087,28 @@ function renderHome() {
       const visiblePlayers = squadPlayers.slice(0,8);
       const extraCount = squadPlayers.length - visiblePlayers.length;
 
+      const gameEditMode = window._gameRsvpEdit?.[ev.id];
       let statusBadge = '';
       if(pid) {
         if(!squadKeys.length) {
           statusBadge = `<div style="background:#F3F4F6;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;color:#6B7280;margin-bottom:${squadPlayers.length?'10px':'0'}">📋 Kader noch offen</div>`;
         } else if(inSquad) {
-          if(conf==='yes') {
+          if((conf==='yes' || conf==='no') && !gameEditMode) {
+            const gbBg    = conf==='yes' ? '#D1FAE5' : '#FEE2E2';
+            const gbBord  = conf==='yes' ? '#6EE7B7' : '#FCA5A5';
+            const gbColor = conf==='yes' ? '#065F46' : '#991B1B';
+            const gbLabel = conf==='yes' ? '✅ Nominiert · Zugesagt' : '⚠️ Nominiert · Abgesagt';
             statusBadge = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:${squadPlayers.length?'10px':'0'}">
-              <div style="flex:1;background:#D1FAE5;border:1.5px solid #6EE7B7;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:800;color:#065F46">✅ Nominiert · Zugesagt</div>
-              <button onclick="setGameRsvp('${ev.id}','${pid}','open')" style="background:#F3F4F6;border:none;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;color:#374151;cursor:pointer;white-space:nowrap">Ändern</button>
-            </div>`;
-          } else if(conf==='no') {
-            statusBadge = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:${squadPlayers.length?'10px':'0'}">
-              <div style="flex:1;background:#FEE2E2;border:1.5px solid #FCA5A5;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:800;color:#991B1B">⚠️ Nominiert · Abgesagt</div>
-              <button onclick="setGameRsvp('${ev.id}','${pid}','open')" style="background:#F3F4F6;border:none;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;color:#374151;cursor:pointer;white-space:nowrap">Ändern</button>
+              <div style="flex:1;background:${gbBg};border:1.5px solid ${gbBord};border-radius:10px;padding:10px 14px;font-size:12px;font-weight:800;color:${gbColor}">${gbLabel}</div>
+              <button onclick="toggleGameRsvpEdit('${ev.id}')" style="background:#F3F4F6;border:none;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;color:#374151;cursor:pointer;white-space:nowrap">Antwort ändern</button>
             </div>`;
           } else {
+            const labelText = squadKeys.length ? '✅ Dein Kind spielt mit! Kannst du kommen?' : '';
             statusBadge = `<div style="margin-bottom:${squadPlayers.length?'10px':'0'}">
-              <div style="font-size:12px;font-weight:700;color:#059669;margin-bottom:8px">✅ Dein Kind spielt mit! Kannst du kommen?</div>
+              ${labelText ? `<div style="font-size:12px;font-weight:700;color:#059669;margin-bottom:8px">${labelText}</div>` : ''}
               <div style="display:flex;gap:8px">
-                <button onclick="setGameRsvp('${ev.id}','${pid}','yes')" style="flex:1;padding:10px;border-radius:12px;border:none;background:#0A2540;color:#fff;font-size:13px;font-weight:800;cursor:pointer">✅ Zusagen</button>
-                <button onclick="setGameRsvp('${ev.id}','${pid}','no')" style="flex:1;padding:10px;border-radius:12px;border:1.5px solid #E5E7EB;background:#F9FAFB;color:#374151;font-size:13px;font-weight:700;cursor:pointer">❌ Absagen</button>
+                <button onclick="setGameRsvp('${ev.id}','${pid}','yes')" style="flex:1;padding:10px;border-radius:12px;border:2px solid #6EE7B7;background:#F0FDF4;color:#065F46;font-size:13px;font-weight:800;cursor:pointer">✅ Zusagen</button>
+                <button onclick="setGameRsvp('${ev.id}','${pid}','no')" style="flex:1;padding:10px;border-radius:12px;border:2px solid #FCA5A5;background:#FEF2F2;color:#991B1B;font-size:13px;font-weight:800;cursor:pointer">❌ Absagen</button>
               </div>
             </div>`;
           }
@@ -1172,7 +1174,7 @@ function renderHome() {
   html += `</div></div>`;
   page.innerHTML = html;
 
-  requestAnimationFrame(() => {});
+  requestAnimationFrame(() => requestAnimationFrame(() => { if(_sy > 0) window.scrollTo(0, _sy); }));
 }
 
 function _oldSlider_noop() { if(false) { [].forEach(t => {
