@@ -1586,10 +1586,28 @@ function addToCalendar(title, dateStr, timeStr, location, durationMin) {
 }
 
 function editProfile() {
-  // Gesperrt: kein Wechsel möglich (außer noch kein Profil gewählt)
   const p = getProfile();
   if (p && STATE.config.profileSwitchLocked === true) {
-    showToast('🔒 Profilwechsel ist gesperrt. Bitte den Trainer kontaktieren.');
+    // Zeige Profil-Info Modal mit Benachrichtigungs-Button
+    const permStatus = typeof Notification !== 'undefined' ? Notification.permission : 'default';
+    const pushActive = permStatus === 'granted' && LS('myPushKey');
+    const player = STATE.players.find(pl => pl.id === p.playerId);
+    showModal(`<div class="modal-handle"></div>
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="width:64px;height:64px;border-radius:50%;background:#0A2540;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;overflow:hidden">
+          ${player?.photo ? `<img src="${player.photo}" style="width:100%;height:100%;object-fit:cover">` : `<span style="color:#fff;font-size:26px;font-weight:800">${(p.name||'?')[0].toUpperCase()}</span>`}
+        </div>
+        <div style="font-size:18px;font-weight:800;color:#0A2540">${escHtml(p.name||'')}</div>
+        ${player ? `<div style="font-size:13px;color:#6B7280;margin-top:2px">${escHtml(player.name||'')} · #${player.number||'?'}</div>` : ''}
+      </div>
+      <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px">🔔 Benachrichtigungen</div>
+      ${permStatus === 'denied'
+        ? `<div style="background:#FEF2F2;border-radius:12px;padding:12px;font-size:13px;color:#DC2626;font-weight:600">⚠️ Blockiert – bitte in den Handy-Einstellungen erlauben</div>`
+        : pushActive
+          ? `<div style="background:#F0FDF4;border-radius:12px;padding:12px;font-size:13px;color:#065F46;font-weight:600;margin-bottom:8px">✅ Benachrichtigungen aktiv</div>
+             <button onclick="resubscribePush();closeModal();" style="width:100%;background:#F3F4F6;color:#374151;border:none;border-radius:12px;padding:10px;font-size:13px;font-weight:600;cursor:pointer">🔄 Neu verbinden (bei Problemen)</button>`
+          : `<button class="btn-primary" onclick="subscribeToPush();closeModal();">🔔 Benachrichtigungen aktivieren</button>`
+      }`);
     return;
   }
   selectedSetupPlayer = p?.playerId || null;
