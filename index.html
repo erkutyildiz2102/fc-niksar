@@ -1949,6 +1949,9 @@ function setRsvpHome(tid, pid, status) {
   window._localAtt[tid + '_' + pid] = status;
   const _t = STATE.trainings.find(x => x.id === tid);
   if (_t) { _t.attendances = _t.attendances || {}; _t.attendances[pid] = status; }
+  if(status === 'yes') showToast('✅ Zusage gespeichert!');
+  else if(status === 'no') showToast('❌ Absage gespeichert!');
+  else showToast('↩️ Antwort zurückgesetzt');
   renderHome();
   renderTermine();
 
