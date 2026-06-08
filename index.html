@@ -885,13 +885,16 @@ function toggleRsvpEdit(tid) {
   window._localAtt[tid + '_' + pid] = 'open';
   const _t = STATE.trainings.find(x => x.id === tid);
   if(_t) { _t.attendances = _t.attendances || {}; _t.attendances[pid] = 'open'; }
-  window._suppressHomeRender = Date.now() + 3000;
-  window._suppressEventBanner = Date.now() + 3000;
+  window._suppressHomeRender = Date.now() + 5000;
+  window._suppressEventBanner = Date.now() + 5000;
   db.ref('/trainings/' + tid + '/attendances/' + pid).set('open');
   window._rsvpEdit = window._rsvpEdit || {};
   window._rsvpEdit[tid] = true;
   if(!_patchRsvpDiv('trsvp-' + tid, _buildTrainingRsvpHtml(tid, pid))) { renderHome(); }
   renderTermine();
+  const _t2 = STATE.trainings.find(x => x.id === tid);
+  const tDate = _t2 ? `${_t2.date ? (()=>{const d=new Date(_t2.date+'T12:00:00');return d.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'});})() : ''} · ${_t2.time||'?'} Uhr` : '';
+  showEventBanner('⏳ Rückmeldung offen', tDate || 'Bitte zu- oder absagen', '#F59E0B');
 }
 
 function renderHome() {
@@ -2079,8 +2082,8 @@ function setRsvpHome(tid, pid, status) {
   else if(status === 'no') showToast('❌ Absage gespeichert!');
   document.getElementById('bannerOpenTrainingRsvp')?.remove();
   document.getElementById('eventNotifBanner')?.remove();
-  window._suppressHomeRender = Date.now() + 3000;
-  window._suppressEventBanner = Date.now() + 3000;
+  window._suppressHomeRender = Date.now() + 5000;
+  window._suppressEventBanner = Date.now() + 5000;
   if(!_patchRsvpDiv('trsvp-' + tid, _buildTrainingRsvpHtml(tid, pid))) { renderHome(); }
   renderTermine();
   db.ref('/trainings/' + tid + '/attendances/' + pid).set(status).then(() => {
@@ -3490,8 +3493,8 @@ function setGameRsvp(gid, pid, status) {
   else if(status === 'no') showToast('❌ Absage gespeichert!');
   document.getElementById('bannerOpenGameRsvp')?.remove();
   document.getElementById('eventNotifBanner')?.remove();
-  window._suppressHomeRender = Date.now() + 3000;
-  window._suppressEventBanner = Date.now() + 3000;
+  window._suppressHomeRender = Date.now() + 5000;
+  window._suppressEventBanner = Date.now() + 5000;
   if(!_patchRsvpDiv('grsvp-' + gid, _buildGameRsvpHtml(gid, pid))) { renderHome(); }
   renderTermine();
   if(status === 'open') {
