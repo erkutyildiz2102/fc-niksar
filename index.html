@@ -987,6 +987,42 @@ function renderHome() {
 
 
 
+  // ── Offene RSVP Banner (persistent, kein Timer) ──
+  if(pid) {
+    const openT = upcomingTrainings.filter(t => {
+      const s = window._localAtt?.[t.id+'_'+pid] ?? t.attendances?.[pid];
+      return !s || s === 'open';
+    });
+    const openG = upcomingGames.filter(g => {
+      const squadKeys = Object.keys(g.squad||{}).filter(k=>g.squad[k]);
+      if(!squadKeys.includes(pid)) return false;
+      const conf = g.squadConfirm?.[pid];
+      return !conf || conf === 'open';
+    });
+    if(openT.length > 0) {
+      const first = openT[0];
+      html += `<div onclick="document.getElementById('evcard-${first.id}')?.scrollIntoView({behavior:'smooth',block:'center'})" style="background:linear-gradient(135deg,#F59E0B,#D97706);padding:12px 16px;border-radius:12px;display:flex;align-items:center;gap:10px;cursor:pointer">
+        <div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">⏳</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:800;font-size:13px;color:#fff">${openT.length === 1 ? '1 offene Rückmeldung' : `${openT.length} offene Rückmeldungen`}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.85);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fmtFull(first.date)} · ${first.time||'?'} Uhr${first.location?' · '+escHtml(first.location):''}</div>
+        </div>
+        <i class="fas fa-chevron-down" style="color:rgba(255,255,255,.7);font-size:13px;flex-shrink:0"></i>
+      </div>`;
+    }
+    if(openG.length > 0) {
+      const first = openG[0];
+      html += `<div onclick="document.getElementById('evcard-${first.id}')?.scrollIntoView({behavior:'smooth',block:'center'})" style="background:linear-gradient(135deg,#B45309,#D97706);padding:12px 16px;border-radius:12px;display:flex;align-items:center;gap:10px;cursor:pointer">
+        <div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">⚽</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:800;font-size:13px;color:#fff">${openG.length === 1 ? '1 offene Spiel-Rückmeldung' : `${openG.length} offene Spiel-Rückmeldungen`}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.85);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(first.opponent||'Spiel')} · ${fmtFull(first.date)} · ${first.time||'?'} Uhr</div>
+        </div>
+        <i class="fas fa-chevron-down" style="color:rgba(255,255,255,.7);font-size:13px;flex-shrink:0"></i>
+      </div>`;
+    }
+  }
+
   // ── Abstimmungs-Banner ──
   const today2 = new Date().toISOString().slice(0,10);
   const openPolls = (STATE.polls||[]).filter(p => !p.deadline || p.deadline >= today2);
