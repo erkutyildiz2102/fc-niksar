@@ -1275,7 +1275,12 @@ function addToCalendar(title, dateStr, timeStr, location, durationMin) {
 }
 
 function editProfile() {
+  // Gesperrt: kein Wechsel möglich (außer noch kein Profil gewählt)
   const p = getProfile();
+  if (p && STATE.config.profileSwitchLocked === true) {
+    showToast('🔒 Profilwechsel ist gesperrt. Bitte den Trainer kontaktieren.');
+    return;
+  }
   selectedSetupPlayer = p?.playerId || null;
   document.getElementById('profileSetup').style.display = 'flex';
   document.getElementById('setupName').value = p?.name || '';
@@ -2594,6 +2599,7 @@ function renderStatistikTab(c) {
 // ---- EINSTELLUNGEN TAB ----
 function renderEinstellungenTab(c) {
   const pushOn = localStorage.getItem('fcniksar_pushEnabled') === 'true';
+  const locked = STATE.config.profileSwitchLocked === true;
   c.innerHTML = `
     <div class="card" style="padding:16px;margin-bottom:0">
       <div style="font-size:15px;font-weight:700;margin-bottom:8px"><i class="fa fa-bell"></i> Push-Benachrichtigungen</div>
@@ -2602,6 +2608,16 @@ function renderEinstellungenTab(c) {
         ? `<div style="background:#10B981;color:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700"><i class="fas fa-check-circle" style="font-size:18px"></i> Benachrichtigungen aktiv</div>`
         : `<button class="btn-primary" onclick="subscribeToPush()" id="pushBtn">🔔 Benachrichtigungen aktivieren</button>`
       }
+    </div>
+    <div class="card" style="padding:16px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px"><i class="fa fa-users"></i> Profilwechsel</div>
+      <div style="font-size:13px;color:#6B7280;margin-bottom:14px">Wenn gesperrt können Eltern ihr Kind nicht mehr wechseln.</div>
+      <div onclick="toggleProfileLock()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+        <span style="font-size:14px;font-weight:600;color:${locked?'#DC2626':'#10B981'}">${locked?'🔒 Profilwechsel gesperrt':'🔓 Profilwechsel erlaubt'}</span>
+        <div style="width:48px;height:26px;border-radius:13px;background:${locked?'#DC2626':'#10B981'};position:relative;transition:background .2s">
+          <div style="position:absolute;top:3px;${locked?'right:3px':'left:3px'};width:20px;height:20px;border-radius:50%;background:#fff;transition:all .2s"></div>
+        </div>
+      </div>
     </div>
     
     
@@ -2621,6 +2637,19 @@ function renderEinstellungenTab(c) {
       <div style="font-size:15px;font-weight:700;margin-bottom:12px"><i class="fa fa-download"></i> Daten exportieren</div>
       <button class="btn-primary" onclick="exportData()"><i class="fa fa-file-export"></i> Als JSON exportieren</button>
     </div>`;
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1F2937;color:#fff;padding:12px 20px;border-radius:20px;font-size:14px;font-weight:600;z-index:9999;max-width:80%;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function toggleProfileLock() {
+  const locked = STATE.config.profileSwitchLocked === true;
+  db.ref('/config/profileSwitchLocked').set(!locked);
 }
 
 function changePin() {
