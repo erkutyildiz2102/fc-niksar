@@ -141,16 +141,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <!-- Name -->
     <div style="margin-bottom:12px">
       <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Dein Name</div>
-      <input id="setupName" class="input-field" type="text" placeholder='z.B. "Erkut"' style="margin-bottom:0;padding:11px 14px;font-size:14px" onblur="renderSetupPlayers()" onkeydown="if(event.key==='Enter'){this.blur();renderSetupPlayers()}">
+      <input id="setupName" class="input-field" type="text" placeholder='z.B. "Erkut"' style="margin-bottom:0;padding:11px 14px;font-size:14px">
     </div>
 
-    <!-- Kind wählen -->
-    <div style="flex:1;display:flex;flex-direction:column;min-height:0">
-      <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Dein Kind wählen <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9CA3AF">· optional</span></div>
-      <div id="setupPlayerGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;overflow-y:auto;flex:1;align-content:start;align-items:start"></div>
-      <div id="setupNoPlayers" style="display:none;background:#FEF3C7;border-radius:10px;padding:10px 12px;font-size:12px;color:#92400E">
-        ℹ️ Noch keine Spieler – der Trainer trägt sie nach dem ersten Login ein.
-      </div>
+    <!-- PIN -->
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Kind-PIN <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9CA3AF">· vom Trainer erhalten</span></div>
+      <input id="setupPin" class="input-field" type="number" inputmode="numeric" maxlength="4" placeholder="z.B. 4873" style="margin-bottom:0;padding:11px 14px;font-size:18px;font-weight:700;letter-spacing:4px" oninput="checkSetupPin()" onkeydown="if(event.key==='Enter')checkSetupPin()">
+      <div id="setupPinResult" style="margin-top:8px;min-height:24px"></div>
+    </div>
+
+    <!-- Kind Anzeige nach PIN -->
+    <div id="setupPlayerGrid" style="display:none;flex-direction:column;align-items:center;padding:12px;background:#F0FDF4;border-radius:12px;border:2px solid #86EFAC;margin-bottom:4px"></div>
+    <div id="setupNoPlayers" style="display:none;background:#FEF3C7;border-radius:10px;padding:10px 12px;font-size:12px;color:#92400E">
+      ℹ️ Noch keine Spieler – der Trainer trägt sie nach dem ersten Login ein.
     </div>
 
     <!-- Button -->
@@ -493,50 +497,42 @@ function showProfileSetup() {
 }
 
 function renderSetupPlayers() {
+  // Wird nicht mehr direkt genutzt – PIN-Flow übernimmt
+}
+
+function checkSetupPin() {
+  const pin = (document.getElementById('setupPin')?.value || '').trim();
+  const result = document.getElementById('setupPinResult');
   const grid = document.getElementById('setupPlayerGrid');
-  const noP  = document.getElementById('setupNoPlayers');
-  if(!grid) return;
-  if(!STATE.players.length) {
-    grid.style.display = 'none';
-    if(noP) noP.style.display = 'block';
+  if (!pin) { if(result) result.innerHTML=''; return; }
+
+  const matched = STATE.players.find(p => p.pin && p.pin.toString() === pin);
+  if (!matched) {
+    if(result) result.innerHTML = `<div style="color:#EF4444;font-size:13px;font-weight:600">❌ Falscher PIN – bitte Trainer fragen</div>`;
+    if(grid) grid.style.display = 'none';
+    selectedSetupPlayer = null;
     return;
   }
-
-  const enteredName = (document.getElementById('setupName')?.value || '').trim().toLowerCase();
-  const allSorted = [...STATE.players].sort((a,b)=>(parseInt(a.number)||999)-(parseInt(b.number)||999));
-
-  // Name leer → nichts anzeigen
-  if (!enteredName) {
-    grid.style.display = 'grid';
-    if(noP) noP.style.display = 'none';
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;color:#9CA3AF;font-size:13px">👆 Bitte zuerst deinen Namen eingeben</div>`;
-    return;
+  // Treffer
+  selectedSetupPlayer = matched.id;
+  if(result) result.innerHTML = `<div style="color:#059669;font-size:13px;font-weight:700">✅ Kind gefunden!</div>`;
+  if(grid) {
+    grid.style.display = 'flex';
+    grid.innerHTML = `
+      <div style="display:flex;align-items:center;gap:14px;width:100%">
+        <div style="width:52px;height:52px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid #86EFAC">
+          ${matched.photo ? `<img src="${matched.photo}" style="width:100%;height:100%;object-fit:cover">` : `<div style="width:100%;height:100%;background:#0A2540;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff">${(matched.name||'?')[0].toUpperCase()}</div>`}
+        </div>
+        <div>
+          <div style="font-size:18px;font-weight:900;color:#065F46">${escHtml(matched.name||'')}</div>
+          <div style="font-size:12px;color:#6B7280">Nummer #${matched.number||'?'}</div>
+        </div>
+      </div>`;
   }
-
-  // Exakter Name-Match (Groß/Kleinschreibung egal)
-  const matched = allSorted.filter(p =>
-    (p.parentNames || []).some(n => n.toLowerCase() === enteredName)
-  );
-
-  grid.style.display = 'grid';
-  if(noP) noP.style.display = 'none';
-
-  if (matched.length === 0) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;color:#EF4444;font-size:13px;font-weight:600">❌ Kein Kind gefunden für „${escHtml(enteredName)}"<br><span style="color:#9CA3AF;font-weight:400;font-size:12px">Bitte Trainer kontaktieren</span></div>`;
-    return;
-  }
-
-  grid.innerHTML = matched.map(p => `
-    <div onclick="selectSetupPlayer('${p.id}')" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px 8px;border-radius:12px;cursor:pointer;background:${selectedSetupPlayer===p.id?'#EFF6FF':'#F9FAFB'};border:2px solid ${selectedSetupPlayer===p.id?'#3B82F6':'#E5E7EB'}">
-      ${p.photo ? `<img src="${p.photo}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid ${selectedSetupPlayer===p.id?'#3B82F6':'#E5E7EB'}">` : `<div style="width:40px;height:40px;border-radius:50%;background:${selectedSetupPlayer===p.id?'#3B82F6':'#0A2540'};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff">${(p.name||'?')[0].toUpperCase()}</div>`}
-      <div style="font-size:13px;font-weight:800;color:${selectedSetupPlayer===p.id?'#1D4ED8':'#1F2937'};text-align:center;line-height:1.2;word-break:break-word">${escHtml(p.name||'')}</div>
-      <div style="font-size:10px;font-weight:600;color:${selectedSetupPlayer===p.id?'#3B82F6':'#9CA3AF'}">#${p.number||'?'}</div>
-    </div>`).join('');
 }
 
 function selectSetupPlayer(id) {
   selectedSetupPlayer = id;
-  renderSetupPlayers();
 }
 
 function saveProfile() {
@@ -1927,6 +1923,10 @@ function renderSpielerTab(c) {
           ${p.birthday ? `<div>🎂 ${new Date(p.birthday+'T12:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}</div>` : ''}
           ${p.passNr ? `<div>🪪 ${escHtml(p.passNr)}</div>` : ''}
         </div>
+        ${p.pin ? `<div style="margin-top:4px;display:inline-flex;align-items:center;gap:5px;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:8px;padding:3px 8px">
+          <i class="fas fa-key" style="font-size:10px;color:#059669"></i>
+          <span style="font-size:12px;font-weight:800;color:#065F46;letter-spacing:2px">${p.pin}</span>
+        </div>` : ''}
       </div>
       <div style="background:#0A2540;color:#fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${p.number||'?'}</div>
       <button onclick="deletePlayer('${p.id}')" style="background:#FEE2E2;color:#991B1B;border:none;border-radius:8px;padding:8px 10px;cursor:pointer">
