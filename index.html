@@ -142,7 +142,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <!-- Name -->
     <div style="margin-bottom:12px">
       <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Dein Name</div>
-      <input id="setupName" class="input-field" type="text" placeholder='z.B. "Sabrina – Lukas Mama"' style="margin-bottom:0;padding:11px 14px;font-size:14px" oninput="renderSetupPlayers()">
+      <input id="setupName" class="input-field" type="text" placeholder='z.B. "Erkut"' style="margin-bottom:0;padding:11px 14px;font-size:14px" onblur="renderSetupPlayers()" onkeydown="if(event.key==='Enter'){this.blur();renderSetupPlayers()}">
     </div>
 
     <!-- Kind wählen -->
@@ -503,24 +503,31 @@ function renderSetupPlayers() {
     return;
   }
 
-  // Eingegebenen Namen holen und mit parentNames filtern
   const enteredName = (document.getElementById('setupName')?.value || '').trim().toLowerCase();
   const allSorted = [...STATE.players].sort((a,b)=>(parseInt(a.number)||999)-(parseInt(b.number)||999));
 
-  // Spieler filtern: nur zeigen wenn parentNames leer ODER Name passt
-  let visible = allSorted;
-  if (enteredName.length >= 2) {
-    const matched = allSorted.filter(p => {
-      const parents = p.parentNames || [];
-      return parents.some(n => n.toLowerCase() === enteredName || enteredName.includes(n.toLowerCase()) || n.toLowerCase().includes(enteredName));
-    });
-    // Wenn Treffer gefunden → nur diese zeigen; sonst alle (unbekannter Elternteil)
-    if (matched.length > 0) visible = matched;
+  // Name leer → nichts anzeigen
+  if (!enteredName) {
+    grid.style.display = 'grid';
+    if(noP) noP.style.display = 'none';
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;color:#9CA3AF;font-size:13px">👆 Bitte zuerst deinen Namen eingeben</div>`;
+    return;
   }
+
+  // Exakter Name-Match (Groß/Kleinschreibung egal)
+  const matched = allSorted.filter(p =>
+    (p.parentNames || []).some(n => n.toLowerCase() === enteredName)
+  );
 
   grid.style.display = 'grid';
   if(noP) noP.style.display = 'none';
-  grid.innerHTML = visible.map(p => `
+
+  if (matched.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;color:#EF4444;font-size:13px;font-weight:600">❌ Kein Kind gefunden für „${escHtml(enteredName)}"<br><span style="color:#9CA3AF;font-weight:400;font-size:12px">Bitte Trainer kontaktieren</span></div>`;
+    return;
+  }
+
+  grid.innerHTML = matched.map(p => `
     <div onclick="selectSetupPlayer('${p.id}')" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px 8px;border-radius:12px;cursor:pointer;background:${selectedSetupPlayer===p.id?'#EFF6FF':'#F9FAFB'};border:2px solid ${selectedSetupPlayer===p.id?'#3B82F6':'#E5E7EB'}">
       ${p.photo ? `<img src="${p.photo}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid ${selectedSetupPlayer===p.id?'#3B82F6':'#E5E7EB'}">` : `<div style="width:40px;height:40px;border-radius:50%;background:${selectedSetupPlayer===p.id?'#3B82F6':'#0A2540'};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff">${(p.name||'?')[0].toUpperCase()}</div>`}
       <div style="font-size:13px;font-weight:800;color:${selectedSetupPlayer===p.id?'#1D4ED8':'#1F2937'};text-align:center;line-height:1.2;word-break:break-word">${escHtml(p.name||'')}</div>
