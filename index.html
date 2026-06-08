@@ -17,6 +17,12 @@
 :root{--primary:#0A2540;--accent:#fff;--amber:#F59E0B}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{overscroll-behavior:none}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0F4F8;margin:0;min-height:100vh;overflow-x:hidden;overscroll-behavior:none}
+#pullIndicator{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:center;height:0;overflow:hidden;background:transparent;transition:height .2s;pointer-events:none}
+#pullIndicator .pull-inner{display:flex;align-items:center;gap:8px;color:#0A2540;font-size:13px;font-weight:600;opacity:0;transition:opacity .15s}
+#pullIndicator.ready .pull-inner{opacity:1}
+#pullIndicator .pull-spinner{width:20px;height:20px;border:2.5px solid #CBD5E1;border-top-color:#0A2540;border-radius:50%;animation:none}
+#pullIndicator.refreshing .pull-spinner{animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 #splash,#profileSetup{position:fixed;inset:0;background:#fff;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
 #app{display:none;flex-direction:column;min-height:100vh;padding-bottom:80px}
 .card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.08);overflow:hidden}
@@ -164,6 +170,7 @@ html{overscroll-behavior:none}body{font-family:-apple-system,BlinkMacSystemFont,
   </div>
 </div>
 
+<div id="pullIndicator"><div class="pull-inner"><div class="pull-spinner"></div><span id="pullLabel">Loslassen zum Aktualisieren</span></div></div>
 <div id="app">
 
   <!-- ═══ HEADER ═══ -->
@@ -609,6 +616,58 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener('scroll', fixChatHeight);
 }
 window.addEventListener('resize', fixChatHeight);
+
+// ---- PULL TO REFRESH ----
+(function(){
+  const THRESHOLD = 70;
+  let startY = 0, pulling = false, triggered = false;
+  const ind = () => document.getElementById('pullIndicator');
+  const lbl = () => document.getElementById('pullLabel');
+
+  document.addEventListener('touchstart', e => {
+    if (currentPage === 'chat') return;
+    const pageEl = document.getElementById(currentPage + 'Page');
+    const scrollTop = pageEl ? pageEl.scrollTop : window.scrollY;
+    if (scrollTop <= 0) { startY = e.touches[0].clientY; pulling = true; triggered = false; }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (!pulling || currentPage === 'chat') return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy <= 0) { pulling = false; return; }
+    const progress = Math.min(dy, THRESHOLD * 1.5);
+    const el = ind();
+    if (!el) return;
+    el.style.height = Math.min(progress * 0.6, 56) + 'px';
+    if (dy > THRESHOLD && !triggered) {
+      el.classList.add('ready');
+      if (lbl()) lbl().textContent = 'Loslassen zum Aktualisieren';
+    } else if (dy <= THRESHOLD) {
+      el.classList.remove('ready');
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', async () => {
+    if (!pulling) return;
+    pulling = false;
+    const el = ind();
+    if (!el) return;
+    if (el.classList.contains('ready')) {
+      triggered = true;
+      el.classList.add('refreshing');
+      el.style.height = '52px';
+      if (lbl()) lbl().textContent = 'Wird aktualisiert…';
+      // Seite neu rendern
+      await new Promise(r => setTimeout(r, 700));
+      switchPage(currentPage);
+      el.classList.remove('ready','refreshing');
+      el.style.height = '0';
+    } else {
+      el.classList.remove('ready');
+      el.style.height = '0';
+    }
+  });
+})();
 
 function navTap(page) {
   if (currentPage === page) {
