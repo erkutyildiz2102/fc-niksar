@@ -375,7 +375,7 @@ function initListeners() {
   db.ref('/players').on('value', s => { STATE.players = toArr(s.val()).sort((a,b)=>(parseInt(a.number)||999)-(parseInt(b.number)||999)); onDataChange(); });
   db.ref('/trainings').on('value', s => {
     const arr = toArr(s.val()).sort((a,b)=>new Date(a.date)-new Date(b.date));
-    if(prevTrainingCount >= 0 && arr.length > prevTrainingCount) {
+    if(prevTrainingCount >= 0 && arr.length > prevTrainingCount && !(window._suppressEventBanner && Date.now() < window._suppressEventBanner)) {
       const n = arr.find(t=>(Date.now()-(t.createdAt||0))<15000);
       if(n) showEventBanner('🏃 Neues Training eingetragen', `${fmtFull(n.date)} · ${n.time||'?'} Uhr · ${n.location||''}`, '#0A2540');
     }
@@ -384,7 +384,7 @@ function initListeners() {
   });
   db.ref('/games').on('value', s => {
     const arr = toArr(s.val()).sort((a,b)=>new Date(a.date)-new Date(b.date));
-    if(prevGameCount >= 0 && arr.length > prevGameCount) {
+    if(prevGameCount >= 0 && arr.length > prevGameCount && !(window._suppressEventBanner && Date.now() < window._suppressEventBanner)) {
       const n = arr.find(g=>(Date.now()-(g.createdAt||0))<15000);
       if(n) showEventBanner('⚽ Neues Spiel eingetragen', `${n.opponent||'?'} · ${fmtFull(n.date)}`, '#B45309');
     }
@@ -886,6 +886,7 @@ function toggleRsvpEdit(tid) {
   const _t = STATE.trainings.find(x => x.id === tid);
   if(_t) { _t.attendances = _t.attendances || {}; _t.attendances[pid] = 'open'; }
   window._suppressHomeRender = Date.now() + 3000;
+  window._suppressEventBanner = Date.now() + 3000;
   db.ref('/trainings/' + tid + '/attendances/' + pid).set('open');
   window._rsvpEdit = window._rsvpEdit || {};
   window._rsvpEdit[tid] = true;
@@ -2068,6 +2069,7 @@ function setRsvpHome(tid, pid, status) {
   document.getElementById('bannerOpenTrainingRsvp')?.remove();
   document.getElementById('eventNotifBanner')?.remove();
   window._suppressHomeRender = Date.now() + 3000;
+  window._suppressEventBanner = Date.now() + 3000;
   if(!_patchRsvpDiv('trsvp-' + tid, _buildTrainingRsvpHtml(tid, pid))) { renderHome(); }
   renderTermine();
   db.ref('/trainings/' + tid + '/attendances/' + pid).set(status).then(() => {
@@ -3462,6 +3464,7 @@ function toggleGameRsvpEdit(gid) {
   const _g = STATE.games.find(x => x.id === gid);
   if(_g) { _g.squadConfirm = _g.squadConfirm || {}; delete _g.squadConfirm[pid]; }
   window._suppressHomeRender = Date.now() + 3000;
+  window._suppressEventBanner = Date.now() + 3000;
   db.ref('/games/'+gid+'/squadConfirm/'+pid).remove();
   if(!_patchRsvpDiv('grsvp-' + gid, _buildGameRsvpHtml(gid, pid))) { renderHome(); }
   renderTermine();
@@ -3477,6 +3480,7 @@ function setGameRsvp(gid, pid, status) {
   document.getElementById('bannerOpenGameRsvp')?.remove();
   document.getElementById('eventNotifBanner')?.remove();
   window._suppressHomeRender = Date.now() + 3000;
+  window._suppressEventBanner = Date.now() + 3000;
   if(!_patchRsvpDiv('grsvp-' + gid, _buildGameRsvpHtml(gid, pid))) { renderHome(); }
   renderTermine();
   if(status === 'open') {
