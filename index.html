@@ -468,33 +468,8 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(afterSplash, autoAdvance);
     }
   }, hasProfile ? 80 : 1800);
-  requestNotifPermission();
-  // Push-Subscription wiederherstellen: wenn Permission schon erteilt aber localStorage geleert (z.B. nach Reinstall)
-  if ('serviceWorker' in navigator && 'PushManager' in window) {
-    navigator.serviceWorker.ready.then(async reg => {
-      try {
-        const sub = await reg.pushManager.getSubscription();
-        if (sub) {
-          // Subscription existiert → IMMER in Firebase speichern
-          // Verhindert Pushlosigkeit wenn Firebase-Eintrag abgelaufen/gelöscht war
-          const k = btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
-          LSset('myPushKey', k);
-          LSset('pushEnabled', 'true');
-          await db.ref('/pushSubscriptions/' + k).set(sub.toJSON());
-        } else if (Notification.permission === 'granted' && LS('pushEnabled') !== 'false') {
-          // Permission erteilt aber keine Subscription (nach Reinstall) → automatisch neu abonnieren
-          const s = await reg.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-          });
-          const k = btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
-          await db.ref('/pushSubscriptions/' + k).set(s.toJSON());
-          LSset('pushEnabled', 'true');
-          LSset('myPushKey', k);
-        }
-      } catch(e) {}
-    }).catch(() => {});
-  }
+  // Push automatisch aktivieren/wiederherstellen bei jedem Start
+  autoSetupPush();
 });
 
 function afterSplash() {
@@ -2903,20 +2878,19 @@ function renderStatistikTab(c) {
 
 // ---- EINSTELLUNGEN TAB ----
 function renderEinstellungenTab(c) {
-  // pushEnabled true, ODER Permission bereits erteilt + Subscription vorhanden (nach Auto-Restore)
-  const pushOn = localStorage.getItem('fcniksar_pushEnabled') === 'true'
-    || (typeof Notification !== 'undefined' && Notification.permission === 'granted' && LS('myPushKey'));
+  const permStatus = typeof Notification !== 'undefined' ? Notification.permission : 'default';
+  const pushActive = permStatus === 'granted' && LS('myPushKey');
   const locked = STATE.config.profileSwitchLocked === true;
   c.innerHTML = `
     <div class="card" style="padding:16px;margin-bottom:0">
       <div style="font-size:15px;font-weight:700;margin-bottom:8px"><i class="fa fa-bell"></i> Push-Benachrichtigungen</div>
-      <div style="font-size:13px;color:#6B7280;margin-bottom:12px">Benachrichtigung bei neuen Trainings, Spielen und Chat.</div>
-      ${pushOn
-        ? `<div style="display:flex;flex-direction:column;gap:8px">
-             <div style="background:#10B981;color:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700"><i class="fas fa-check-circle" style="font-size:18px"></i> Benachrichtigungen aktiv</div>
-             <button onclick="resubscribePush()" style="background:#F3F4F6;color:#6B7280;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;width:100%">🔄 Neu verbinden (bei Problemen)</button>
-           </div>`
-        : `<button class="btn-primary" onclick="subscribeToPush()" id="pushBtn">🔔 Benachrichtigungen aktivieren</button>`
+      <div style="font-size:13px;color:#6B7280;margin-bottom:12px">Benachrichtigung bei neuen Trainings, Spielen und Abstimmungen.</div>
+      ${permStatus === 'denied'
+        ? `<div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:12px;padding:12px 16px;font-size:13px;color:#DC2626;font-weight:600">⚠️ Benachrichtigungen sind in den Handy-Einstellungen blockiert. Bitte dort aktivieren.</div>`
+        : pushActive
+          ? `<div style="background:#10B981;color:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700"><i class="fas fa-check-circle" style="font-size:18px"></i> Automatisch aktiv ✓</div>`
+          : `<div style="background:#FEF3C7;border:1.5px solid #FCD34D;border-radius:12px;padding:12px 16px;font-size:13px;color:#92400E;font-weight:600;margin-bottom:8px">⏳ Wird beim nächsten App-Start automatisch aktiviert</div>
+             <button class="btn-primary" onclick="subscribeToPush()">🔔 Jetzt aktivieren</button>`
       }
     </div>
     <div class="card" style="padding:16px">
@@ -3050,22 +3024,46 @@ async function resubscribePush(){
 async function unsubscribeFromPush(){try{const r=await navigator.serviceWorker.ready;const s=await r.pushManager.getSubscription();if(s){const k=btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);await db.ref('/pushSubscriptions/'+k).remove();await s.unsubscribe();}LSset('pushEnabled','false');alert('Deaktiviert.');}catch(e){alert('Fehler: '+e.message);}}
 
 // ---- NOTIFICATIONS ----
-function requestNotifPermission() {
-  if('Notification' in window && Notification.permission === 'default' && LS('pushEnabled') === null) {
-    setTimeout(() => {
-      const el = document.createElement('div');
-      el.id = 'notifPopup';
-      el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;display:flex;align-items:center;justify-content:center;padding:24px';
-      el.innerHTML = `<div style="background:#fff;border-radius:24px;padding:28px 24px;max-width:320px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-        <div style="font-size:52px;margin-bottom:12px">&#128276;</div>
-        <div style="font-size:20px;font-weight:800;color:#0A2540;margin-bottom:8px">Benachrichtigungen</div>
-        <div style="font-size:14px;color:#6B7280;margin-bottom:24px;line-height:1.5">Erhalte eine Nachricht wenn der Trainer ein neues Training oder Spiel eintr&#228;gt.</div>
-        <button onclick="document.getElementById('notifPopup')?.remove();subscribeToPush()" style="width:100%;background:#0A2540;color:#fff;border:none;padding:14px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px">Ja, aktivieren &#128276;</button>
-        <button onclick="LSset('pushEnabled','false');document.getElementById('notifPopup').remove()" style="width:100%;background:#f3f4f6;color:#6B7280;border:none;padding:12px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">Nein danke</button>
-      </div>`;
-      document.body.appendChild(el);
-    }, 2000);
-  }
+async function autoSetupPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+
+    if (sub) {
+      // Subscription vorhanden → immer in Firebase sichern (auch nach App-Update)
+      const k = btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
+      LSset('myPushKey', k);
+      LSset('pushEnabled', 'true');
+      await db.ref('/pushSubscriptions/' + k).set(sub.toJSON());
+      return;
+    }
+
+    // Keine Subscription → Permission prüfen
+    if (Notification.permission === 'granted') {
+      // Direkt still abonnieren
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+      const k = btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
+      await db.ref('/pushSubscriptions/' + k).set(sub.toJSON());
+      LSset('pushEnabled', 'true');
+      LSset('myPushKey', k);
+    } else if (Notification.permission === 'default' && LS('pushEnabled') !== 'false') {
+      // Ersten Start: Popup nach 2s anzeigen
+      setTimeout(() => {
+        const el = document.createElement('div');
+        el.id = 'notifPopup';
+        el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;display:flex;align-items:center;justify-content:center;padding:24px';
+        el.innerHTML = `<div style="background:#fff;border-radius:24px;padding:28px 24px;max-width:320px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+          <div style="font-size:52px;margin-bottom:12px">&#128276;</div>
+          <div style="font-size:20px;font-weight:800;color:#0A2540;margin-bottom:8px">Benachrichtigungen</div>
+          <div style="font-size:14px;color:#6B7280;margin-bottom:24px;line-height:1.5">Erhalte sofort eine Nachricht bei neuen Trainings, Spielen und Abstimmungen.</div>
+          <button onclick="document.getElementById('notifPopup')?.remove();subscribeToPush()" style="width:100%;background:#0A2540;color:#fff;border:none;padding:14px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px">Ja, aktivieren &#128276;</button>
+          <button onclick="LSset('pushEnabled','false');document.getElementById('notifPopup').remove()" style="width:100%;background:#f3f4f6;color:#6B7280;border:none;padding:12px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">Nein danke</button>
+        </div>`;
+        document.body.appendChild(el);
+      }, 2000);
+    }
+  } catch(e) {}
 }
 </script>
 </body>
