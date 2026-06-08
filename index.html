@@ -904,9 +904,6 @@ function toggleRsvpEdit(tid) {
   window._rsvpEdit[tid] = true;
   if(!_patchRsvpDiv('trsvp-' + tid, _buildTrainingRsvpHtml(tid, pid))) { renderHome(); }
   renderTermine();
-  const _t2 = STATE.trainings.find(x => x.id === tid);
-  const tDate = _t2 ? `${_t2.date ? (()=>{const d=new Date(_t2.date+'T12:00:00');return d.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'});})() : ''} · ${_t2.time||'?'} Uhr` : '';
-  showEventBanner('⏳ Rückmeldung offen', tDate || 'Bitte zu- oder absagen', '#F59E0B', tid);
 }
 
 function renderHome() {
