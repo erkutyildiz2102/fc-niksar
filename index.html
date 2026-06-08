@@ -139,7 +139,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div style="width:100%;max-width:420px;margin:0 auto;padding:100px 24px 60px;display:flex;flex-direction:column;gap:16px;box-sizing:border-box">
 
     <!-- Logo + Titel -->
-    <div style="display:flex;align-items:center;gap:14px">
+    <div id="setupHeader" style="display:flex;align-items:center;gap:14px;transition:opacity 0.2s ease,max-height 0.3s ease,margin 0.3s ease;overflow:hidden;max-height:100px">
       <div style="width:52px;height:52px;border-radius:50%;background:#F3F4F6;flex-shrink:0;overflow:hidden;border:2px solid #E5E7EB;display:flex;align-items:center;justify-content:center">
         <img id="setupLogoImg" src="" style="display:none;width:100%;height:100%;object-fit:cover">
         <span id="setupLogoEmoji" style="font-size:24px">⚽</span>
@@ -575,6 +575,20 @@ function getProfile() {
 function showProfileSetup() {
   document.getElementById('profileSetup').style.display = 'block';
   renderSetupPlayers();
+  // Logo ausblenden wenn Tastatur öffnet
+  setTimeout(() => {
+    const header = document.getElementById('setupHeader');
+    ['setupName','setupPin'].forEach(id => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.addEventListener('focus', () => {
+        if(header){ header.style.opacity='0'; header.style.maxHeight='0'; header.style.marginBottom='-16px'; }
+      });
+      el.addEventListener('blur', () => {
+        if(header){ header.style.opacity='1'; header.style.maxHeight='100px'; header.style.marginBottom=''; }
+      });
+    });
+  }, 100);
 }
 
 function renderSetupPlayers() {
