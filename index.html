@@ -2066,6 +2066,7 @@ function setRsvpHome(tid, pid, status) {
   if(status === 'yes') showToast('✅ Zusage gespeichert!');
   else if(status === 'no') showToast('❌ Absage gespeichert!');
   document.getElementById('bannerOpenTrainingRsvp')?.remove();
+  document.getElementById('eventNotifBanner')?.remove();
   window._suppressHomeRender = Date.now() + 3000;
   if(!_patchRsvpDiv('trsvp-' + tid, _buildTrainingRsvpHtml(tid, pid))) { renderHome(); }
   renderTermine();
@@ -3474,6 +3475,7 @@ function setGameRsvp(gid, pid, status) {
   if(status === 'yes') showToast('✅ Zusage gespeichert!');
   else if(status === 'no') showToast('❌ Absage gespeichert!');
   document.getElementById('bannerOpenGameRsvp')?.remove();
+  document.getElementById('eventNotifBanner')?.remove();
   window._suppressHomeRender = Date.now() + 3000;
   if(!_patchRsvpDiv('grsvp-' + gid, _buildGameRsvpHtml(gid, pid))) { renderHome(); }
   renderTermine();
