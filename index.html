@@ -1200,12 +1200,10 @@ function renderHome() {
   html += `</div></div>`;
   page.innerHTML = html;
 
-  // ── SLIDER: immer auf erstes Element zurücksetzen ──
+  // ── SLIDER: zum nächsten offenen Termin scrollen ──
   requestAnimationFrame(() => {
-    ['sliderTraining', 'sliderGames'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.scrollLeft = 0;
-    });
+    const pid = getProfile()?.playerId || null;
+    scrollToNextOpenTraining(pid);
   });
 
   // ── SLIDER DOT LISTENERS ──
@@ -1658,14 +1656,16 @@ function scrollToNextOpenTraining(pid) {
   const upcoming = STATE.trainings
     .filter(t => t.date >= today)
     .sort((a,b) => a.date > b.date ? 1 : -1);
+  if (!upcoming.length) return;
 
-  // Nächsten offenen Termin finden
-  const nextOpen = upcoming.find(t => {
+  // 1. Nächsten offenen (unbeantworteten) Termin suchen
+  const nextOpen = pid ? upcoming.find(t => {
     const att = window._localAtt?.[t.id+'_'+pid] ?? t.attendances?.[pid];
     return !att || att === 'open';
-  });
+  }) : null;
 
-  const targetId = nextOpen ? nextOpen.id : (upcoming[0]?.id);
+  // 2. Wenn alles beantwortet → nächsten anstehenden Termin (= erster in der Liste)
+  const targetId = (nextOpen || upcoming[0])?.id;
   if (!targetId) return;
 
   const slides = slider.querySelectorAll('.event-slide');
