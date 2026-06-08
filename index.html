@@ -688,7 +688,7 @@ function dateBox(dateStr, dark) {
   const day = d.toLocaleDateString('de-DE',{weekday:'short'}).toUpperCase();
   const num = d.getDate();
   const mon = d.toLocaleDateString('de-DE',{month:'short'}).toUpperCase();
-  const bg = dark ? 'rgba(255,255,255,.18)' : '#0A2540';
+  const bg = 'rgba(255,255,255,.18)';
   const col = '#fff';
   return `<div style="width:50px;border-radius:12px;background:${bg};color:${col};text-align:center;padding:8px 4px;flex-shrink:0">
     <div style="font-size:9px;font-weight:700;opacity:.75;letter-spacing:.04em">${day}</div>
@@ -1032,8 +1032,8 @@ function renderHome() {
 
       html += `<div class="event-slide" style="min-width:calc(90vw - 32px)">
         <div style="background:linear-gradient(135deg,#B45309,#F59E0B);padding:18px;border-radius:18px;height:100%">
-          <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:8px">
-            ${dateBox(g.date, false)}
+          <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
+            ${dateBox(g.date, true)}
             <div style="flex:1;min-width:0">
               <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">⚽ Spiel${isNew(g.createdAt)?' <span style="background:#EF4444;color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:4px">NEU</span>':''}</div>
               <div style="font-size:15px;font-weight:800;color:#fff;line-height:1.2">${escHtml(g.opponent||'?')}</div>
