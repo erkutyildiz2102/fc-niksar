@@ -866,17 +866,6 @@ function renderHome() {
     </div>`;
   }
 
-  // ── TRAINER QUICK STATS ──
-  if(trainerLoggedIn) {
-    html += `<div style="background:#0A2540;padding:0 16px 14px;display:flex;gap:8px">
-      ${[['fas fa-users',STATE.players.length,'Spieler'],['fas fa-running',STATE.trainings.length,'Trainings'],['fas fa-futbol',STATE.games.length,'Spiele']].map(([ic,val,lab])=>
-        `<div style="flex:1;background:rgba(255,255,255,.08);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:20px;font-weight:900;color:#fff">${val}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:2px"><i class="${ic}"></i> ${lab}</div>
-        </div>`).join('')}
-    </div>`;
-  }
-
   // ── STATUS BANNER (sofort sichtbar ohne scrollen) ──
   const openRsvp     = pid ? upcomingTrainings.filter(t => { const s = t.attendances?.[pid]; return !s || s === 'open'; }).length : 0;
   const newTrainings = upcomingTrainings.filter(t => {
