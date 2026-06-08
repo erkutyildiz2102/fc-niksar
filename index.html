@@ -470,12 +470,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }, hasProfile ? 80 : 1800);
   // Push automatisch aktivieren/wiederherstellen bei jedem Start
   autoSetupPush();
+  // Service Worker sofort auf Updates prüfen (nicht auf 24h-Cache warten)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(reg => reg.update()).catch(() => {});
+  }
 });
 
-// Push-Subscription bei jedem Öffnen der App erneuern (iOS background invalidation fix)
+// Push-Subscription & SW-Update bei jedem Öffnen der App prüfen
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     autoSetupPush();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(reg => reg.update()).catch(() => {});
+    }
   }
 });
 
