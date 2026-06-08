@@ -1600,7 +1600,30 @@ function addToCalendar(title, dateStr, timeStr, location, durationMin) {
   const fmtIcs = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
   const start = new Date(dateStr + 'T' + (timeStr||'10:00'));
   const end   = new Date(start.getTime() + (durationMin||90) * 60000);
-  const fmtIcsUTC = d => { const u = new Date(d.getTime() - d.getTimezoneOffset()*60000); return u.toISOString().replace(/[-:]/g,'').replace('.000',''); };
+  const fmtGoogle = d => d.toISOString().replace(/[-:]/g,'').replace('.000','');
+  const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${fmtGoogle(start)}/${fmtGoogle(end)}&details=${encodeURIComponent('FC Niksar F1/U9 – Saison 26/27')}&location=${encodeURIComponent(location||'')}`;
+  showModal(`<div class="modal-handle"></div>
+    <div style="font-size:16px;font-weight:800;color:#0A2540;margin-bottom:4px">📅 Zum Kalender hinzufügen</div>
+    <div style="font-size:13px;color:#6B7280;margin-bottom:20px">${escHtml(title)}</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <a href="${googleUrl}" target="_blank" onclick="closeModal()" style="display:flex;align-items:center;gap:14px;background:#F0F9FF;border:1.5px solid #BAE6FD;border-radius:14px;padding:14px 16px;text-decoration:none">
+        <span style="font-size:26px">📅</span>
+        <div><div style="font-size:14px;font-weight:700;color:#0369A1">Google Kalender</div><div style="font-size:12px;color:#6B7280">Öffnet direkt im Browser</div></div>
+      </a>
+      <button onclick="addToCalendarICS('${encodeURIComponent(title)}','${dateStr}','${timeStr||''}','${encodeURIComponent(location||'')}',${durationMin||90});closeModal();" style="display:flex;align-items:center;gap:14px;background:#F5F3FF;border:1.5px solid #C4B5FD;border-radius:14px;padding:14px 16px;cursor:pointer;width:100%;text-align:left">
+        <span style="font-size:26px">🍎</span>
+        <div><div style="font-size:14px;font-weight:700;color:#5B21B6">Apple / Outlook Kalender</div><div style="font-size:12px;color:#6B7280">Lädt .ics Datei herunter</div></div>
+      </button>
+    </div>`);
+}
+
+function addToCalendarICS(titleEnc, dateStr, timeStr, locationEnc, durationMin) {
+  const title = decodeURIComponent(titleEnc);
+  const location = decodeURIComponent(locationEnc);
+  const pad = n => String(n).padStart(2,'0');
+  const fmtIcs = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+  const start = new Date(dateStr + 'T' + (timeStr||'10:00'));
+  const end   = new Date(start.getTime() + (durationMin||90) * 60000);
   const ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
