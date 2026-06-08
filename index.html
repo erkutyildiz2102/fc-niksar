@@ -1602,17 +1602,24 @@ function addToCalendar(title, dateStr, timeStr, location, durationMin) {
   const end   = new Date(start.getTime() + (durationMin||90) * 60000);
   const fmtGoogle = d => d.toISOString().replace(/[-:]/g,'').replace('.000','');
   const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${fmtGoogle(start)}/${fmtGoogle(end)}&details=${encodeURIComponent('FC Niksar F1/U9 – Saison 26/27')}&location=${encodeURIComponent(location||'')}`;
+  const startIso = start.toISOString().slice(0,19);
+  const endIso   = end.toISOString().slice(0,19);
+  const outlookUrl = `https://outlook.live.com/calendar/0/action/compose?rru=addevent&subject=${encodeURIComponent(title)}&startdt=${startIso}&enddt=${endIso}&body=${encodeURIComponent('FC Niksar F1/U9 – Saison 26/27')}&location=${encodeURIComponent(location||'')}`;
   showModal(`<div class="modal-handle"></div>
     <div style="font-size:16px;font-weight:800;color:#0A2540;margin-bottom:4px">📅 Zum Kalender hinzufügen</div>
     <div style="font-size:13px;color:#6B7280;margin-bottom:20px">${escHtml(title)}</div>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <a href="${googleUrl}" target="_blank" onclick="closeModal()" style="display:flex;align-items:center;gap:14px;background:#F0F9FF;border:1.5px solid #BAE6FD;border-radius:14px;padding:14px 16px;text-decoration:none">
+      <a href="${outlookUrl}" target="_blank" onclick="closeModal()" style="display:flex;align-items:center;gap:14px;background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:14px;padding:14px 16px;text-decoration:none">
+        <span style="font-size:26px">📧</span>
+        <div><div style="font-size:14px;font-weight:700;color:#1D4ED8">Outlook Kalender</div><div style="font-size:12px;color:#6B7280">Öffnet in Outlook Web</div></div>
+      </a>
+      <a href="${googleUrl}" target="_blank" onclick="closeModal()" style="display:flex;align-items:center;gap:14px;background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:14px;padding:14px 16px;text-decoration:none">
         <span style="font-size:26px">📅</span>
-        <div><div style="font-size:14px;font-weight:700;color:#0369A1">Google Kalender</div><div style="font-size:12px;color:#6B7280">Öffnet direkt im Browser</div></div>
+        <div><div style="font-size:14px;font-weight:700;color:#15803D">Google Kalender</div><div style="font-size:12px;color:#6B7280">Öffnet direkt im Browser</div></div>
       </a>
       <button onclick="addToCalendarICS('${encodeURIComponent(title)}','${dateStr}','${timeStr||''}','${encodeURIComponent(location||'')}',${durationMin||90});closeModal();" style="display:flex;align-items:center;gap:14px;background:#F5F3FF;border:1.5px solid #C4B5FD;border-radius:14px;padding:14px 16px;cursor:pointer;width:100%;text-align:left">
         <span style="font-size:26px">🍎</span>
-        <div><div style="font-size:14px;font-weight:700;color:#5B21B6">Apple / Outlook Kalender</div><div style="font-size:12px;color:#6B7280">Lädt .ics Datei herunter</div></div>
+        <div><div style="font-size:14px;font-weight:700;color:#5B21B6">Apple Kalender</div><div style="font-size:12px;color:#6B7280">Für iPhone / iPad</div></div>
       </button>
     </div>`);
 }
