@@ -3122,74 +3122,131 @@ function deleteAbsence(id) {
 }
 
 // ---- STATISTIK TAB ----
+let statsTab = 'training';
+
 function renderStatistikTab(c) {
   const totalT = STATE.trainings.length;
   const totalG = STATE.games.length;
   const totalP = STATE.players.length;
   if(!totalP) { c.innerHTML = `<div style="text-align:center;padding:40px;color:#9CA3AF"><div style="font-size:40px;margin-bottom:8px">📊</div><div>Noch keine Spieler</div></div>`; return; }
 
-  const stats = [...STATE.players].sort((a,b)=>(parseInt(a.number,10)||999)-(parseInt(b.number,10)||999)).map(p => {
-    const yesCount = STATE.trainings.filter(t => t.attendances?.[p.id] === 'yes').length;
-    const noCount  = STATE.trainings.filter(t => t.attendances?.[p.id] === 'no').length;
-    const gamesInSquad = STATE.games.filter(g => Object.keys(g.squad||{}).filter(k=>g.squad[k]).includes(p.id));
-    const avgPctP = totalT ? Math.round(yesCount / totalT * 100) : 0;
-    return { ...p, yesCount, noCount, gamesInSquad, avgPctP };
+  const sorted = [...STATE.players].sort((a,b)=>(parseInt(a.number,10)||999)-(parseInt(b.number,10)||999));
+
+  const playerStats = sorted.map(p => {
+    const yesCount    = STATE.trainings.filter(t => t.attendances?.[p.id] === 'yes').length;
+    const noCount     = STATE.trainings.filter(t => t.attendances?.[p.id] === 'no').length;
+    const openCount   = STATE.trainings.filter(t => !t.attendances?.[p.id] || t.attendances[p.id] === 'open').length;
+    const gamesInSquad = STATE.games.filter(g => g.squad?.[p.id] === true);
+    const trainPct    = totalT ? Math.round(yesCount / totalT * 100) : 0;
+    const gamePct     = totalG ? Math.round(gamesInSquad.length / totalG * 100) : 0;
+    return { ...p, yesCount, noCount, openCount, gamesInSquad, trainPct, gamePct };
   });
 
-  const avgPct = Math.round(stats.reduce((s,p)=>s+p.avgPctP,0)/totalP);
+  const avgTrainPct = totalP ? Math.round(playerStats.reduce((s,p)=>s+p.trainPct,0)/totalP) : 0;
+  const avgGamePct  = totalP ? Math.round(playerStats.reduce((s,p)=>s+p.gamePct,0)/totalP) : 0;
 
-  let html = `
-    <div style="background:linear-gradient(135deg,#0A2540,#1e3a5c);border-radius:16px;padding:16px;margin-bottom:14px;color:#fff">
-      <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Team Übersicht</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-        ${[
-          [totalP,      'Spieler',   'fas fa-users'],
-          [totalT,      'Trainings', 'fas fa-running'],
-          [totalG,      'Spiele',    'fas fa-futbol'],
-          [avgPct+'%',  'Ø Zusagen', 'fas fa-check']
-        ].map(([v,l,ic])=>`
-          <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:10px 6px;text-align:center">
-            <i class="${ic}" style="font-size:14px;opacity:.6;display:block;margin-bottom:4px"></i>
-            <div style="font-size:18px;font-weight:900;line-height:1">${v}</div>
-            <div style="font-size:9px;opacity:.6;margin-top:2px;text-transform:uppercase;letter-spacing:.04em">${l}</div>
-          </div>`).join('')}
-      </div>
-    </div>`;
+  const tabBtn = (key, label) =>
+    `<button onclick="statsTab='${key}';renderStatistikTab(document.getElementById('trainerContent'))"
+      style="flex:1;padding:9px 4px;border:none;border-bottom:2px solid ${statsTab===key?'#0A2540':'transparent'};background:transparent;font-size:13px;font-weight:${statsTab===key?'800':'600'};color:${statsTab===key?'#0A2540':'#9CA3AF'};cursor:pointer">${label}</button>`;
 
-  html += stats.map(p => {
-    return `<div class="card" style="padding:14px;margin-bottom:10px">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #F3F4F6">
-        <div style="position:relative;flex-shrink:0">
-          <div style="width:52px;height:52px;border-radius:50%;overflow:hidden;border:2px solid #E5E7EB">
-            ${p.photo?`<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;background:#0A2540;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff">${(p.name||'?')[0].toUpperCase()}</div>`}
+  const playerAvatar = p =>
+    p.photo
+      ? `<img src="${p.photo}" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid #E5E7EB;flex-shrink:0">`
+      : `<div style="width:34px;height:34px;border-radius:50%;background:#0A2540;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0">${(p.name||'?')[0].toUpperCase()}</div>`;
+
+  const pctColor = pct => pct >= 75 ? '#059669' : pct >= 50 ? '#D97706' : '#DC2626';
+  const pctBg    = pct => pct >= 75 ? '#D1FAE5' : pct >= 50 ? '#FEF3C7' : '#FEE2E2';
+
+  // Tabellen-Zeilen
+  let rows = '';
+  if(statsTab === 'training') {
+    rows = playerStats.map(p => `
+      <tr style="border-bottom:1px solid #F3F4F6">
+        <td style="padding:10px 8px;display:flex;align-items:center;gap:10px">
+          ${playerAvatar(p)}
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#1F2937">${escHtml(p.name||'')}</div>
+            <div style="font-size:11px;color:#9CA3AF">#${p.number||'?'}</div>
           </div>
-          <div style="position:absolute;bottom:-2px;right:-2px;background:#0A2540;color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:6px">${p.number||'?'}</div>
-        </div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:16px;font-weight:800;color:#1F2937">${escHtml(p.name||'')}</div>
-          <div style="font-size:12px;color:#9CA3AF;margin-top:2px">#${p.number||'?'}</div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <span style="font-size:13px;color:#6B7280;width:130px;flex-shrink:0">🏃 Training</span>
-        <span style="font-size:13px;font-weight:700;color:#065F46;background:#D1FAE5;padding:3px 10px;border-radius:20px">✅ ${p.yesCount} Zusagen</span>
-        <span style="font-size:13px;font-weight:700;color:#991B1B;background:#FEE2E2;padding:3px 10px;border-radius:20px">❌ ${p.noCount} Absagen</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:8px">
-        <span style="font-size:13px;color:#6B7280;width:130px;flex-shrink:0;padding-top:2px">⚽ Spiele im Kader</span>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:700;color:#1F2937;margin-bottom:6px">${p.gamesInSquad.length} von ${totalG} Spielen</div>
-          ${p.gamesInSquad.length > 0
-            ? `<div style="display:flex;flex-wrap:wrap;gap:5px">
-                ${p.gamesInSquad.map(g=>`<div style="background:#EEF2FF;border-radius:8px;padding:4px 8px;font-size:11px;font-weight:600;color:#3730A3">${escHtml(g.opponent||'?')}${g.result?` · <span style="font-weight:800;color:#0A2540">${escHtml(g.result)}</span>`:''}</div>`).join('')}
-              </div>`
-            : `<div style="font-size:12px;color:#D1D5DB;font-style:italic">Noch kein Spiel im Kader</div>`}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+        </td>
+        <td style="padding:10px 8px;text-align:center">
+          <span style="font-size:13px;font-weight:800;color:${pctColor(p.trainPct)};background:${pctBg(p.trainPct)};padding:3px 9px;border-radius:20px">${p.trainPct}%</span>
+          <div style="font-size:10px;color:#9CA3AF;margin-top:2px">${p.yesCount}/${totalT}</div>
+        </td>
+        <td style="padding:10px 8px;text-align:center">
+          <span style="font-size:18px">${p.trainPct >= 75 ? '👍' : p.trainPct >= 50 ? '➡️' : '👎'}</span>
+        </td>
+      </tr>`).join('');
+  } else {
+    rows = playerStats.map(p => `
+      <tr style="border-bottom:1px solid #F3F4F6">
+        <td style="padding:10px 8px;display:flex;align-items:center;gap:10px">
+          ${playerAvatar(p)}
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#1F2937">${escHtml(p.name||'')}</div>
+            <div style="font-size:11px;color:#9CA3AF">#${p.number||'?'}</div>
+          </div>
+        </td>
+        <td style="padding:10px 8px;text-align:center">
+          <span style="font-size:13px;font-weight:800;color:${pctColor(p.gamePct)};background:${pctBg(p.gamePct)};padding:3px 9px;border-radius:20px">${p.gamePct}%</span>
+          <div style="font-size:10px;color:#9CA3AF;margin-top:2px">${p.gamesInSquad.length}/${totalG}</div>
+        </td>
+        <td style="padding:10px 8px;text-align:center">
+          <span style="font-size:18px">${p.gamePct >= 75 ? '👍' : p.gamePct >= 50 ? '➡️' : '👎'}</span>
+        </td>
+      </tr>`).join('');
+  }
 
-  c.innerHTML = html;
+  c.innerHTML = `
+    <!-- Tabs -->
+    <div style="display:flex;background:#fff;border-bottom:1px solid #E5E7EB;margin:-12px -12px 14px">
+      ${tabBtn('training','🏃 Training')}
+      ${tabBtn('spiele','⚽ Spiele')}
+    </div>
+
+    <!-- Zusammenfassung -->
+    <div style="background:#F8FAFC;border:1px solid #E5E7EB;border-radius:12px;padding:10px 14px;margin-bottom:14px;display:flex;gap:0;justify-content:space-around">
+      <div style="text-align:center">
+        <div style="font-size:18px;font-weight:900;color:#0A2540">${totalT}</div>
+        <div style="font-size:11px;color:#6B7280">Trainings</div>
+      </div>
+      <div style="width:1px;background:#E5E7EB"></div>
+      <div style="text-align:center">
+        <div style="font-size:18px;font-weight:900;color:#0A2540">${totalG}</div>
+        <div style="font-size:11px;color:#6B7280">Spiele</div>
+      </div>
+      <div style="width:1px;background:#E5E7EB"></div>
+      <div style="text-align:center">
+        <div style="font-size:18px;font-weight:900;color:#0A2540">${totalP}</div>
+        <div style="font-size:11px;color:#6B7280">Spieler</div>
+      </div>
+      <div style="width:1px;background:#E5E7EB"></div>
+      <div style="text-align:center">
+        <div style="font-size:18px;font-weight:900;color:${pctColor(statsTab==='training'?avgTrainPct:avgGamePct)}">${statsTab==='training'?avgTrainPct:avgGamePct}%</div>
+        <div style="font-size:11px;color:#6B7280">Ø Teilnahme</div>
+      </div>
+    </div>
+
+    <!-- Tabelle -->
+    <div style="background:#fff;border-radius:12px;border:1px solid #E5E7EB;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:#F8FAFC;border-bottom:2px solid #E5E7EB">
+            <th style="padding:10px 8px;text-align:left;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.05em">Spieler</th>
+            <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.05em">Teilnahme</th>
+            <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:#6B7280;width:44px"></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+
+    <!-- Legende -->
+    <div style="display:flex;gap:12px;justify-content:center;margin-top:12px;flex-wrap:wrap">
+      <span style="font-size:12px;color:#6B7280">👍 ≥ 75%</span>
+      <span style="font-size:12px;color:#6B7280">➡️ 50–74%</span>
+      <span style="font-size:12px;color:#6B7280">👎 &lt; 50%</span>
+    </div>`;
 }
 
 // ---- EINSTELLUNGEN TAB ----
