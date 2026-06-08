@@ -2524,25 +2524,41 @@ function renderTrainingTab(c) {
     }).join('')}`;
 }
 
+function trainingDateLabel(dateStr) {
+  if(!dateStr) return '';
+  const d = new Date(dateStr + 'T12:00:00');
+  const days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  return days[d.getDay()] + ', ' + d.getDate() + '. ' + months[d.getMonth()];
+}
+
+// Zwischenspeicher für Serien-Scope
+let _trainingEditScope = 'single';
+
 function editTrainingModal(id) {
   const t = STATE.trainings.find(x => x.id === id);
   if(!t) return;
-  // Wenn Serientermin: erst fragen ob nur dieser oder alle
   if(t.seriesId) {
     const seriesCount = STATE.trainings.filter(x => x.seriesId === t.seriesId).length;
-    showModal(`<div class="modal-handle"></div>
-      <div style="font-size:18px;font-weight:800;color:#0A2540;margin-bottom:6px">Training bearbeiten</div>
-      <div style="font-size:13px;color:#6B7280;margin-bottom:20px">Dieser Termin gehört zu einer Serie (${seriesCount} Termine). Was möchtest du ändern?</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <button onclick="openTrainingEditForm('${id}','single')" style="display:flex;align-items:center;gap:14px;background:#F0F9FF;border:1.5px solid #BAE6FD;border-radius:14px;padding:14px 16px;cursor:pointer;text-align:left;width:100%">
-          <span style="font-size:24px">📅</span>
-          <div><div style="font-size:14px;font-weight:700;color:#0369A1">Nur diesen Termin</div><div style="font-size:12px;color:#6B7280">Nur das Training am ${fmtDate(t.date)} ändern</div></div>
-        </button>
-        <button onclick="openTrainingEditForm('${id}','all')" style="display:flex;align-items:center;gap:14px;background:#F5F3FF;border:1.5px solid #C4B5FD;border-radius:14px;padding:14px 16px;cursor:pointer;text-align:left;width:100%">
-          <span style="font-size:24px">📆</span>
-          <div><div style="font-size:14px;font-weight:700;color:#5B21B6">Alle Serientermine</div><div style="font-size:12px;color:#6B7280">Alle ${seriesCount} Termine der Serie anpassen</div></div>
-        </button>
-      </div>`);
+    showModal(
+      '<div class="modal-handle"></div>' +
+      '<div style="font-size:18px;font-weight:800;color:#0A2540;margin-bottom:6px">Training bearbeiten</div>' +
+      '<div style="font-size:13px;color:#6B7280;margin-bottom:20px">Dieser Termin gehört zu einer Serie (' + seriesCount + ' Termine). Was möchtest du ändern?</div>' +
+      '<div style="display:flex;flex-direction:column;gap:10px">' +
+        '<button id="btnEditSingle" style="display:flex;align-items:center;gap:14px;background:#F0F9FF;border:1.5px solid #BAE6FD;border-radius:14px;padding:14px 16px;cursor:pointer;text-align:left;width:100%">' +
+          '<span style="font-size:24px">📅</span>' +
+          '<div><div style="font-size:14px;font-weight:700;color:#0369A1">Nur diesen Termin</div>' +
+          '<div style="font-size:12px;color:#6B7280">Nur das Training am ' + trainingDateLabel(t.date) + ' ändern</div></div>' +
+        '</button>' +
+        '<button id="btnEditAll" style="display:flex;align-items:center;gap:14px;background:#F5F3FF;border:1.5px solid #C4B5FD;border-radius:14px;padding:14px 16px;cursor:pointer;text-align:left;width:100%">' +
+          '<span style="font-size:24px">📆</span>' +
+          '<div><div style="font-size:14px;font-weight:700;color:#5B21B6">Alle Serientermine</div>' +
+          '<div style="font-size:12px;color:#6B7280">Alle ' + seriesCount + ' Termine der Serie anpassen</div></div>' +
+        '</button>' +
+      '</div>'
+    );
+    document.getElementById('btnEditSingle').addEventListener('click', function(){ openTrainingEditForm(id, 'single'); });
+    document.getElementById('btnEditAll').addEventListener('click', function(){ openTrainingEditForm(id, 'all'); });
   } else {
     openTrainingEditForm(id, 'single');
   }
@@ -2706,19 +2722,32 @@ function deleteTraining(id) {
   if(!t) return;
   if(t.seriesId) {
     const seriesCount = STATE.trainings.filter(x => x.seriesId === t.seriesId).length;
-    showModal(`<div class="modal-handle"></div>
-      <div style="font-size:18px;font-weight:800;color:#0A2540;margin-bottom:6px">Training löschen</div>
-      <div style="font-size:13px;color:#6B7280;margin-bottom:20px">Dieser Termin gehört zu einer Serie (${seriesCount} Termine). Was möchtest du löschen?</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <button onclick="closeModal();db.ref('/trainings/${id}').remove();notifyAll('🗑️ Training abgesagt','Ein Training wurde abgesagt.',false,'termine');showToast('🗑️ Termin gelöscht')" style="display:flex;align-items:center;gap:14px;background:#FFF7ED;border:1.5px solid #FED7AA;border-radius:14px;padding:14px 16px;cursor:pointer;text-align:left;width:100%">
-          <span style="font-size:24px">📅</span>
-          <div><div style="font-size:14px;font-weight:700;color:#C2410C">Nur diesen Termin</div><div style="font-size:12px;color:#6B7280">Nur das Training am ${fmtDate(t.date)} löschen</div></div>
-        </button>
-        <button onclick="deleteTrainingSeries('${t.seriesId}',${seriesCount})" style="display:flex;align-items:center;gap:14px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:14px;padding:14px 16px;cursor:pointer;text-align:left;width:100%">
-          <span style="font-size:24px">🗑️</span>
-          <div><div style="font-size:14px;font-weight:700;color:#991B1B">Alle Serientermine</div><div style="font-size:12px;color:#6B7280">Alle ${seriesCount} Termine der Serie löschen</div></div>
-        </button>
-      </div>`);
+    showModal(
+      '<div class="modal-handle"></div>' +
+      '<div style="font-size:18px;font-weight:800;color:#0A2540;margin-bottom:6px">Training löschen</div>' +
+      '<div style="font-size:13px;color:#6B7280;margin-bottom:20px">Dieser Termin gehört zu einer Serie (' + seriesCount + ' Termine). Was möchtest du löschen?</div>' +
+      '<div style="display:flex;flex-direction:column;gap:10px">' +
+        '<button id="btnDelSingle" style="display:flex;align-items:center;gap:14px;background:#FFF7ED;border:1.5px solid #FED7AA;border-radius:14px;padding:14px 16px;cursor:pointer;text-align:left;width:100%">' +
+          '<span style="font-size:24px">📅</span>' +
+          '<div><div style="font-size:14px;font-weight:700;color:#C2410C">Nur diesen Termin</div>' +
+          '<div style="font-size:12px;color:#6B7280">Nur das Training am ' + trainingDateLabel(t.date) + ' löschen</div></div>' +
+        '</button>' +
+        '<button id="btnDelAll" style="display:flex;align-items:center;gap:14px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:14px;padding:14px 16px;cursor:pointer;text-align:left;width:100%">' +
+          '<span style="font-size:24px">🗑️</span>' +
+          '<div><div style="font-size:14px;font-weight:700;color:#991B1B">Alle Serientermine</div>' +
+          '<div style="font-size:12px;color:#6B7280">Alle ' + seriesCount + ' Termine der Serie löschen</div></div>' +
+        '</button>' +
+      '</div>'
+    );
+    document.getElementById('btnDelSingle').addEventListener('click', function(){
+      closeModal();
+      db.ref('/trainings/' + id).remove();
+      notifyAll('🗑️ Training abgesagt', 'Ein Training wurde abgesagt.', false, 'termine');
+      showToast('🗑️ Termin gelöscht');
+    });
+    document.getElementById('btnDelAll').addEventListener('click', function(){
+      deleteTrainingSeries(t.seriesId, seriesCount);
+    });
   } else {
     if(confirm('Training löschen?')) {
       db.ref('/trainings/' + id).remove();
