@@ -2262,8 +2262,18 @@ function saveNewPlayer() {
   let pin;
   do { pin = String(Math.floor(1000 + Math.random() * 9000)); } while (usedPins.has(pin));
   db.ref('/players').push({ name, number: number||'', photo, birthday, passNr, pin, createdAt: Date.now() });
-  showToast(`✅ Spieler gespeichert · PIN: ${pin}`);
-  closeModal();
+  showModal(`<div class="modal-handle"></div>
+    <div style="text-align:center;padding:8px 0 16px">
+      <div style="font-size:40px;margin-bottom:8px">✅</div>
+      <div style="font-size:18px;font-weight:800;color:#0A2540;margin-bottom:4px">${escHtml(name)} wurde angelegt</div>
+      <div style="font-size:13px;color:#6B7280;margin-bottom:20px">Schicke diesen PIN an die Eltern:</div>
+      <div style="background:#F0FDF4;border:2px solid #86EFAC;border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="font-size:13px;color:#065F46;font-weight:600;margin-bottom:6px">🔑 App-PIN für ${escHtml(name)}</div>
+        <div style="font-size:44px;font-weight:900;color:#0A2540;letter-spacing:8px">${pin}</div>
+      </div>
+      <button onclick="navigator.clipboard?.writeText('${pin}').then(()=>showToast('📋 PIN kopiert!')); " style="width:100%;background:#0A2540;color:#fff;border:none;border-radius:12px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px">📋 PIN kopieren</button>
+      <button onclick="closeModal()" style="width:100%;background:#F3F4F6;color:#374151;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:600;cursor:pointer">Schließen</button>
+    </div>`);
 }
 
 function editPlayer(id) {
