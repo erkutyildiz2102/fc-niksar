@@ -3058,13 +3058,30 @@ async function autoSetupPush() {
     let sub = await reg.pushManager.getSubscription();
 
     if (sub) {
-      // Subscription vorhanden → in Firebase sichern
+      // Subscription vorhanden → alle 20 Tage automatisch erneuern
+      const lastRenew = parseInt(LS('pushRenewedAt') || '0');
+      const twentyDays = 20 * 24 * 60 * 60 * 1000;
+      if (lastRenew && Date.now() - lastRenew > twentyDays) {
+        // 20 Tage alt → still neue Subscription erstellen
+        try {
+          const newSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+          // Neue ist anders als alte → alte aus Firebase löschen
+          if (newSub.endpoint !== sub.endpoint) {
+            const oldK = btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
+            await db.ref('/pushSubscriptions/' + oldK).remove();
+          }
+          sub = newSub;
+          LSset('pushRenewedAt', String(Date.now()));
+        } catch(e) {
+          // Fehlgeschlagen → in 1 Tag nochmal versuchen
+          LSset('pushRenewedAt', String(Date.now() - (19 * 24 * 60 * 60 * 1000)));
+        }
+      }
       const k = btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
       LSset('myPushKey', k);
       LSset('pushEnabled', 'true');
+      LSset('pushRenewedAt', LS('pushRenewedAt') || String(Date.now()));
       await db.ref('/pushSubscriptions/' + k).set(sub.toJSON());
-      // Timer setzen falls noch nicht gesetzt (für künftige Erneuerung)
-      if (!LS('pushRenewedAt')) LSset('pushRenewedAt', String(Date.now()));
       return;
     }
 
@@ -3076,6 +3093,7 @@ async function autoSetupPush() {
       await db.ref('/pushSubscriptions/' + k).set(sub.toJSON());
       LSset('pushEnabled', 'true');
       LSset('myPushKey', k);
+      LSset('pushRenewedAt', String(Date.now()));
     } else if (Notification.permission === 'default' && LS('pushEnabled') !== 'false') {
       // Ersten Start: Popup nach 2s anzeigen
       setTimeout(() => {
