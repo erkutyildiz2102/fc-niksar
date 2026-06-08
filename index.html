@@ -470,14 +470,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }, hasProfile ? 80 : 1800);
   // Push automatisch aktivieren/wiederherstellen bei jedem Start
   autoSetupPush();
-  // Service Worker sofort auf Updates prüfen (nicht auf 24h-Cache warten)
+  // Service Worker sofort auf Updates prüfen und sofort aktivieren
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready.then(reg => reg.update()).catch(() => {});
     // Wenn neuer SW übernimmt → Seite neu laden + Toast anzeigen
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       sessionStorage.setItem('swUpdated', '1');
       window.location.reload();
     });
+    activateSWUpdate();
   }
   // Nach SW-Update Toast anzeigen
   if (sessionStorage.getItem('swUpdated')) {
@@ -486,13 +486,34 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+function activateSWUpdate() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then(reg => {
+    // Sofort prüfen ob neue Version wartet
+    if (reg.waiting) {
+      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      return;
+    }
+    // Nach Update suchen
+    reg.update().catch(() => {});
+    // Wenn neue Version gefunden wird → sofort aktivieren
+    reg.addEventListener('updatefound', () => {
+      const sw = reg.installing;
+      if (!sw) return;
+      sw.addEventListener('statechange', () => {
+        if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+          sw.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    });
+  }).catch(() => {});
+}
+
 // Push-Subscription & SW-Update bei jedem Öffnen der App prüfen
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     autoSetupPush();
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(reg => reg.update()).catch(() => {});
-    }
+    activateSWUpdate();
   }
 });
 
