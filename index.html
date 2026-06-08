@@ -901,19 +901,6 @@ function renderHome() {
   }
 
   const pid = profile?.playerId;
-
-  // Termin ist vorbei wenn Endzeit überschritten (Training: timeTo, sonst +90min; Spiel: +120min)
-  function endMs(ev, isTraining) {
-    const start = parseSortDate(ev.date, ev.time);
-    if(isTraining) return ev.timeTo ? parseSortDate(ev.date, ev.timeTo) : start + 90*60*1000;
-    return start + 120*60*1000;
-  }
-
-  const upcoming = [
-    ...upcomingTrainings.map(t => ({...t, _type:'training', sortDate: parseSortDate(t.date, t.time)})),
-    ...upcomingGames.map(g => ({...g, _type:'game', sortDate: parseSortDate(g.date, g.time)}))
-  ].sort((a,b) => a.sortDate - b.sortDate);
-
   const todayStr = new Date().toISOString().slice(0,10);
 
   const upcomingTrainings = STATE.trainings
@@ -925,6 +912,11 @@ function renderHome() {
     .filter(g => g.date && g.date >= todayStr)
     .map(g => ({...g, sortDate: parseSortDate(g.date, g.time)}))
     .sort((a,b) => a.sortDate - b.sortDate);
+
+  const upcoming = [
+    ...upcomingTrainings.map(t => ({...t, _type:'training'})),
+    ...upcomingGames.map(g => ({...g, _type:'game'}))
+  ].sort((a,b) => a.sortDate - b.sortDate);
 
   let html = `<div style="display:flex;flex-direction:column;gap:0;padding-bottom:16px">`;
 
