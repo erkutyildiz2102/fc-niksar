@@ -985,92 +985,6 @@ function renderHome() {
     </div>`;
   }
 
-  // ── STATUS BANNER (sofort sichtbar ohne scrollen) ──
-  const openRsvp     = pid ? upcomingTrainings.filter(t => { const s = t.attendances?.[pid]; return !s || s === 'open'; }).length : 0;
-  const newTrainings = upcomingTrainings.filter(t => {
-    if(!isNew(t.createdAt)) return false;
-    if(!pid) return true;
-    const s = window._localAtt?.[t.id+'_'+pid] ?? t.attendances?.[pid];
-    return !s || s === 'open'; // NEU nur wenn noch nicht beantwortet
-  });
-  const newGames     = upcomingGames.filter(g => isNew(g.createdAt));
-
-  // Zeige Banner für offene RSVPs UND neue Einträge
-  const banners = [];
-  // Neues Training Banner — immer zeigen wenn frisch eingetragen (unabhängig von openRsvp)
-  if(newTrainings.length > 0) {
-    banners.push({
-      bg: 'linear-gradient(135deg,#1D4ED8,#0A2540)',
-      icon: 'fas fa-running',
-      msg: newTrainings.length === 1 ? '🏃 Neues Training eingetragen!' : `🏃 ${newTrainings.length} neue Trainings eingetragen!`,
-      hint: `${fmtFull(newTrainings[0].date)} · ${newTrainings[0].time||'?'} Uhr · ${newTrainings[0].location||''}`,
-      target: 'homePage'
-    });
-  }
-  // Offene Rückmeldungen — eigener Banner mit Info zum ersten offenen Training
-  if(openRsvp > 0 && newTrainings.length === 0) {
-    const firstOpen = upcomingTrainings.find(t => {
-      const s = window._localAtt?.[t.id+'_'+pid] ?? t.attendances?.[pid];
-      return !s || s === 'open';
-    });
-    banners.push({
-      bg: 'linear-gradient(135deg,#F59E0B,#D97706)',
-      icon: 'fas fa-clipboard-list',
-      msg: `⚠️ Rückmeldung noch offen!`,
-      hint: firstOpen ? `${fmtFull(firstOpen.date)} · ${firstOpen.time||'?'} Uhr · ${firstOpen.location||''}` : `${openRsvp} Training${openRsvp>1?'s':''} warten auf Rückmeldung`,
-      target: 'homePage',
-      domId: 'bannerOpenTrainingRsvp'
-    });
-  }
-  if(newGames.length > 0) {
-    banners.push({
-      bg: 'linear-gradient(135deg,#B45309,#D97706)',
-      icon: 'fas fa-futbol',
-      msg: newGames.length === 1 ? `⚽ Neues Spiel eingetragen!` : `⚽ ${newGames.length} neue Spiele eingetragen!`,
-      hint: newGames[0].opponent ? `${newGames[0].opponent} · ${fmtFull(newGames[0].date)}` : fmtFull(newGames[0].date),
-      target: 'homePage'
-    });
-  }
-
-  // Offene Spiel-Nominierungs-Rückmeldung
-  const openGameRsvp = pid ? upcomingGames.filter(g => {
-    const squadKeys = Object.keys(g.squad||{}).filter(k=>g.squad[k]);
-    if(!squadKeys.includes(pid)) return false; // nicht nominiert
-    const conf = g.squadConfirm?.[pid];
-    return !conf || conf === 'open'; // nominiert aber noch nicht geantwortet
-  }) : [];
-  if(openGameRsvp.length > 0) {
-    const first = openGameRsvp[0];
-    banners.push({
-      bg: 'linear-gradient(135deg,#B45309,#D97706)',
-      icon: 'fas fa-futbol',
-      key: `gameRsvp_${first.id}`,
-      msg: `⚽ Rückmeldung fürs Spiel offen!`,
-      hint: `${escHtml(first.opponent||'?')} · ${fmtFull(first.date)} · ${first.time||'?'} Uhr`,
-      target: 'homePage',
-      domId: 'bannerOpenGameRsvp'
-    });
-  }
-
-  const dismissed = JSON.parse(LS('dismissedBanners') || '[]');
-  const activeBanners = banners.filter(b => !dismissed.includes(b.key || b.msg));
-
-  activeBanners.forEach(b => {
-    const key = encodeURIComponent(b.key || b.msg);
-    html += `<div ${b.domId?`id="${b.domId}" `:''}data-auto-banner="1" style="background:${b.bg};padding:12px 16px;display:flex;align-items:center;gap:10px;transition:opacity .4s ease,max-height .4s ease,padding .4s ease">
-      <div onclick="document.getElementById('${b.target}')?.scrollIntoView({behavior:'smooth'})" style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;min-width:0">
-        <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <i class="${b.icon}" style="color:#fff;font-size:15px"></i>
-        </div>
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:800;font-size:14px;color:#fff">${b.msg}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,.8);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.hint}</div>
-        </div>
-        <i class="fas fa-chevron-right" style="color:rgba(255,255,255,.5);font-size:12px;flex-shrink:0"></i>
-      </div>
-      <button onclick="dismissBanner('${key}')" style="width:28px;height:28px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
-    </div>`;
-  });
 
 
   // ── Abstimmungs-Banner ──
@@ -1285,17 +1199,6 @@ function renderHome() {
 
   html += `</div></div>`;
   page.innerHTML = html;
-  // Inline-Banner nach 5s automatisch ausblenden
-  setTimeout(() => {
-    page.querySelectorAll('[data-auto-banner]').forEach(el => {
-      el.style.transition = 'opacity .4s ease, max-height .4s ease, padding .4s ease';
-      el.style.opacity = '0';
-      el.style.maxHeight = '0';
-      el.style.padding = '0';
-      el.style.overflow = 'hidden';
-      setTimeout(() => el.remove(), 420);
-    });
-  }, 5000);
 }
 
 function _oldSlider_noop() { if(false) { [].forEach(t => {
