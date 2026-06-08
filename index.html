@@ -3267,7 +3267,67 @@ function renderStatistikTab(c) {
     <!-- Legende -->
     <div style="display:flex;gap:14px;margin-top:10px;font-size:11px;color:#9CA3AF">
       <span>👍 Dabei</span><span>👎 Abgesagt</span><span>○ Offen</span>
-    </div>`;
+    </div>
+
+    <!-- Export -->
+    <button onclick="exportStatistikCSV('${statsTab}')" style="width:100%;margin-top:14px;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:12px;padding:12px;font-size:14px;font-weight:700;color:#065F46;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+      📥 Als Excel exportieren (alle Termine)
+    </button>`;
+}
+
+function exportStatistikCSV(tab) {
+  const players = [...STATE.players].sort((a,b)=>(parseInt(a.number,10)||999)-(parseInt(b.number,10)||999));
+  const escape = v => '"' + String(v||'').replace(/"/g,'""') + '"';
+  const shortDate = d => {
+    if(!d) return '';
+    const dt = new Date(d + 'T12:00:00');
+    return (dt.getDate()+'').padStart(2,'0') + '.' + ((dt.getMonth()+1)+'').padStart(2,'0') + '.' + dt.getFullYear();
+  };
+
+  let csv = '';
+
+  if(tab === 'training') {
+    const trainings = [...STATE.trainings].sort((a,b)=> a.date > b.date ? 1 : -1);
+    // Header
+    const dateHeaders = trainings.map(t => escape(shortDate(t.date) + (t.location ? ' · ' + t.location : '')));
+    csv = ['Spieler','Nr','Dabei','Abgesagt','Offen','Teilnahme %', ...dateHeaders].join(';') + '\n';
+    // Zeilen
+    players.forEach(p => {
+      const yes  = trainings.filter(t => t.attendances?.[p.id] === 'yes').length;
+      const no   = trainings.filter(t => t.attendances?.[p.id] === 'no').length;
+      const open = trainings.filter(t => !t.attendances?.[p.id] || t.attendances[p.id] === 'open').length;
+      const pct  = trainings.length ? Math.round(yes / trainings.length * 100) : 0;
+      const dateCells = trainings.map(t => {
+        const att = t.attendances?.[p.id];
+        return escape(att === 'yes' ? 'Dabei' : att === 'no' ? 'Abgesagt' : 'Offen');
+      });
+      csv += [escape(p.name), escape(p.number||''), yes, no, open, pct+'%', ...dateCells].join(';') + '\n';
+    });
+
+  } else {
+    const games = [...STATE.games].sort((a,b)=> a.date > b.date ? 1 : -1);
+    // Header
+    const gameHeaders = games.map(g => escape(shortDate(g.date) + ' · ' + (g.opponent||'?')));
+    csv = ['Spieler','Nr','Im Kader','Kader %', ...gameHeaders].join(';') + '\n';
+    // Zeilen
+    players.forEach(p => {
+      const inSquad = games.filter(g => g.squad?.[p.id] === true).length;
+      const pct = games.length ? Math.round(inSquad / games.length * 100) : 0;
+      const gameCells = games.map(g => escape(g.squad?.[p.id] === true ? 'Im Kader' : '-'));
+      csv += [escape(p.name), escape(p.number||''), inSquad, pct+'%', ...gameCells].join(';') + '\n';
+    });
+  }
+
+  // BOM für Excel UTF-8
+  const bom = '﻿';
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'FC_Niksar_' + (tab === 'training' ? 'Training' : 'Spiele') + '_Statistik.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥 Export erfolgreich!');
 }
 
 // ---- EINSTELLUNGEN TAB ----
