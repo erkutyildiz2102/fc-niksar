@@ -1,5 +1,5 @@
-// FC Niksar Service Worker v6 - Cache-First für schnellen Start
-const CACHE = 'fcn-v6';
+// FC Niksar Service Worker v7 - Cache-First für schnellen Start
+const CACHE = 'fcn-v7';
 
 // App-Shell Dateien beim Install direkt cachen
 const APP_SHELL = [
