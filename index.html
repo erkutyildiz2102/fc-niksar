@@ -8,8 +8,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/fc-niksar/manifest.json">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<script src="https://cdn.tailwindcss.com"></script>
+<!-- FontAwesome non-blocking: lädt im Hintergrund, blockiert nicht den ersten Paint -->
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
+<script src="https://cdn.tailwindcss.com" defer></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
@@ -424,18 +426,15 @@ function updateHeader() {
 }
 
 // ---- Init ----
-window.addEventListener('load', () => {
+document.addEventListener('DOMContentLoaded', () => {
   initListeners();
   const hasProfile = !!getProfile();
-  // Returning user with profile → skip splash entirely, show app fast
-  // New user → show splash briefly so they can read, then auto-advance
   const splashDelay = hasProfile ? 0 : 400;
   const autoAdvance = hasProfile ? 1200 : 2200;
 
   setTimeout(() => {
     document.getElementById('loadingOverlay').style.display = 'none';
     if(splashDelay === 0) {
-      // Returning user: go straight to app (skip splash)
       afterSplash();
     } else {
       document.getElementById('splash').style.display = 'flex';
@@ -444,8 +443,6 @@ window.addEventListener('load', () => {
     }
   }, hasProfile ? 80 : 1800);
   requestNotifPermission();
-
-  // iOS Keyboard Fix: wird durch fixChatHeight() + visualViewport-Listener gehandhabt
 });
 
 function afterSplash() {
