@@ -2647,7 +2647,10 @@ function renderEinstellungenTab(c) {
       <div style="font-size:15px;font-weight:700;margin-bottom:8px"><i class="fa fa-bell"></i> Push-Benachrichtigungen</div>
       <div style="font-size:13px;color:#6B7280;margin-bottom:12px">Benachrichtigung bei neuen Trainings, Spielen und Chat.</div>
       ${pushOn
-        ? `<div style="background:#10B981;color:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700"><i class="fas fa-check-circle" style="font-size:18px"></i> Benachrichtigungen aktiv</div>`
+        ? `<div style="display:flex;flex-direction:column;gap:8px">
+             <div style="background:#10B981;color:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700"><i class="fas fa-check-circle" style="font-size:18px"></i> Benachrichtigungen aktiv</div>
+             <button onclick="resubscribePush()" style="background:#F3F4F6;color:#6B7280;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;width:100%">🔄 Neu verbinden (bei Problemen)</button>
+           </div>`
         : `<button class="btn-primary" onclick="subscribeToPush()" id="pushBtn">🔔 Benachrichtigungen aktivieren</button>`
       }
     </div>
@@ -2757,6 +2760,27 @@ function compressImage(dataUrl, maxW, quality, cb) {
 function urlBase64ToUint8Array(b64){const pad='='.repeat((4-b64.length%4)%4);const raw=atob((b64+pad).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));}
 async function notifyAll(title,body){try{const excludeKey=LS('myPushKey')||null;await fetch(PUSH_API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,body,excludeKey})});}catch(e){}}
 async function subscribeToPush(){if(!('PushManager'in window)){alert('Push-Benachrichtigungen werden auf diesem Geraet nicht unterstuetzt.');return;}const p=await Notification.requestPermission();if(p!=='granted'){alert('Bitte erlaube Benachrichtigungen in den Einstellungen.');return;}try{const r=await navigator.serviceWorker.ready;const old=await r.pushManager.getSubscription();if(old)await old.unsubscribe();const s=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});const k=btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);await db.ref('/pushSubscriptions/'+k).set(s.toJSON());LSset('pushEnabled','true');LSset('myPushKey',k);alert('✅ Benachrichtigungen aktiviert!');if(document.getElementById('pushBtn')){document.getElementById('pushBtn').textContent='✅ Aktiviert';document.getElementById('pushBtn').style.background='#10B981';document.getElementById('pushBtn').disabled=true;}}catch(e){alert('FEHLER bei Schritt: '+e.message);}}
+async function resubscribePush(){
+  try {
+    const r = await navigator.serviceWorker.ready;
+    // Alte Subscription löschen
+    const old = await r.pushManager.getSubscription();
+    if (old) {
+      const oldK = btoa(old.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
+      await db.ref('/pushSubscriptions/'+oldK).remove();
+      await old.unsubscribe();
+    }
+    // Neue Subscription erstellen
+    const s = await r.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
+    const k = btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
+    await db.ref('/pushSubscriptions/'+k).set(s.toJSON());
+    LSset('pushEnabled','true');
+    LSset('myPushKey',k);
+    showToast('✅ Push-Verbindung erneuert!');
+  } catch(e) {
+    showToast('❌ Fehler: '+e.message);
+  }
+}
 async function unsubscribeFromPush(){try{const r=await navigator.serviceWorker.ready;const s=await r.pushManager.getSubscription();if(s){const k=btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);await db.ref('/pushSubscriptions/'+k).remove();await s.unsubscribe();}LSset('pushEnabled','false');alert('Deaktiviert.');}catch(e){alert('Fehler: '+e.message);}}
 
 // ---- NOTIFICATIONS ----
