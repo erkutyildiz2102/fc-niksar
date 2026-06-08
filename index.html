@@ -442,7 +442,7 @@ window.addEventListener('load', () => {
       document.getElementById('splash').addEventListener('click', afterSplash, {once:true});
       setTimeout(afterSplash, autoAdvance);
     }
-  }, hasProfile ? 600 : 1800);
+  }, hasProfile ? 80 : 1800);
   requestNotifPermission();
 
   // iOS Keyboard Fix: wird durch fixChatHeight() + visualViewport-Listener gehandhabt
