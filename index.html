@@ -938,7 +938,7 @@ function renderHome() {
       }
 
       html += `<div class="event-slide" style="">
-        <div style="background:linear-gradient(135deg,#0A2540,#1e4d8c);padding:18px;border-radius:18px">
+        <div style="background:linear-gradient(135deg,#0A2540,#1e4d8c);padding:18px;border-radius:18px;overflow:hidden;box-sizing:border-box;width:100%">
           <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
             ${dateBox(t.date, true)}
             <div style="flex:1;min-width:0">
@@ -956,7 +956,7 @@ function renderHome() {
               <i class="fas fa-calendar-plus"></i>
             </button>
           </div>
-          ${t.notes ? `<div style="font-size:11px;color:rgba(255,255,255,.55);font-style:italic;margin-bottom:6px">${escHtml(t.notes)}</div>` : ''}
+          ${t.notes ? `<div style="font-size:11px;color:rgba(255,255,255,.55);font-style:italic;margin-bottom:6px;word-break:break-word;overflow-wrap:break-word">${escHtml(t.notes)}</div>` : ''}
           ${rsvpSection}
         </div>
       </div>`;
@@ -1031,7 +1031,7 @@ function renderHome() {
       }
 
       html += `<div class="event-slide" style="">
-        <div style="background:linear-gradient(135deg,#B45309,#F59E0B);padding:18px;border-radius:18px">
+        <div style="background:linear-gradient(135deg,#B45309,#F59E0B);padding:18px;border-radius:18px;overflow:hidden;box-sizing:border-box;width:100%">
           <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
             ${dateBox(g.date, true)}
             <div style="flex:1;min-width:0">
