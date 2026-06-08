@@ -443,6 +443,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, hasProfile ? 80 : 1800);
   requestNotifPermission();
+  // Bestehenden Push-Key auslesen und speichern (für "kein Push bei eigener Nachricht")
+  if ('serviceWorker' in navigator && !LS('myPushKey')) {
+    navigator.serviceWorker.ready.then(reg => reg.pushManager.getSubscription()).then(sub => {
+      if (sub) {
+        const k = btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
+        LSset('myPushKey', k);
+      }
+    }).catch(() => {});
+  }
 });
 
 function afterSplash() {
