@@ -472,6 +472,13 @@ document.addEventListener('DOMContentLoaded', () => {
   autoSetupPush();
 });
 
+// Push-Subscription bei jedem Öffnen der App erneuern (iOS background invalidation fix)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    autoSetupPush();
+  }
+});
+
 function afterSplash() {
   document.getElementById('splash').style.display = 'none';
   const profile = getProfile();
