@@ -279,33 +279,55 @@ setPWAManifest(DEFAULT_ICON);
 const APP_VERSION = '1.5';
 
 if ('serviceWorker' in navigator) {
-  // Network-first Service Worker: immer frische HTML, Fallback auf Cache wenn offline
-    navigator.serviceWorker.register('/fc-niksar/sw.js').then(reg => {
-    // Wenn neuer Service Worker wartet → sofort aktivieren
+  navigator.serviceWorker.register('/fc-niksar/sw.js').then(reg => {
+
+    // Neue Version gefunden → Banner anzeigen statt automatisch neu laden
     reg.addEventListener('updatefound', () => {
       const newSW = reg.installing;
       newSW.addEventListener('statechange', () => {
-        if(newSW.state === 'installed' && navigator.serviceWorker.controller) {
-          newSW.postMessage({ type: 'SKIP_WAITING' });
+        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          showUpdateBanner(newSW);
         }
       });
     });
 
-    // Alle 30 Minuten auf Updates prüfen
+    // Alle 30 Minuten + bei Sichtbarkeit auf Updates prüfen
     setInterval(() => reg.update(), 30 * 60 * 1000);
-
-    // Beim Öffnen der App (aus Hintergrund) sofort prüfen
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') reg.update();
     });
 
-  }).catch(()=>{});
+  }).catch(() => {});
 
-  // Seite automatisch neu laden wenn neuer SW aktiv wird
+  // Nach SKIP_WAITING: Seite neu laden
   let refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if(!refreshing){ refreshing = true; window.location.reload(); }
+    if (!refreshing) { refreshing = true; window.location.reload(); }
   });
+}
+
+function showUpdateBanner(newSW) {
+  const existing = document.getElementById('updateBanner');
+  if (existing) return;
+  const b = document.createElement('div');
+  b.id = 'updateBanner';
+  b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#0A2540;color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 2px 12px rgba(0,0,0,.3);animation:slideDown .3s ease';
+  b.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600">
+      <span style="font-size:20px">🆕</span> Neue Version verfügbar
+    </div>
+    <button onclick="document.getElementById('updateBanner').remove()" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:20px;cursor:pointer;padding:0 4px;line-height:1">✕</button>
+    <button onclick="applyUpdate()" style="background:#25D366;color:#fff;border:none;border-radius:20px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Jetzt laden</button>`;
+  document.body.appendChild(b);
+  window._pendingUpdateSW = newSW;
+}
+
+function applyUpdate() {
+  if (window._pendingUpdateSW) {
+    window._pendingUpdateSW.postMessage({ type: 'SKIP_WAITING' });
+  } else {
+    window.location.reload();
+  }
 }
 
 function showEventBanner(title, subtitle, color) {
