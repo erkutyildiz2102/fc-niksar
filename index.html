@@ -601,12 +601,19 @@ function fixChatHeight() {
   // Sonst: normales Padding mit safe-area für Home-Indicator
   const inputBar = document.querySelector('.wa-input-bar');
   if (inputBar) {
-    const keyboardOpen = vv && vv.height < window.innerHeight * 0.85;
-    inputBar.style.paddingBottom = keyboardOpen ? '8px' : '';
+    const keyboardOpen = vv && vv.height < window.innerHeight * 0.75;
+    // Tastatur offen: kein extra Padding (Keyboard liegt direkt darunter, kein Home-Indicator)
+    inputBar.style.paddingBottom = keyboardOpen ? '0px' : '';
   }
   // Nach Layout-Änderung (z.B. Keyboard öffnet) immer nach unten scrollen
   const msgs = document.getElementById('chatMessages');
   if (msgs) requestAnimationFrame(() => { msgs.scrollTop = msgs.scrollHeight; });
+}
+
+function fixChatHeightDelayed() {
+  // Sofort + nochmal nach Keyboard-Animation (iOS braucht ~300ms)
+  fixChatHeight();
+  setTimeout(fixChatHeight, 350);
 }
 
 function setupChatKeyboard() {
@@ -614,7 +621,7 @@ function setupChatKeyboard() {
   if (!inp) return;
   inp.addEventListener('focus', () => {
     chatInputWasFocused = true;
-    // Sofort + nochmal nach Keyboard-Animation nach unten scrollen
+    fixChatHeightDelayed();
     const c = document.getElementById('chatMessages');
     if (c) c.scrollTop = c.scrollHeight;
     setTimeout(() => { if (c) c.scrollTop = c.scrollHeight; }, 350);
@@ -625,10 +632,10 @@ function setupChatKeyboard() {
 }
 
 if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', fixChatHeight);
+  window.visualViewport.addEventListener('resize', fixChatHeightDelayed);
   window.visualViewport.addEventListener('scroll', fixChatHeight);
 }
-window.addEventListener('resize', fixChatHeight);
+window.addEventListener('resize', fixChatHeightDelayed);
 
 // ---- PULL TO REFRESH (still, kein Indikator) ----
 (function(){
