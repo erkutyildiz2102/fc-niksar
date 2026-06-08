@@ -896,7 +896,7 @@ function renderHome() {
       icon: 'fas fa-running',
       msg: newTrainings.length === 1 ? '🏃 Neues Training eingetragen!' : `🏃 ${newTrainings.length} neue Trainings eingetragen!`,
       hint: `${fmtFull(newTrainings[0].date)} · ${newTrainings[0].time||'?'} Uhr · ${newTrainings[0].location||''}`,
-      target: 'sliderTraining'
+      target: 'homePage'
     });
   }
   // Offene Rückmeldungen — eigener Banner mit Info zum ersten offenen Training
@@ -910,7 +910,7 @@ function renderHome() {
       icon: 'fas fa-clipboard-list',
       msg: `⚠️ Rückmeldung noch offen!`,
       hint: firstOpen ? `${fmtFull(firstOpen.date)} · ${firstOpen.time||'?'} Uhr · ${firstOpen.location||''}` : `${openRsvp} Training${openRsvp>1?'s':''} warten auf Rückmeldung`,
-      target: 'sliderTraining'
+      target: 'homePage'
     });
   }
   if(newGames.length > 0) {
@@ -919,7 +919,7 @@ function renderHome() {
       icon: 'fas fa-futbol',
       msg: newGames.length === 1 ? `⚽ Neues Spiel eingetragen!` : `⚽ ${newGames.length} neue Spiele eingetragen!`,
       hint: newGames[0].opponent ? `${newGames[0].opponent} · ${fmtFull(newGames[0].date)}` : fmtFull(newGames[0].date),
-      target: 'sliderGames'
+      target: 'homePage'
     });
   }
 
@@ -938,7 +938,7 @@ function renderHome() {
       key: `gameRsvp_${first.id}`,
       msg: `⚽ Rückmeldung fürs Spiel offen!`,
       hint: `${escHtml(first.opponent||'?')} · ${fmtFull(first.date)} · ${first.time||'?'} Uhr`,
-      target: 'sliderGames'
+      target: 'homePage'
     });
   }
 
