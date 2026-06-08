@@ -2888,7 +2888,10 @@ function renderEinstellungenTab(c) {
       ${permStatus === 'denied'
         ? `<div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:12px;padding:12px 16px;font-size:13px;color:#DC2626;font-weight:600">⚠️ Benachrichtigungen sind in den Handy-Einstellungen blockiert. Bitte dort aktivieren.</div>`
         : pushActive
-          ? `<div style="background:#10B981;color:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700"><i class="fas fa-check-circle" style="font-size:18px"></i> Automatisch aktiv ✓</div>`
+          ? `<div style="display:flex;flex-direction:column;gap:8px">
+               <div style="background:#10B981;color:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700"><i class="fas fa-check-circle" style="font-size:18px"></i> Automatisch aktiv ✓</div>
+               <button onclick="resubscribePush()" style="background:transparent;border:none;color:#9CA3AF;font-size:12px;cursor:pointer;padding:4px;text-align:center;width:100%">🔄 Neu verbinden (bei Problemen)</button>
+             </div>`
           : `<div style="background:#FEF3C7;border:1.5px solid #FCD34D;border-radius:12px;padding:12px 16px;font-size:13px;color:#92400E;font-weight:600;margin-bottom:8px">⏳ Wird beim nächsten App-Start automatisch aktiviert</div>
              <button class="btn-primary" onclick="subscribeToPush()">🔔 Jetzt aktivieren</button>`
       }
