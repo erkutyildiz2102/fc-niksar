@@ -3305,12 +3305,9 @@ function renderStatistikTab(c) {
     </div>
 
     <!-- Export Buttons -->
-    <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+    <div style="margin-top:14px">
       <button onclick="exportStatistikPDF()" style="width:100%;background:linear-gradient(135deg,#0A2540,#1e4d8c);border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
         📄 Als PDF exportieren (mit Diagrammen)
-      </button>
-      <button onclick="exportStatistikCSV('${statsTab}')" style="width:100%;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:12px;padding:12px;font-size:14px;font-weight:700;color:#065F46;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
-        📥 Als Excel exportieren (alle Termine)
       </button>
     </div>`;
 }
@@ -3418,7 +3415,10 @@ function exportStatistikPDF() {
       <div style="font-size:24px;font-weight:900;letter-spacing:2px">FC NIKSAR</div>
       <div style="font-size:13px;opacity:.7;margin-top:2px">F1 · U9 · Statistik Auswertung · ${today}</div>
     </div>
-    <button class="no-print" onclick="window.print()" style="margin-left:auto;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);border-radius:12px;padding:10px 18px;color:#fff;font-size:14px;font-weight:700;cursor:pointer">📄 Als PDF speichern</button>
+    <div class="no-print" style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+      <button onclick="window.close()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:12px;padding:10px 18px;color:#fff;font-size:14px;font-weight:700;cursor:pointer">← Zurück</button>
+      <button onclick="window.print()" style="background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.5);border-radius:12px;padding:10px 18px;color:#fff;font-size:14px;font-weight:700;cursor:pointer">📄 Als PDF speichern</button>
+    </div>
   </div>
 
   <!-- Team Übersicht -->
@@ -3471,60 +3471,6 @@ function exportStatistikPDF() {
   }
 }
 
-function exportStatistikCSV(tab) {
-  const players = [...STATE.players].sort((a,b)=>(parseInt(a.number,10)||999)-(parseInt(b.number,10)||999));
-  const escape = v => '"' + String(v||'').replace(/"/g,'""') + '"';
-  const shortDate = d => {
-    if(!d) return '';
-    const dt = new Date(d + 'T12:00:00');
-    return (dt.getDate()+'').padStart(2,'0') + '.' + ((dt.getMonth()+1)+'').padStart(2,'0') + '.' + dt.getFullYear();
-  };
-
-  let csv = '';
-
-  if(tab === 'training') {
-    const trainings = [...STATE.trainings].sort((a,b)=> a.date > b.date ? 1 : -1);
-    // Header
-    const dateHeaders = trainings.map(t => escape(shortDate(t.date) + (t.location ? ' · ' + t.location : '')));
-    csv = ['Spieler','Nr','Dabei','Abgesagt','Offen','Teilnahme %', ...dateHeaders].join(';') + '\n';
-    // Zeilen
-    players.forEach(p => {
-      const yes  = trainings.filter(t => t.attendances?.[p.id] === 'yes').length;
-      const no   = trainings.filter(t => t.attendances?.[p.id] === 'no').length;
-      const open = trainings.filter(t => !t.attendances?.[p.id] || t.attendances[p.id] === 'open').length;
-      const pct  = trainings.length ? Math.round(yes / trainings.length * 100) : 0;
-      const dateCells = trainings.map(t => {
-        const att = t.attendances?.[p.id];
-        return escape(att === 'yes' ? 'Dabei' : att === 'no' ? 'Abgesagt' : 'Offen');
-      });
-      csv += [escape(p.name), escape(p.number||''), yes, no, open, pct+'%', ...dateCells].join(';') + '\n';
-    });
-
-  } else {
-    const games = [...STATE.games].sort((a,b)=> a.date > b.date ? 1 : -1);
-    // Header
-    const gameHeaders = games.map(g => escape(shortDate(g.date) + ' · ' + (g.opponent||'?')));
-    csv = ['Spieler','Nr','Im Kader','Kader %', ...gameHeaders].join(';') + '\n';
-    // Zeilen
-    players.forEach(p => {
-      const inSquad = games.filter(g => g.squad?.[p.id] === true).length;
-      const pct = games.length ? Math.round(inSquad / games.length * 100) : 0;
-      const gameCells = games.map(g => escape(g.squad?.[p.id] === true ? 'Im Kader' : '-'));
-      csv += [escape(p.name), escape(p.number||''), inSquad, pct+'%', ...gameCells].join(';') + '\n';
-    });
-  }
-
-  // BOM für Excel UTF-8
-  const bom = '﻿';
-  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'FC_Niksar_' + (tab === 'training' ? 'Training' : 'Spiele') + '_Statistik.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('📥 Export erfolgreich!');
-}
 
 // ---- EINSTELLUNGEN TAB ----
 function renderEinstellungenTab(c) {
