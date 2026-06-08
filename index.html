@@ -900,23 +900,27 @@ function renderHome() {
     } catch(e) { return 0; }
   }
 
-  const upcoming = [
-    ...STATE.trainings.map(t => ({...t, type:'training', sortDate: parseSortDate(t.date, t.time)})),
-    ...STATE.games.map(g => ({...g, type:'game', sortDate: parseSortDate(g.date, g.time)}))
-  ].filter(x => x.sortDate >= todayMs).sort((a,b) => a.sortDate - b.sortDate);
-
   const pid = profile?.playerId;
 
-  // Robust: Datum-String direkt vergleichen (keine Timezone-Probleme)
-  const todayStr = new Date().toISOString().slice(0, 10); // "2026-06-10"
+  // Termin ist vorbei wenn Endzeit überschritten (Training: timeTo, sonst +90min; Spiel: +120min)
+  function endMs(ev, isTraining) {
+    const start = parseSortDate(ev.date, ev.time);
+    if(isTraining) return ev.timeTo ? parseSortDate(ev.date, ev.timeTo) : start + 90*60*1000;
+    return start + 120*60*1000;
+  }
+
+  const upcoming = [
+    ...STATE.trainings.map(t => ({...t, _type:'training', sortDate: parseSortDate(t.date, t.time), _endMs: endMs(t,true)})),
+    ...STATE.games.map(g => ({...g, _type:'game', sortDate: parseSortDate(g.date, g.time), _endMs: endMs(g,false)}))
+  ].filter(x => x._endMs > now).sort((a,b) => a.sortDate - b.sortDate);
 
   const upcomingTrainings = STATE.trainings
-    .filter(t => t.date && t.date >= todayStr)
+    .filter(t => t.date && endMs(t,true) > now)
     .map(t => ({...t, sortDate: parseSortDate(t.date, t.time)}))
     .sort((a,b) => a.sortDate - b.sortDate);
 
   const upcomingGames = STATE.games
-    .filter(g => g.date && g.date >= todayStr)
+    .filter(g => g.date && endMs(g,false) > now)
     .map(g => ({...g, sortDate: parseSortDate(g.date, g.time)}))
     .sort((a,b) => a.sortDate - b.sortDate);
 
