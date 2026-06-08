@@ -345,18 +345,26 @@ function applyUpdate() {
   }
 }
 
-function showEventBanner(title, subtitle, color) {
+function showEventBanner(title, subtitle, color, cardId) {
   document.getElementById('eventNotifBanner')?.remove();
   const b = document.createElement('div');
   b.id = 'eventNotifBanner';
-  b.style.cssText = `position:fixed;top:0;left:0;right:0;background:${color};color:#fff;z-index:700;padding:max(14px,env(safe-area-inset-top)) 16px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(0,0,0,.35);animation:slideDown .35s ease`;
+  b.style.cssText = `position:fixed;top:0;left:0;right:0;background:${color};color:#fff;z-index:700;padding:max(14px,env(safe-area-inset-top)) 16px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(0,0,0,.35);animation:slideDown .35s ease;cursor:${cardId?'pointer':'default'}`;
   b.innerHTML = `
     <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${title.split(' ')[0]}</div>
     <div style="flex:1;min-width:0">
       <div style="font-weight:800;font-size:14px">${title.slice(title.indexOf(' ')+1)}</div>
       <div style="font-size:12px;opacity:.8;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${subtitle}</div>
     </div>
-    <button onclick="document.getElementById('eventNotifBanner').remove()" style="background:rgba(255,255,255,.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;flex-shrink:0">✕</button>`;
+    ${cardId ? '<i class="fas fa-chevron-down" style="color:rgba(255,255,255,.7);font-size:13px;flex-shrink:0"></i>' : ''}
+    <button onclick="event.stopPropagation();document.getElementById('eventNotifBanner').remove()" style="background:rgba(255,255,255,.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;flex-shrink:0">✕</button>`;
+  if(cardId) {
+    b.onclick = () => {
+      b.remove();
+      const card = document.getElementById('evcard-' + cardId);
+      if(card) card.scrollIntoView({behavior:'smooth', block:'center'});
+    };
+  }
   document.body.appendChild(b);
   setTimeout(() => {
     if(b.parentNode) { b.style.animation='slideUp .35s ease forwards'; setTimeout(()=>b.remove(), 350); }
@@ -375,19 +383,23 @@ function initListeners() {
   db.ref('/players').on('value', s => { STATE.players = toArr(s.val()).sort((a,b)=>(parseInt(a.number)||999)-(parseInt(b.number)||999)); onDataChange(); });
   db.ref('/trainings').on('value', s => {
     const arr = toArr(s.val()).sort((a,b)=>new Date(a.date)-new Date(b.date));
-    if(prevTrainingCount >= 0 && arr.length > prevTrainingCount && !(window._suppressEventBanner && Date.now() < window._suppressEventBanner)) {
-      const n = arr.find(t=>(Date.now()-(t.createdAt||0))<15000);
-      if(n) showEventBanner('🏃 Neues Training eingetragen', `${fmtFull(n.date)} · ${n.time||'?'} Uhr · ${n.location||''}`, '#0A2540');
+    const knownIds = window._knownTrainingIds || new Set();
+    const n = arr.find(t => !knownIds.has(t.id) && (Date.now()-(t.createdAt||0))<20000);
+    if(knownIds.size > 0 && n && !(window._suppressEventBanner && Date.now() < window._suppressEventBanner)) {
+      showEventBanner('🏃 Neues Training eingetragen', `${fmtFull(n.date)} · ${n.time||'?'} Uhr · ${n.location||''}`, '#0A2540', n.id);
     }
+    window._knownTrainingIds = new Set(arr.map(t => t.id));
     prevTrainingCount = arr.length;
     STATE.trainings = arr; onDataChange();
   });
   db.ref('/games').on('value', s => {
     const arr = toArr(s.val()).sort((a,b)=>new Date(a.date)-new Date(b.date));
-    if(prevGameCount >= 0 && arr.length > prevGameCount && !(window._suppressEventBanner && Date.now() < window._suppressEventBanner)) {
-      const n = arr.find(g=>(Date.now()-(g.createdAt||0))<15000);
-      if(n) showEventBanner('⚽ Neues Spiel eingetragen', `${n.opponent||'?'} · ${fmtFull(n.date)}`, '#B45309');
+    const knownIds = window._knownGameIds || new Set();
+    const n = arr.find(g => !knownIds.has(g.id) && (Date.now()-(g.createdAt||0))<20000);
+    if(knownIds.size > 0 && n && !(window._suppressEventBanner && Date.now() < window._suppressEventBanner)) {
+      showEventBanner('⚽ Neues Spiel eingetragen', `${n.opponent||'?'} · ${fmtFull(n.date)}`, '#B45309', n.id);
     }
+    window._knownGameIds = new Set(arr.map(g => g.id));
     prevGameCount = arr.length;
     STATE.games = arr; onDataChange();
   });
@@ -894,7 +906,7 @@ function toggleRsvpEdit(tid) {
   renderTermine();
   const _t2 = STATE.trainings.find(x => x.id === tid);
   const tDate = _t2 ? `${_t2.date ? (()=>{const d=new Date(_t2.date+'T12:00:00');return d.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'});})() : ''} · ${_t2.time||'?'} Uhr` : '';
-  showEventBanner('⏳ Rückmeldung offen', tDate || 'Bitte zu- oder absagen', '#F59E0B');
+  showEventBanner('⏳ Rückmeldung offen', tDate || 'Bitte zu- oder absagen', '#F59E0B', tid);
 }
 
 function renderHome() {
@@ -1232,7 +1244,7 @@ function renderHome() {
 
     const notesHtml = isT && ev.notes ? `<div style="padding:0 12px 8px;font-size:11px;color:#6B7280;font-style:italic">${linkify(ev.notes)}</div>` : !isT && ev.notes ? `<div style="padding:0 12px 8px;font-size:11px;color:#6B7280">${linkify(ev.notes)}</div>` : '';
 
-    html += `<div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.07)">
+    html += `<div id="evcard-${ev.id}" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.07)">
       <div style="background:${headerBg};padding:13px 16px;display:flex;align-items:center;gap:12px">
         <div style="background:rgba(255,255,255,.18);border-radius:10px;padding:6px 10px;text-align:center;min-width:48px">
           <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.75)">${fmtListDay(ev.date)}</div>
