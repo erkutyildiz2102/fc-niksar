@@ -2907,7 +2907,8 @@ function deletePlayer(id) {
 
 // ---- TRAINING TAB ----
 function renderTrainingTab(c) {
-  const sorted = [...STATE.trainings].sort((a,b) => new Date(b.date) - new Date(a.date));
+  const today = new Date().toISOString().slice(0,10);
+  const sorted = [...STATE.trainings].sort((a,b) => new Date(a.date) - new Date(b.date));
   c.innerHTML = `
     <button class="btn-primary" onclick="addTrainingModal()"><i class="fa fa-plus"></i> Training hinzufügen</button>
     ${sorted.map(t => {
