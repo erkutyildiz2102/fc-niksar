@@ -467,13 +467,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, hasProfile ? 80 : 1800);
   requestNotifPermission();
-  // Bestehenden Push-Key auslesen und speichern (für "kein Push bei eigener Nachricht")
-  if ('serviceWorker' in navigator && !LS('myPushKey')) {
-    navigator.serviceWorker.ready.then(reg => reg.pushManager.getSubscription()).then(sub => {
-      if (sub) {
-        const k = btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
-        LSset('myPushKey', k);
-      }
+  // Push-Subscription wiederherstellen: wenn Permission schon erteilt aber localStorage geleert (z.B. nach Reinstall)
+  if ('serviceWorker' in navigator && 'PushManager' in window) {
+    navigator.serviceWorker.ready.then(async reg => {
+      try {
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          // Subscription existiert → Key speichern + in Firebase registrieren falls nötig
+          const k = btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
+          LSset('myPushKey', k);
+          if (LS('pushEnabled') !== 'true') {
+            // Nach Reinstall: neu in Firebase eintragen
+            await db.ref('/pushSubscriptions/' + k).set(sub.toJSON());
+            LSset('pushEnabled', 'true');
+          }
+        } else if (Notification.permission === 'granted' && LS('pushEnabled') !== 'false') {
+          // Permission erteilt aber keine Subscription (nach Reinstall) → automatisch neu abonnieren
+          const s = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+          });
+          const k = btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
+          await db.ref('/pushSubscriptions/' + k).set(s.toJSON());
+          LSset('pushEnabled', 'true');
+          LSset('myPushKey', k);
+        }
+      } catch(e) {}
     }).catch(() => {});
   }
 });
@@ -2619,7 +2638,9 @@ function renderStatistikTab(c) {
 
 // ---- EINSTELLUNGEN TAB ----
 function renderEinstellungenTab(c) {
-  const pushOn = localStorage.getItem('fcniksar_pushEnabled') === 'true';
+  // pushEnabled true, ODER Permission bereits erteilt + Subscription vorhanden (nach Auto-Restore)
+  const pushOn = localStorage.getItem('fcniksar_pushEnabled') === 'true'
+    || (typeof Notification !== 'undefined' && Notification.permission === 'granted' && LS('myPushKey'));
   const locked = STATE.config.profileSwitchLocked === true;
   c.innerHTML = `
     <div class="card" style="padding:16px;margin-bottom:0">
