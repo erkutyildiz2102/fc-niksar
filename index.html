@@ -86,7 +86,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* Event Slider */
 .event-slider{display:flex;overflow-x:auto;gap:12px;padding:0 16px 8px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .event-slider::-webkit-scrollbar{display:none}
-.event-slide{min-width:calc(100vw - 56px);max-width:360px;scroll-snap-align:start;border-radius:18px;overflow:hidden;flex-shrink:0}
+.event-slide{min-width:calc(100vw - 56px);max-width:360px;scroll-snap-align:start;border-radius:18px;overflow:visible;flex-shrink:0}
 /* New event banner */
 @keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes slideUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}
@@ -938,7 +938,7 @@ function renderHome() {
       }
 
       html += `<div class="event-slide" style="min-width:calc(90vw - 32px)">
-        <div style="background:linear-gradient(135deg,#0A2540,#1e4d8c);padding:18px;border-radius:18px;height:100%">
+        <div style="background:linear-gradient(135deg,#0A2540,#1e4d8c);padding:18px;border-radius:18px">
           <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
             ${dateBox(t.date, true)}
             <div style="flex:1;min-width:0">
@@ -1031,7 +1031,7 @@ function renderHome() {
       }
 
       html += `<div class="event-slide" style="min-width:calc(90vw - 32px)">
-        <div style="background:linear-gradient(135deg,#B45309,#F59E0B);padding:18px;border-radius:18px;height:100%">
+        <div style="background:linear-gradient(135deg,#B45309,#F59E0B);padding:18px;border-radius:18px">
           <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
             ${dateBox(g.date, true)}
             <div style="flex:1;min-width:0">
