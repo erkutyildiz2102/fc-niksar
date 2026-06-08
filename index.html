@@ -910,17 +910,29 @@ function renderHome() {
   }
 
   const upcoming = [
-    ...STATE.trainings.map(t => ({...t, _type:'training', sortDate: parseSortDate(t.date, t.time), _endMs: endMs(t,true)})),
-    ...STATE.games.map(g => ({...g, _type:'game', sortDate: parseSortDate(g.date, g.time), _endMs: endMs(g,false)}))
-  ].filter(x => x._endMs > now).sort((a,b) => a.sortDate - b.sortDate);
+    ...upcomingTrainings.map(t => ({...t, _type:'training', sortDate: parseSortDate(t.date, t.time)})),
+    ...upcomingGames.map(g => ({...g, _type:'game', sortDate: parseSortDate(g.date, g.time)}))
+  ].sort((a,b) => a.sortDate - b.sortDate);
+
+  const todayStr = new Date().toISOString().slice(0,10);
 
   const upcomingTrainings = STATE.trainings
-    .filter(t => t.date && endMs(t,true) > now)
+    .filter(t => {
+      if(!t.date) return false;
+      if(t.date > todayStr) return true;   // Zukunft immer anzeigen
+      if(t.date < todayStr) return false;  // Vergangenheit nie
+      return endMs(t, true) > now;          // Heute: Endzeit prüfen
+    })
     .map(t => ({...t, sortDate: parseSortDate(t.date, t.time)}))
     .sort((a,b) => a.sortDate - b.sortDate);
 
   const upcomingGames = STATE.games
-    .filter(g => g.date && endMs(g,false) > now)
+    .filter(g => {
+      if(!g.date) return false;
+      if(g.date > todayStr) return true;   // Zukunft immer anzeigen
+      if(g.date < todayStr) return false;  // Vergangenheit nie
+      return endMs(g, false) > now;         // Heute: Endzeit prüfen
+    })
     .map(g => ({...g, sortDate: parseSortDate(g.date, g.time)}))
     .sort((a,b) => a.sortDate - b.sortDate);
 
