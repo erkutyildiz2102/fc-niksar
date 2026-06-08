@@ -1996,10 +1996,10 @@ function renderGalerie() {
   page.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:4px">
       <div class="section-title">Fotos (${STATE.photos.length})</div>
-      <label style="background:#0A2540;color:#fff;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer">
+      ${trainerLoggedIn ? `<label style="background:#0A2540;color:#fff;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer">
         <i class="fa fa-upload"></i> Hochladen
         <input type="file" accept="image/*" multiple style="display:none" onchange="uploadPhotos(this)">
-      </label>
+      </label>` : ''}
     </div>
     ${STATE.photos.length ? `<div class="photo-grid">${STATE.photos.map(p =>
       `<div style="position:relative;display:inline-block;line-height:0">
