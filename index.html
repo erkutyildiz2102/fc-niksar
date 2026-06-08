@@ -2257,7 +2257,12 @@ function saveNewPlayer() {
   const birthday = document.getElementById('newPlayerBirthday')?.value || '';
   const passNr = document.getElementById('newPlayerPassNr')?.value.trim() || '';
   if(!name){ alert('Name eingeben'); return; }
-  db.ref('/players').push({ name, number: number||'', photo, birthday, passNr, createdAt: Date.now() });
+  // PIN automatisch generieren (4-stellig, eindeutig)
+  const usedPins = new Set(STATE.players.map(p => String(p.pin)).filter(Boolean));
+  let pin;
+  do { pin = String(Math.floor(1000 + Math.random() * 9000)); } while (usedPins.has(pin));
+  db.ref('/players').push({ name, number: number||'', photo, birthday, passNr, pin, createdAt: Date.now() });
+  showToast(`✅ Spieler gespeichert · PIN: ${pin}`);
   closeModal();
 }
 
@@ -2280,8 +2285,21 @@ function editPlayer(id) {
     <input id="editPlayerNumber" class="input-field" type="number" placeholder="Rückennummer" value="${escHtml(p.number||'')}" style="margin-bottom:10px">
     <label style="font-size:12px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px">🎂 Geburtstag</label>
     <input id="editPlayerBirthday" class="input-field" type="date" value="${p.birthday||''}" style="margin-bottom:10px">
-    <input id="editPlayerPassNr" class="input-field" placeholder="🪪 Passnummer (optional)" value="${escHtml(p.passNr||'')}" style="margin-bottom:16px">
+    <input id="editPlayerPassNr" class="input-field" placeholder="🪪 Passnummer (optional)" value="${escHtml(p.passNr||'')}" style="margin-bottom:10px">
+    ${p.pin ? `<div style="background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:12px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:13px;color:#065F46;font-weight:600">🔑 App-PIN: <strong style="font-size:16px;letter-spacing:2px">${p.pin}</strong></span>
+      <button onclick="regeneratePin('${id}')" style="background:none;border:none;color:#6B7280;font-size:12px;cursor:pointer">Neu generieren</button>
+    </div>` : `<button onclick="regeneratePin('${id}')" class="btn-primary" style="margin-bottom:16px;background:#059669">🔑 PIN generieren</button>`}
     <button class="btn-primary" onclick="savePlayerEdit('${id}')">Änderungen speichern</button>`);
+}
+
+function regeneratePin(id) {
+  const usedPins = new Set(STATE.players.map(p => String(p.pin)).filter(Boolean));
+  let pin;
+  do { pin = String(Math.floor(1000 + Math.random() * 9000)); } while (usedPins.has(pin));
+  db.ref('/players/' + id).update({ pin });
+  showToast(`🔑 Neuer PIN: ${pin}`);
+  editPlayer(id);
 }
 
 function savePlayerEdit(id) {
