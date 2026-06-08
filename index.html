@@ -54,7 +54,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .wa-date-sep{text-align:center;margin:8px 0}
 .wa-date-sep span{background:rgba(255,255,255,.85);color:#667781;font-size:12px;font-weight:600;padding:4px 12px;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.1)}
 .wa-file{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.06);min-width:180px;cursor:pointer}
-.wa-input-bar{background:#F0F2F5;padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;gap:6px;align-items:flex-end;flex-shrink:0}
+.wa-input-bar{background:#F0F2F5;padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;gap:6px;align-items:flex-end;flex-shrink:0;transition:padding .1s}
 .wa-emoji-grid{display:none;background:#fff;border-top:1px solid #e5e7eb;padding:10px;flex-shrink:0}
 .wa-emoji-grid.open{display:block}
 /* legacy - keep for other pages */
@@ -513,6 +513,13 @@ function fixChatHeight() {
   chat.style.top    = top + 'px';
   chat.style.height = h + 'px';
   chat.style.bottom = 'auto';
+  // Wenn Tastatur offen: safe-area-inset-bottom entfernen (kein Home-Indicator sichtbar)
+  // Sonst: normales Padding mit safe-area für Home-Indicator
+  const inputBar = document.querySelector('.wa-input-bar');
+  if (inputBar) {
+    const keyboardOpen = vv && vv.height < window.innerHeight * 0.85;
+    inputBar.style.paddingBottom = keyboardOpen ? '8px' : '';
+  }
   // Nach Layout-Änderung (z.B. Keyboard öffnet) immer nach unten scrollen
   const msgs = document.getElementById('chatMessages');
   if (msgs) requestAnimationFrame(() => { msgs.scrollTop = msgs.scrollHeight; });
