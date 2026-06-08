@@ -1,6 +1,6 @@
-// FC Niksar Service Worker v9
+// FC Niksar Service Worker v10
 // index.html: Network-First (immer aktuell), Bilder/Icons: Cache-First (schnell)
-const CACHE = 'fcn-v9';
+const CACHE = 'fcn-v10';
 
 self.addEventListener('message', e => {
   if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
@@ -86,7 +86,7 @@ self.addEventListener('push', e => {
   // → hält Subscription aktiv auch ohne App zu öffnen
   const refreshPromise = self.registration.pushManager.getSubscription().then(sub => {
     if (!sub) return;
-    const k = btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(0,28);
+    const k = btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(-28);
     return fetch(`${DB_URL}/pushSubscriptions/${k}.json`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
