@@ -2954,12 +2954,6 @@ function gameDetailModal(id) {
     <div style="font-size:18px;font-weight:800;margin-bottom:2px;padding-right:36px">${escHtml(g.opponent||'?')}</div>
     <div style="font-size:13px;color:#6B7280;margin-bottom:16px">${fmt(g.date)}${g.time ? ' · Treffpunkt: '+g.time : ''} · ${escHtml(g.location||'')}</div>
 
-    <!-- Ergebnis -->
-    <div style="display:flex;gap:8px;margin-bottom:20px;align-items:center">
-      <input id="gResultIn" class="input-field" placeholder="Ergebnis z.B. 3:1" value="${escHtml(g.result||'')}" style="flex:1;font-size:18px;font-weight:700;text-align:center">
-      <button style="background:#0A2540;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap" onclick="saveResult('${id}')">Speichern</button>
-    </div>
-
     <!-- Kader -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div style="font-size:14px;font-weight:800;color:#1F2937">Kader <span style="background:#0A2540;color:#fff;font-size:11px;padding:2px 8px;border-radius:12px;margin-left:4px">${inSquad.length}</span></div>
@@ -3166,10 +3160,11 @@ function renderStatistikTab(c) {
     const yesCount    = STATE.trainings.filter(t => t.attendances?.[p.id] === 'yes').length;
     const noCount     = STATE.trainings.filter(t => t.attendances?.[p.id] === 'no').length;
     const openCount   = STATE.trainings.filter(t => !t.attendances?.[p.id] || t.attendances[p.id] === 'open').length;
-    const gamesInSquad = STATE.games.filter(g => g.squad?.[p.id] === true);
+    const gamesInSquad   = STATE.games.filter(g => g.squad?.[p.id] === true);
+    const gamesConfirmed = STATE.games.filter(g => g.squadConfirm?.[p.id] === 'yes');
     const trainPct    = totalT ? Math.round(yesCount / totalT * 100) : 0;
-    const gamePct     = totalG ? Math.round(gamesInSquad.length / totalG * 100) : 0;
-    return { ...p, yesCount, noCount, openCount, gamesInSquad, trainPct, gamePct };
+    const gamePct     = totalG ? Math.round(gamesConfirmed.length / totalG * 100) : 0;
+    return { ...p, yesCount, noCount, openCount, gamesInSquad, gamesConfirmed, trainPct, gamePct };
   });
 
   const avgTrainPct = totalP ? Math.round(playerStats.reduce((s,p)=>s+p.trainPct,0)/totalP) : 0;
@@ -3250,8 +3245,12 @@ function renderStatistikTab(c) {
     rows = playerStats.map(p => {
       const dateCells = dateCols.map(g => {
         const inSquad = g.squad?.[p.id] === true;
-        const icon = inSquad ? `<span style="color:#059669;font-size:16px">👍</span>`
-                             : `<span style="color:#D1D5DB;font-size:16px">○</span>`;
+        const conf = g.squadConfirm?.[p.id];
+        const icon = !inSquad
+          ? `<span style="color:#E5E7EB;font-size:14px">–</span>`
+          : conf === 'yes' ? `<span style="color:#059669;font-size:16px">👍</span>`
+          : conf === 'no'  ? `<span style="color:#DC2626;font-size:16px">👎</span>`
+          : `<span style="color:#D1D5DB;font-size:16px">○</span>`;
         return `<td style="padding:8px 4px;text-align:center">${icon}</td>`;
       }).join('');
       return `<tr style="border-bottom:1px solid #F3F4F6">
@@ -3264,7 +3263,7 @@ function renderStatistikTab(c) {
           </div>
         </td>
         <td style="padding:8px 6px;text-align:center;white-space:nowrap">
-          <span style="font-size:12px;font-weight:800;color:${pctColor(p.gamePct)}">${p.gamesInSquad.length}/${totalG}</span>
+          <span style="font-size:12px;font-weight:800;color:${pctColor(p.gamePct)}">${p.gamesConfirmed.length}/${totalG}</span>
           <div style="font-size:10px;color:#9CA3AF;margin-top:1px">${p.gamePct}%</div>
         </td>
         ${dateCells}
@@ -3325,7 +3324,7 @@ function exportStatistikPDF() {
     const yes  = STATE.trainings.filter(t => t.attendances?.[p.id] === 'yes').length;
     const no   = STATE.trainings.filter(t => t.attendances?.[p.id] === 'no').length;
     const open = totalT - yes - no;
-    const games = STATE.games.filter(g => g.squad?.[p.id] === true).length;
+    const games = STATE.games.filter(g => g.squadConfirm?.[p.id] === 'yes').length;
     const tPct = totalT ? Math.round(yes/totalT*100) : 0;
     const gPct = totalG ? Math.round(games/totalG*100) : 0;
     return { ...p, yes, no, open, games, tPct, gPct };
