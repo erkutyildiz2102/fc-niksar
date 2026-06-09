@@ -315,10 +315,9 @@ if ('serviceWorker' in navigator) {
 
   }).catch(() => {});
 
-  // Nach SKIP_WAITING: Seite neu laden
-  let refreshing = false;
+  // Nach SKIP_WAITING: nur Toast, kein Reload
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) { refreshing = true; window.location.reload(); }
+    showToast('✅ App aktualisiert');
   });
 }
 
@@ -483,17 +482,7 @@ document.addEventListener('DOMContentLoaded', () => {
   autoSetupPush();
   // Service Worker sofort auf Updates prüfen und sofort aktivieren
   if ('serviceWorker' in navigator) {
-    // Wenn neuer SW übernimmt → Seite neu laden + Toast anzeigen
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      sessionStorage.setItem('swUpdated', '1');
-      window.location.reload();
-    });
     activateSWUpdate();
-  }
-  // Nach SW-Update Toast anzeigen
-  if (sessionStorage.getItem('swUpdated')) {
-    sessionStorage.removeItem('swUpdated');
-    setTimeout(() => showToast('✅ App aktualisiert'), 1000);
   }
 
   // Push-Benachrichtigung angeklickt → Seite aus URL-Parameter lesen
