@@ -57,7 +57,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .wa-date-sep{text-align:center;margin:8px 0}
 .wa-date-sep span{background:rgba(255,255,255,.85);color:#667781;font-size:12px;font-weight:600;padding:4px 12px;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.1)}
 .wa-file{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.06);min-width:180px;cursor:pointer}
-.wa-input-bar{position:fixed;left:0;right:0;bottom:0;background:#F0F2F5;padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;gap:6px;align-items:flex-end;z-index:101;transition:bottom .15s}
+.wa-input-bar{background:#F0F2F5;padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;gap:6px;align-items:flex-end;flex-shrink:0;transition:padding .1s}
 .wa-emoji-grid{display:none;background:#fff;border-top:1px solid #e5e7eb;padding:10px;flex-shrink:0}
 .wa-emoji-grid.open{display:block}
 /* legacy - keep for other pages */
@@ -96,7 +96,6 @@ input[type="date"].input-field,input[type="time"].input-field{display:block;widt
 #chatPage.active{display:flex}
 #chatPageHeader{flex-shrink:0;background:#0A2540;display:flex;align-items:center;gap:12px;padding:max(env(safe-area-inset-top),14px) 16px 12px}
 #chatMessages{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-.wa-input-bar{background:#F0F2F5;padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;gap:6px;align-items:flex-end;flex-shrink:0;transition:padding .1s}
 </style>
 </head>
 <body>
