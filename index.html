@@ -92,11 +92,11 @@ input[type="date"].input-field,input[type="time"].input-field{display:block;widt
 /* New event banner */
 @keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes slideUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}
-#chatPage{display:none;flex-direction:column;position:fixed;left:0;right:0;top:0;bottom:0;background:#ECE5DD;z-index:100;overflow:hidden}
+#chatPage{display:none;flex-direction:column;position:fixed;left:0;right:0;top:0;height:100svh;background:#ECE5DD;z-index:100;overflow:hidden}
 #chatPage.active{display:flex}
 #chatPageHeader{flex-shrink:0;background:#0A2540;display:flex;align-items:center;gap:12px;padding:max(env(safe-area-inset-top),14px) 16px 12px}
-#chatMessages{flex:1;overflow-y:auto;padding:10px 12px 80px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-.wa-input-bar{flex-shrink:0}
+#chatMessages{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.wa-input-bar{background:#F0F2F5;padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;gap:6px;align-items:flex-end;flex-shrink:0;transition:padding .1s}
 </style>
 </head>
 <body>
@@ -626,20 +626,20 @@ function showApp() {
 }
 
 function fixChatHeight() {
-  if (currentPage !== 'chat') return;
+  const chat = document.getElementById('chatPage');
+  if (!chat || currentPage !== 'chat') return;
   const vv = window.visualViewport;
+  const h = vv ? vv.height : window.innerHeight;
+  chat.style.top    = '0px';   // immer oben – Header springt nie
+  chat.style.height = h + 'px'; // Höhe = sichtbarer Bereich über Tastatur
+  chat.style.bottom = 'auto';
   const inputBar = document.querySelector('.wa-input-bar');
-  if (!inputBar) return;
-  // Tastatur-Höhe = Differenz zwischen window-Höhe und sichtbarem Viewport
-  const keyboardH = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
-  // Input-Bar direkt über der Tastatur positionieren
-  inputBar.style.bottom = keyboardH + 'px';
-  // Nachrichten-Padding damit letztes Nachrichten nicht hinter Input-Bar versteckt
-  const msgs = document.getElementById('chatMessages');
-  if (msgs) {
-    msgs.style.paddingBottom = (keyboardH + 72) + 'px';
-    requestAnimationFrame(() => { msgs.scrollTop = msgs.scrollHeight; });
+  if (inputBar) {
+    const keyboardOpen = vv && vv.height < window.innerHeight * 0.75;
+    inputBar.style.paddingBottom = keyboardOpen ? '0px' : '';
   }
+  const msgs = document.getElementById('chatMessages');
+  if (msgs) requestAnimationFrame(() => { msgs.scrollTop = msgs.scrollHeight; });
 }
 
 function fixChatHeightDelayed() {
