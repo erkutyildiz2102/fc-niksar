@@ -1530,7 +1530,7 @@ function renderTermine() {
         <div style="font-size:11px;font-weight:700;opacity:.6;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">${isT?'🏃 Training':'⚽ Spiel'}</div>
         <div style="font-size:17px;font-weight:900;margin-bottom:6px">${isT ? fmtFull(ev.date) : escHtml(ev.opponent||'?')}</div>
         <div style="font-size:12px;opacity:.8;display:flex;flex-direction:column;gap:2px">
-          <div><i class="fas fa-clock" style="width:14px"></i> ${ev.time||'?'} Uhr</div>
+          <div><i class="fas fa-clock" style="width:14px"></i> ${(ev.time||'?').replace(/\s*Uhr\s*/i,'').trim()} Uhr</div>
           <div><i class="fas fa-location-dot" style="width:14px"></i> ${escHtml(ev.location||'?')}</div>
         </div>
         ${ev.result?`<div style="margin-top:8px;font-size:18px;font-weight:900">Ergebnis: ${escHtml(ev.result)}</div>`:''}
@@ -2053,11 +2053,15 @@ function calBtn(el) {
   addToCalendar(el.dataset.title, el.dataset.date, el.dataset.time, el.dataset.loc, parseInt(el.dataset.dur)||90);
 }
 function addToCalendar(title, dateStr, timeStr, location, durationMin) {
-  if(!dateStr) return;
+  if(!dateStr || dateStr === 'undefined') return;
   const pad = n => String(n).padStart(2,'0');
   const fmtIcs = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-  const cleanTime = (timeStr||'10:00').replace(/\s*Uhr\s*/i,'').trim() || '10:00';
+  // "8:00 Uhr" → "08:00", "17:30 Uhr" → "17:30", "" → "10:00"
+  const rawTime = (timeStr||'').replace(/\s*Uhr\s*/i,'').trim();
+  const timeParts = rawTime.match(/^(\d{1,2}):(\d{2})$/);
+  const cleanTime = timeParts ? pad(parseInt(timeParts[1])) + ':' + timeParts[2] : '10:00';
   const start = new Date(dateStr + 'T' + cleanTime);
+  if(isNaN(start.getTime())) { alert('Ungültiges Datum/Zeit'); return; }
   const end   = new Date(start.getTime() + (durationMin||90) * 60000);
   const fmtGoogle = d => d.toISOString().replace(/[-:]/g,'').replace('.000','');
   const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${fmtGoogle(start)}/${fmtGoogle(end)}&details=${encodeURIComponent('FC Niksar F1/U9 – Saison 26/27')}&location=${encodeURIComponent(location||'')}`;
@@ -2088,8 +2092,12 @@ function addToCalendarICS(titleEnc, dateStr, timeStr, locationEnc, durationMin) 
   const location = decodeURIComponent(locationEnc);
   const pad = n => String(n).padStart(2,'0');
   const fmtIcs = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-  const cleanTime = (timeStr||'10:00').replace(/\s*Uhr\s*/i,'').trim() || '10:00';
+  const rawTime2 = (timeStr||'').replace(/\s*Uhr\s*/i,'').trim();
+  const timeParts2 = rawTime2.match(/^(\d{1,2}):(\d{2})$/);
+  const pad2 = n => String(n).padStart(2,'0');
+  const cleanTime = timeParts2 ? pad2(parseInt(timeParts2[1])) + ':' + timeParts2[2] : '10:00';
   const start = new Date(dateStr + 'T' + cleanTime);
+  if(isNaN(start.getTime())) return;
   const end   = new Date(start.getTime() + (durationMin||90) * 60000);
   const ics = [
     'BEGIN:VCALENDAR',
