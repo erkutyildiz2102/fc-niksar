@@ -2248,9 +2248,13 @@ function appendNewChatMessages() {
     }
     const div = document.createElement('div');
     div.style.cssText = `display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};max-width:85%;${mine?'align-self:flex-end':'align-self:flex-start'}`;
+    const safeText2 = (m.text||'').replace(/'/g,"\\'").replace(/\n/g,'\\n');
     div.innerHTML = `
       <div style="display:flex;align-items:flex-end;gap:5px;${mine?'flex-direction:row-reverse':''}">
-        <div class="${mine?'wa-mine':'wa-other'}" style="padding:8px 10px;position:relative;max-width:280px">
+        <div class="${mine?'wa-mine':'wa-other'}" style="padding:8px 10px;position:relative;max-width:280px;-webkit-user-select:none;user-select:none"
+          ontouchstart="startMsgLongPress('${m.id}','${(m.author||'').replace(/'/g,"\\'")}','${safeText2}',${!!m.image})"
+          ontouchend="cancelMsgLongPress()" ontouchmove="cancelMsgLongPress()"
+          oncontextmenu="chatMsgAction('${m.id}','${(m.author||'').replace(/'/g,"\\'")}','${safeText2}',${!!m.image});return false">
           ${!mine?`<div style="font-size:12px;font-weight:700;color:${getSenderColor(m.author||'')};margin-bottom:4px">${escHtml(m.author||'?')}</div>`:''}
           ${content}
           <div style="display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-top:4px">
@@ -2306,7 +2310,9 @@ function renderChat() {
 
       // Bubble content
       let content = '';
-      if(m.image) {
+      if(m.deleted) {
+        content = `<span style="font-size:14px;color:#9CA3AF;font-style:italic">🚫 Nachricht gelöscht</span>`;
+      } else if(m.image) {
         content = `<img src="${m.image}" onclick="viewChatImage('${m.id}')" style="max-width:220px;max-height:200px;border-radius:8px;display:block;cursor:pointer;object-fit:cover">`;
       } else if(m.file) {
         const icon = getFileIcon(m.fileName||'');
@@ -2332,17 +2338,22 @@ function renderChat() {
         }).join('')}
       </div>` : '';
 
+      const safeText = (m.text||'').replace(/'/g,"\\'").replace(/\n/g,'\\n');
       msgsHtml += `<div style="display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};max-width:85%;${mine?'align-self:flex-end':'align-self:flex-start'}">
         <div style="display:flex;align-items:flex-end;gap:5px;${mine?'flex-direction:row-reverse':''}">
-          <div class="${mine?'wa-mine':'wa-other'}" style="padding:8px 10px;position:relative;max-width:280px">
-            ${!mine?`<div style="font-size:12px;font-weight:700;color:${getSenderColor(m.author||'')};margin-bottom:4px">${escHtml(m.author||'?')}</div>`:''}
+          <div class="${mine?'wa-mine':'wa-other'}" style="padding:8px 10px;position:relative;max-width:280px;-webkit-user-select:none;user-select:none"
+            ontouchstart="startMsgLongPress('${m.id}','${(m.author||'').replace(/'/g,"\\'")}','${safeText}',${!!m.image})"
+            ontouchend="cancelMsgLongPress()" ontouchmove="cancelMsgLongPress()"
+            oncontextmenu="chatMsgAction('${m.id}','${(m.author||'').replace(/'/g,"\\'")}','${safeText}',${!!m.image});return false">
+            ${!mine&&!m.deleted?`<div style="font-size:12px;font-weight:700;color:${getSenderColor(m.author||'')};margin-bottom:4px">${escHtml(m.author||'?')}</div>`:''}
             ${content}
             <div style="display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-top:4px">
+              ${m.edited&&!m.deleted?`<span style="font-size:10px;color:#9CA3AF;font-style:italic">bearbeitet</span>`:''}
               <span style="font-size:10px;color:${mine?'#667781':'#9CA3AF'}">${timeStr}</span>
               ${mine?'<i class="fas fa-check-double" style="font-size:10px;color:#53bdeb"></i>':''}
             </div>
           </div>
-          <button onclick="openReactionPicker('${m.id}')" style="background:none;border:none;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.35;color:#666">😊</button>
+          ${!m.deleted?`<button onclick="openReactionPicker('${m.id}')" style="background:none;border:none;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.35;color:#666">😊</button>`:''}
         </div>
         ${reactionRow}
       </div>`;
@@ -2491,6 +2502,49 @@ function viewChatImage(id) {
 function setChatName() {
   const v = document.getElementById('chatNameIn')?.value.trim();
   if(v){ chatName = v; LSset('chatName', v); renderChat(); }
+}
+
+// ── NACHRICHT BEARBEITEN / LÖSCHEN ──
+let _longPressTimer = null;
+
+function startMsgLongPress(id, author, text, isImage) {
+  _longPressTimer = setTimeout(() => chatMsgAction(id, author, text, isImage), 500);
+}
+function cancelMsgLongPress() {
+  if (_longPressTimer) { clearTimeout(_longPressTimer); _longPressTimer = null; }
+}
+
+function chatMsgAction(id, author, text, isImage) {
+  const myName = getChatName();
+  const isTrainer = STATE.config?.profileSwitchLocked === true;
+  const isMine = myName && author === myName;
+  if (!isMine && !isTrainer) return;
+
+  const canEdit = isMine && !isImage;
+  const btns = `
+    ${canEdit ? `<button onclick="closeModal();editChatMsg('${id}',\`${text.replace(/`/g,'\\`')}\`)" style="width:100%;padding:14px 16px;background:#fff;border:none;border-radius:12px;font-size:16px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:12px"><span style="font-size:20px">✏️</span><span style="font-weight:600">Bearbeiten</span></button>` : ''}
+    <button onclick="closeModal();deleteChatMsg('${id}')" style="width:100%;padding:14px 16px;background:#fff;border:none;border-radius:12px;font-size:16px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:12px;color:#EF4444"><span style="font-size:20px">🗑️</span><span style="font-weight:600">Löschen</span></button>
+    <button onclick="closeModal()" style="width:100%;padding:14px 16px;background:#F3F4F6;border:none;border-radius:12px;font-size:16px;text-align:center;cursor:pointer;color:#6B7280;font-weight:600;margin-top:4px">Abbrechen</button>`;
+  showModal(`<div class="modal-handle"></div><div style="display:flex;flex-direction:column;gap:8px;padding-top:8px">${btns}</div>`);
+}
+
+function editChatMsg(id, currentText) {
+  showModal(`<div class="modal-handle"></div>
+    <div style="font-size:18px;font-weight:800;color:#0A2540;margin-bottom:16px">Nachricht bearbeiten</div>
+    <textarea id="editMsgInput" style="width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:10px;font-size:15px;resize:none;min-height:80px;box-sizing:border-box;outline:none" onfocus="this.style.borderColor='#0A2540'" onblur="this.style.borderColor='#e5e7eb'">${escHtml(currentText)}</textarea>
+    <button onclick="saveEditChatMsg('${id}')" style="width:100%;margin-top:12px;padding:14px;background:#0A2540;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer">Speichern</button>`);
+  setTimeout(() => { const t = document.getElementById('editMsgInput'); if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length);} }, 100);
+}
+
+function saveEditChatMsg(id) {
+  const val = (document.getElementById('editMsgInput')?.value || '').trim();
+  if (!val) return;
+  db.ref('/chat/' + id).update({ text: val, edited: true });
+  closeModal();
+}
+
+function deleteChatMsg(id) {
+  db.ref('/chat/' + id).update({ deleted: true, text: '' });
 }
 
 function sendChat() {
