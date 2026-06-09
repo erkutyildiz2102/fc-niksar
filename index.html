@@ -2247,6 +2247,7 @@ function appendNewChatMessages() {
       content = `<span style="font-size:14px;line-height:1.45;word-break:break-word">${escHtml(m.text||'')}</span>`;
     }
     const div = document.createElement('div');
+    div.dataset.msgId = m.id;
     div.style.cssText = `display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};max-width:85%;${mine?'align-self:flex-end':'align-self:flex-start'}`;
     const safeText2 = (m.text||'').replace(/'/g,"\\'").replace(/\n/g,'\\n');
     div.innerHTML = `
@@ -2339,7 +2340,7 @@ function renderChat() {
       </div>` : '';
 
       const safeText = (m.text||'').replace(/'/g,"\\'").replace(/\n/g,'\\n');
-      msgsHtml += `<div style="display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};max-width:85%;${mine?'align-self:flex-end':'align-self:flex-start'}">
+      msgsHtml += `<div data-msg-id="${m.id}" style="display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};max-width:85%;${mine?'align-self:flex-end':'align-self:flex-start'}">
         <div style="display:flex;align-items:flex-end;gap:5px;${mine?'flex-direction:row-reverse':''}">
           <div class="${mine?'wa-mine':'wa-other'}" style="padding:8px 10px;position:relative;max-width:280px;-webkit-user-select:none;user-select:none"
             ontouchstart="startMsgLongPress('${m.id}','${(m.author||'').replace(/'/g,"\\'")}','${safeText}',${!!m.image})"
@@ -2543,14 +2544,46 @@ function saveEditChatMsg(id) {
   if (msg) { msg.text = val; msg.edited = true; }
   db.ref('/chat/' + id).update({ text: val, edited: true });
   closeModal();
-  renderChat();
+  updateMsgBubble(id);
 }
 
 function deleteChatMsg(id) {
   const msg = STATE.chat.find(m => m.id === id);
   if (msg) { msg.deleted = true; msg.text = ''; }
   db.ref('/chat/' + id).update({ deleted: true, text: '' });
-  renderChat();
+  updateMsgBubble(id);
+}
+
+function updateMsgBubble(id) {
+  const el = document.querySelector(`[data-msg-id="${id}"]`);
+  const msg = STATE.chat.find(m => m.id === id);
+  if (!el || !msg) return;
+  const myName = getChatName();
+  const mine = myName && msg.author === myName;
+  const timeStr = new Date(msg.ts||0).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  const safeText = (msg.text||'').replace(/'/g,"\\'").replace(/\n/g,'\\n');
+  let content = '';
+  if (msg.deleted) {
+    content = `<span style="font-size:14px;color:#9CA3AF;font-style:italic">🚫 Nachricht gelöscht</span>`;
+  } else {
+    content = `<span style="font-size:14px;line-height:1.45;word-break:break-word">${escHtml(msg.text||'')}</span>`;
+  }
+  el.innerHTML = `
+    <div style="display:flex;align-items:flex-end;gap:5px;${mine?'flex-direction:row-reverse':''}">
+      <div class="${mine?'wa-mine':'wa-other'}" style="padding:8px 10px;position:relative;max-width:280px;-webkit-user-select:none;user-select:none"
+        ontouchstart="startMsgLongPress('${id}','${(msg.author||'').replace(/'/g,"\\'")}','${safeText}',false)"
+        ontouchend="cancelMsgLongPress()" ontouchmove="cancelMsgLongPress()"
+        oncontextmenu="chatMsgAction('${id}','${(msg.author||'').replace(/'/g,"\\'")}','${safeText}',false);return false">
+        ${!mine&&!msg.deleted?`<div style="font-size:12px;font-weight:700;color:${getSenderColor(msg.author||'')};margin-bottom:4px">${escHtml(msg.author||'?')}</div>`:''}
+        ${content}
+        <div style="display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-top:4px">
+          ${msg.edited&&!msg.deleted?`<span style="font-size:10px;color:#9CA3AF;font-style:italic">bearbeitet</span>`:''}
+          <span style="font-size:10px;color:${mine?'#667781':'#9CA3AF'}">${timeStr}</span>
+          ${mine?'<i class="fas fa-check-double" style="font-size:10px;color:#53bdeb"></i>':''}
+        </div>
+      </div>
+      ${!msg.deleted?`<button onclick="openReactionPicker('${id}')" style="background:none;border:none;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.35;color:#666">😊</button>`:''}
+    </div>`;
 }
 
 function sendChat() {
