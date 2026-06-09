@@ -2249,9 +2249,9 @@ function appendNewChatMessages() {
     const div = document.createElement('div');
     div.style.cssText = `display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};max-width:85%;${mine?'align-self:flex-end':'align-self:flex-start'}`;
     div.innerHTML = `
-      ${!mine?`<div style="font-size:12px;font-weight:700;color:${getSenderColor(m.author||'')};margin-bottom:3px;padding:0 4px">${escHtml(m.author||'?')}</div>`:''}
       <div style="display:flex;align-items:flex-end;gap:5px;${mine?'flex-direction:row-reverse':''}">
         <div class="${mine?'wa-mine':'wa-other'}" style="padding:8px 10px;position:relative;max-width:280px">
+          ${!mine?`<div style="font-size:12px;font-weight:700;color:${getSenderColor(m.author||'')};margin-bottom:4px">${escHtml(m.author||'?')}</div>`:''}
           ${content}
           <div style="display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-top:4px">
             <span style="font-size:10px;color:${mine?'#667781':'#9CA3AF'}">${timeStr}</span>
@@ -2333,9 +2333,9 @@ function renderChat() {
       </div>` : '';
 
       msgsHtml += `<div style="display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};max-width:85%;${mine?'align-self:flex-end':'align-self:flex-start'}">
-        ${!mine?`<div style="font-size:12px;font-weight:700;color:${getSenderColor(m.author||'')};margin-bottom:3px;padding:0 4px">${escHtml(m.author||'?')}</div>`:''}
         <div style="display:flex;align-items:flex-end;gap:5px;${mine?'flex-direction:row-reverse':''}">
           <div class="${mine?'wa-mine':'wa-other'}" style="padding:8px 10px;position:relative;max-width:280px">
+            ${!mine?`<div style="font-size:12px;font-weight:700;color:${getSenderColor(m.author||'')};margin-bottom:4px">${escHtml(m.author||'?')}</div>`:''}
             ${content}
             <div style="display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-top:4px">
               <span style="font-size:10px;color:${mine?'#667781':'#9CA3AF'}">${timeStr}</span>
