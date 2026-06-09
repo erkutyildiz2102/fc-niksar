@@ -3131,8 +3131,13 @@ function openCropModal(dataUrl, previewId, dataId) {
 }
 
 function _applyCrop() {
+  if(!_crop) return;
   const img = document.getElementById('cropImg');
-  if(img && _crop) img.style.transform = `translate(${_crop.x}px,${_crop.y}px) scale(${_crop.scale})`;
+  if(img) img.style.transform = `translate(${_crop.x}px,${_crop.y}px) scale(${_crop.scale})`;
+  _crop.raf = null;
+}
+function _scheduleCrop() {
+  if(_crop && !_crop.raf) _crop.raf = requestAnimationFrame(_applyCrop);
 }
 
 function _cropTS(e) {
@@ -3152,28 +3157,28 @@ function _cropTM(e) {
     if(_crop.lastDist > 0) {
       const cx = (e.touches[0].clientX+e.touches[1].clientX)/2;
       const cy = (e.touches[0].clientY+e.touches[1].clientY)/2;
-      const ns = Math.max(_crop.minScale, Math.min(_crop.scale*(dist/_crop.lastDist), _crop.minScale*5));
+      const ns = Math.max(_crop.minScale*0.4, Math.min(_crop.scale*(dist/_crop.lastDist), _crop.minScale*6));
       const r = ns/_crop.scale;
       _crop.x = cx+(_crop.x-cx)*r; _crop.y = cy+(_crop.y-cy)*r; _crop.scale = ns;
     }
     _crop.lastDist = dist;
   }
-  _applyCrop();
+  _scheduleCrop();
 }
 function _cropTE() { _crop.lastDist = 0; }
 function _cropMD(e) {
   let lx=e.clientX, ly=e.clientY;
-  const mm = e2=>{ _crop.x+=e2.clientX-lx; _crop.y+=e2.clientY-ly; lx=e2.clientX; ly=e2.clientY; _applyCrop(); };
+  const mm = e2=>{ _crop.x+=e2.clientX-lx; _crop.y+=e2.clientY-ly; lx=e2.clientX; ly=e2.clientY; _scheduleCrop(); };
   const mu = ()=>{ document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',mu); };
   document.addEventListener('mousemove',mm); document.addEventListener('mouseup',mu);
 }
 function _cropWH(e) {
   e.preventDefault();
   if(!_crop) return;
-  const ns = Math.max(_crop.minScale, Math.min(_crop.scale*(e.deltaY<0?1.1:0.9), _crop.minScale*5));
+  const ns = Math.max(_crop.minScale*0.4, Math.min(_crop.scale*(e.deltaY<0?1.1:0.9), _crop.minScale*6));
   const r = ns/_crop.scale;
   _crop.x = e.clientX+(_crop.x-e.clientX)*r; _crop.y = e.clientY+(_crop.y-e.clientY)*r; _crop.scale = ns;
-  _applyCrop();
+  _scheduleCrop();
 }
 
 function closeCropModal() { document.getElementById('cropOverlay')?.remove(); _crop = null; }
