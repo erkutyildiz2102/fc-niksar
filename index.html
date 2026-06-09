@@ -2121,6 +2121,55 @@ function addToCalendarICS(titleEnc, dateStr, timeStr, locationEnc, durationMin) 
   setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 2000);
 }
 
+function showDatenschutz() {
+  closeModal();
+  setTimeout(() => {
+    showModal(`<div class="modal-handle"></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <div style="width:44px;height:44px;border-radius:12px;background:#0A2540;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🔒</div>
+        <div>
+          <div style="font-size:17px;font-weight:900;color:#0A2540">Datenschutz & Sicherheit</div>
+          <div style="font-size:12px;color:#9CA3AF;margin-top:2px">FC Niksar App</div>
+        </div>
+      </div>
+
+      <div style="background:#F0FDF4;border-radius:12px;padding:12px;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:800;color:#065F46;margin-bottom:4px">✅ DSGVO-konform</div>
+        <div style="font-size:12px;color:#374151">Alle Daten werden in <strong>Google Firebase, Frankfurt (Deutschland)</strong> gespeichert — nach europäischem Datenschutzrecht.</div>
+      </div>
+
+      <div style="font-size:13px;font-weight:800;color:#0A2540;margin-bottom:8px">Was wird gespeichert?</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151"><span style="font-size:15px">👤</span> Name des Kindes (Spielerprofil)</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151"><span style="font-size:15px">✅</span> Rückmeldungen zu Training und Spielen</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151"><span style="font-size:15px">📷</span> Spieler-Profilfotos (freiwillig)</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151"><span style="font-size:15px">🖼️</span> Vereins-Galerie (nur Trainer)</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151"><span style="font-size:15px">🔔</span> Technische Push-ID (keine Personendaten)</div>
+      </div>
+
+      <div style="font-size:13px;font-weight:800;color:#0A2540;margin-bottom:8px">Was passiert mit den Fotos?</div>
+      <div style="background:#F8FAFC;border-radius:12px;padding:12px;margin-bottom:14px;font-size:13px;color:#374151;line-height:1.6">
+        Fotos sind <strong>nicht öffentlich</strong> — nur Mitglieder mit PIN sehen sie.<br>
+        Google darf Fotos <strong>nicht für Werbung oder andere Zwecke</strong> verwenden.<br>
+        Fotos können jederzeit <strong>vom Trainer gelöscht</strong> werden.
+      </div>
+
+      <div style="font-size:13px;font-weight:800;color:#0A2540;margin-bottom:8px">Was wird NICHT gespeichert?</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+        ${['Passwörter','E-Mail-Adressen','Standortdaten','Zahlungsdaten'].map(t =>
+          `<div style="background:#FEF2F2;color:#991B1B;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600">✗ ${t}</div>`
+        ).join('')}
+      </div>
+
+      <div style="background:#EFF6FF;border-radius:12px;padding:12px;margin-bottom:14px;font-size:13px;color:#1D4ED8">
+        <strong>🗑️ Daten löschen?</strong><br>Jederzeit möglich — einfach beim Trainer melden. Alle Daten werden vollständig entfernt.
+      </div>
+
+      <div style="font-size:11px;color:#9CA3AF;text-align:center">Verantwortlich: FC Niksar · Kontakt über den Trainer</div>
+    `);
+  }, 200);
+}
+
 function editProfile() {
   const p = getProfile();
   if (p && STATE.config.profileSwitchLocked === true) {
@@ -2143,7 +2192,10 @@ function editProfile() {
           ? `<div style="background:#F0FDF4;border-radius:12px;padding:12px;font-size:13px;color:#065F46;font-weight:600;margin-bottom:8px">✅ Benachrichtigungen aktiv</div>
              <button onclick="resubscribePush();closeModal();" style="width:100%;background:#F3F4F6;color:#374151;border:none;border-radius:12px;padding:10px;font-size:13px;font-weight:600;cursor:pointer">🔄 Neu verbinden (bei Problemen)</button>`
           : `<button class="btn-primary" onclick="subscribeToPush();closeModal();">🔔 Benachrichtigungen aktivieren</button>`
-      }`);
+      }
+      <div style="margin-top:16px;border-top:1px solid #F3F4F6;padding-top:14px">
+        <button onclick="showDatenschutz()" style="width:100%;background:#F3F4F6;color:#374151;border:none;border-radius:12px;padding:10px;font-size:13px;font-weight:600;cursor:pointer">🔒 Datenschutz & Sicherheit</button>
+      </div>`);
     return;
   }
   selectedSetupPlayer = p?.playerId || null;

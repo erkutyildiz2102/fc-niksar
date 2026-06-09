@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FC Niksar – Datenschutz & Sicherheit</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #F8FAFC;
+      color: #374151;
+      padding: 40px 20px;
+    }
+
+    .page {
+      max-width: 700px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 20px;
+      padding: 48px 48px 40px;
+      box-shadow: 0 4px 32px rgba(0,0,0,.08);
+    }
+
+    /* HEADER */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+    .logo {
+      width: 64px;
+      height: 64px;
+      border-radius: 14px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+    .header-text h1 {
+      font-size: 26px;
+      font-weight: 900;
+      color: #0A2540;
+      line-height: 1.1;
+    }
+    .header-text p {
+      font-size: 14px;
+      color: #9CA3AF;
+      margin-top: 4px;
+    }
+
+    .divider {
+      height: 3px;
+      background: #0A2540;
+      border-radius: 2px;
+      margin-bottom: 28px;
+    }
+
+    /* BADGE */
+    .badge-green {
+      background: #F0FDF4;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #065F46;
+    }
+
+    /* INTRO */
+    .intro {
+      font-size: 14px;
+      line-height: 1.7;
+      color: #374151;
+      margin-bottom: 28px;
+    }
+
+    /* SECTIONS */
+    h2 {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0A2540;
+      margin-bottom: 10px;
+      margin-top: 28px;
+    }
+
+    /* BLUE BOX */
+    .box-blue {
+      background: #EFF6FF;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: #1D4ED8;
+      line-height: 1.7;
+      margin-bottom: 8px;
+    }
+
+    /* LIST ITEMS */
+    .item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .item-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+      width: 26px;
+      text-align: center;
+      margin-top: 1px;
+    }
+    .item-text strong {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0A2540;
+      display: block;
+    }
+    .item-text span {
+      font-size: 12px;
+      color: #6B7280;
+    }
+
+    /* BULLETS */
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-bottom: 8px;
+    }
+    .bullet-list li {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #374151;
+      padding-left: 16px;
+      position: relative;
+    }
+    .bullet-list li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: #0A2540;
+      font-weight: 700;
+    }
+
+    /* NOT STORED TAGS */
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .tag-red {
+      background: #FEF2F2;
+      color: #991B1B;
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* DELETE BOX */
+    .box-delete {
+      background: #EFF6FF;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: #1D4ED8;
+      line-height: 1.7;
+      margin-top: 28px;
+    }
+
+    /* FOOTER */
+    .footer {
+      margin-top: 32px;
+      padding-top: 16px;
+      border-top: 1px solid #F3F4F6;
+      text-align: center;
+      font-size: 11px;
+      color: #9CA3AF;
+    }
+
+    /* PRINT */
+    @media print {
+      body { background: #fff; padding: 0; }
+      .page { box-shadow: none; border-radius: 0; padding: 32px; max-width: 100%; }
+      @page { margin: 1.5cm; size: A4; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- HEADER -->
+    <div class="header">
+      <img src="icon-192.png" class="logo" alt="FC Niksar Logo">
+      <div class="header-text">
+        <h1>FC Niksar</h1>
+        <p>Datenschutz &amp; Sicherheit · Eltern-Information</p>
+      </div>
+    </div>
+    <div class="divider"></div>
+
+    <!-- BADGE -->
+    <div class="badge-green">
+      ✅ &nbsp;DSGVO-konform &nbsp;·&nbsp; Google Firebase &nbsp;·&nbsp; Serverstandort: Frankfurt, Deutschland
+    </div>
+
+    <!-- INTRO -->
+    <p class="intro">
+      Die FC Niksar App dient der internen Kommunikation und Organisation unseres Vereins.
+      Der Datenschutz Ihrer Kinder liegt uns am Herzen. Diese Information erklärt transparent,
+      welche Daten gespeichert werden, wo sie liegen und wie sie geschützt sind.
+    </p>
+
+    <!-- WO GESPEICHERT -->
+    <h2>Wo werden die Daten gespeichert?</h2>
+    <div class="box-blue">
+      Alle Daten — einschließlich Fotos — werden in <strong>Google Firebase</strong> gespeichert.
+      Der Serverstandort ist <strong>Frankfurt, Deutschland</strong>. Google Firebase ist <strong>DSGVO-konform</strong>
+      und unterliegt den strengen europäischen Datenschutzgesetzen. Google verarbeitet die Daten
+      ausschließlich zur technischen Bereitstellung des Dienstes und darf sie
+      <strong>nicht für Werbung oder andere Zwecke nutzen</strong>.
+    </div>
+
+    <!-- WAS GESPEICHERT -->
+    <h2>Was wird gespeichert?</h2>
+    <div class="item-list">
+      <div class="item">
+        <div class="item-icon">👤</div>
+        <div class="item-text"><strong>Name des Kindes</strong><span>Spielerprofil</span></div>
+      </div>
+      <div class="item">
+        <div class="item-icon">✅</div>
+        <div class="item-text"><strong>Rückmeldungen</strong><span>Zu- und Absagen bei Training und Spielen</span></div>
+      </div>
+      <div class="item">
+        <div class="item-icon">📷</div>
+        <div class="item-text"><strong>Spieler-Profilfotos</strong><span>Freiwillig — kann weggelassen werden</span></div>
+      </div>
+      <div class="item">
+        <div class="item-icon">🖼️</div>
+        <div class="item-text"><strong>Vereins-Galerie</strong><span>Fotos werden ausschließlich vom Trainer hochgeladen</span></div>
+      </div>
+      <div class="item">
+        <div class="item-icon">🔔</div>
+        <div class="item-text"><strong>Push-Benachrichtigungs-ID</strong><span>Technische Geräte-ID — enthält keine Personendaten</span></div>
+      </div>
+    </div>
+
+    <!-- FOTOS -->
+    <h2>Was passiert mit den Fotos?</h2>
+    <ul class="bullet-list">
+      <li>Fotos sind <strong>nicht öffentlich</strong> — nur Vereinsmitglieder mit persönlichem PIN-Code können sie sehen.</li>
+      <li>Google darf Fotos <strong>nicht für Werbung oder andere Zwecke</strong> verwenden.</li>
+      <li>Fotos können jederzeit <strong>vom Trainer gelöscht</strong> werden.</li>
+      <li>Es gibt <strong>keinen öffentlichen Zugang</strong> und keine öffentliche Registrierung.</li>
+    </ul>
+
+    <!-- NICHT GESPEICHERT -->
+    <h2>Was wird NICHT gespeichert?</h2>
+    <div class="tags">
+      <span class="tag-red">✗ Passwörter</span>
+      <span class="tag-red">✗ E-Mail-Adressen</span>
+      <span class="tag-red">✗ Standortdaten</span>
+      <span class="tag-red">✗ Zahlungsdaten</span>
+      <span class="tag-red">✗ Gerätekennungen</span>
+    </div>
+
+    <!-- ZUGRIFF -->
+    <h2>Wer hat Zugriff?</h2>
+    <p style="font-size:13px;line-height:1.7;color:#374151">
+      Ausschließlich Vereinsmitglieder mit persönlichem PIN-Code. Es gibt keine öffentliche Registrierung
+      und keinen offenen Zugang. Trainer haben zusätzliche Verwaltungsrechte.
+    </p>
+
+    <!-- LÖSCHEN -->
+    <div class="box-delete">
+      🗑️ &nbsp;<strong>Daten löschen lassen?</strong><br>
+      Jederzeit möglich — einfach beim Trainer melden. Alle Daten inkl. Fotos werden dann
+      vollständig und dauerhaft entfernt.
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      Verantwortlich: FC Niksar &nbsp;·&nbsp; Kontakt über den Trainer &nbsp;·&nbsp; Stand: Juni 2026
+    </div>
+
+  </div>
+
+  <!-- PRINT BUTTON (wird beim Drucken ausgeblendet) -->
+  <div style="text-align:center;margin-top:24px;print:none">
+    <button onclick="window.print()" style="background:#0A2540;color:#fff;border:none;border-radius:12px;padding:12px 28px;font-size:15px;font-weight:700;cursor:pointer">
+      🖨️ Als PDF drucken / speichern
+    </button>
+  </div>
+
+</body>
+</html>
