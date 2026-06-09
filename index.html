@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>FC Niksar · F1/U9</title>
 <meta name="theme-color" content="#0A2540">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -630,8 +630,8 @@ function fixChatHeight() {
   if (!chat || currentPage !== 'chat') return;
   const vv = window.visualViewport;
   // top immer 0 lassen – nur Höhe anpassen (verhindert Header-Springen)
-  // vv.offsetTop + vv.height = sichtbarer Bereich von Bildschirmoberkante bis Tastatur
-  const h = vv ? (vv.offsetTop + vv.height) : window.innerHeight;
+  // vv.height = sichtbare Höhe über der Tastatur (ohne offsetTop, da kein interactive-widget)
+  const h = vv ? vv.height : window.innerHeight;
   chat.style.top    = '0px';
   chat.style.height = h + 'px';
   chat.style.bottom = 'auto';
