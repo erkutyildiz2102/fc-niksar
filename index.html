@@ -449,10 +449,10 @@ function makeLogoWhite(src, cb) {
     for(let i = 0; i < d.data.length; i += 4) {
       const r=d.data[i], g=d.data[i+1], b=d.data[i+2];
       const brightness = (r+g+b)/3;
-      if(brightness > 200) {
-        d.data[i+3] = 0; // helle/weiße Pixel → transparent
+      if(brightness > 80) {
+        d.data[i+3] = 0; // alles außer sehr dunklen Pixel → transparent
       } else {
-        d.data[i]=255; d.data[i+1]=255; d.data[i+2]=255; // dunkle Pixel → weiß
+        d.data[i]=255; d.data[i+1]=255; d.data[i+2]=255; // nur sehr dunkle Pixel → weiß
       }
     }
     ctx.putImageData(d, 0, 0);
