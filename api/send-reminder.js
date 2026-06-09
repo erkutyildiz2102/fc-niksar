@@ -52,8 +52,9 @@ module.exports = async function handler(req, res) {
 
   try {
     const now = Date.now();
-    const REMIND_AFTER_MS = 5 * 60 * 60 * 1000;  // 5 Stunden
-    const WINDOW_MS       = 60 * 60 * 1000;        // 1 Stunde Fenster (Cron läuft stündlich)
+    const TEST_MODE = process.env.REMINDER_TEST === 'true';
+    const REMIND_AFTER_MS = TEST_MODE ? 2 * 60 * 1000        : 5 * 60 * 60 * 1000;  // Test: 2min | Prod: 5h
+    const WINDOW_MS       = TEST_MODE ? 60 * 60 * 1000       : 60 * 60 * 1000;       // 1 Stunde Fenster
     const todayStr = new Date().toISOString().slice(0, 10);
 
     // Nur zwischen 08:00 und 21:00 Uhr (Europe/Berlin) senden

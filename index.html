@@ -2576,7 +2576,7 @@ function chatMsgAction(id, author, text, isImage) {
   const myName = getChatName();
   const isTrainer = getProfile()?.playerId == null;
   const isMine = myName && author === myName;
-  if (!isMine && !isTrainer) return;
+  // Everyone can reply; only own messages editable; only own/trainer deletable
 
   const canEdit = isMine && !isImage;
   const canDelete = isMine || isTrainer;
@@ -2642,7 +2642,18 @@ function updateMsgBubble(id) {
         </div>
       </div>
       ${!msg.deleted?`<button onclick="openReactionPicker('${id}')" style="background:none;border:none;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.35;color:#666">😊</button>`:''}
-    </div>`;
+    </div>
+    ${(() => {
+      if (msg.deleted) return '';
+      const myReactions = JSON.parse(LS('myReactions') || '{}');
+      const reactions = msg.reactions || {};
+      const entries = Object.entries(reactions).filter(([,c]) => c > 0);
+      if (!entries.length) return '';
+      return `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;${mine?'justify-content:flex-end':''}">${entries.map(([e,c]) => {
+        const isMineR = myReactions[id+'_'+e];
+        return `<button onclick="toggleReaction('${id}','${e}')" style="background:${isMineR?'#DCF8C6':'#fff'};border:1.5px solid ${isMineR?'#25D366':'#e5e7eb'};border-radius:20px;padding:2px 8px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:3px">${e}<span style="font-size:11px;font-weight:700;color:#374151">${c}</span></button>`;
+      }).join('')}</div>`;
+    })()}`;
 }
 
 function sendChat() {
