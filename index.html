@@ -3092,6 +3092,7 @@ function openCropModal(origImg, blobUrl, previewId, dataId) {
       <button onclick="confirmCrop()" style="background:#25D366;border:none;color:#fff;font-size:15px;font-weight:700;padding:8px 18px;border-radius:20px;cursor:pointer">Fertig ✓</button>
     </div>
     <div id="cropArea" style="flex:1;position:relative;touch-action:none;overflow:hidden">
+      <img id="cropBg" src="${origImg.src}" style="position:absolute;inset:-30px;width:calc(100% + 60px);height:calc(100% + 60px);object-fit:cover;filter:blur(18px) brightness(0.5);pointer-events:none">
       <canvas id="cropCanvas" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
     </div>
     <div style="padding:12px;text-align:center;flex-shrink:0">
@@ -3136,28 +3137,20 @@ function _renderCrop() {
 
   ctx.clearRect(0, 0, W, H);
 
-  // 1. Verschwommener Hintergrund (füllt gesamten Canvas)
-  const bgScale = Math.max(W / iW, H / iH) * 1.15;
-  const bgW = iW * bgScale, bgH = iH * bgScale;
-  const bgX = (W - bgW) / 2, bgY = (H - bgH) / 2;
-  ctx.save();
-  ctx.filter = 'blur(18px)';
-  ctx.drawImage(origImg, bgX, bgY, bgW, bgH);
-  ctx.restore();
-
-  // 2. Dunkles Overlay über Hintergrund
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  // 1. Dunkles Overlay (Hintergrund = CSS <img> dahinter)
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
   ctx.fillRect(0, 0, W, H);
 
-  // 3. Scharfes Bild innerhalb des Kreises
+  // 2. Kreis-Ausschnitt: Overlay entfernen + scharfes Bild zeichnen
   ctx.save();
   ctx.beginPath();
   ctx.arc(ccX, ccY, cs / 2, 0, Math.PI * 2);
   ctx.clip();
+  ctx.clearRect(0, 0, W, H); // Overlay im Kreis wegräumen
   ctx.drawImage(origImg, x, y, iW * scale, iH * scale);
   ctx.restore();
 
-  // 4. Kreis-Rand
+  // 3. Kreis-Rand
   ctx.beginPath();
   ctx.arc(ccX, ccY, cs / 2, 0, Math.PI * 2);
   ctx.strokeStyle = 'rgba(255,255,255,0.85)';
@@ -3225,12 +3218,11 @@ function confirmCrop(){
   const iW=origImg.naturalWidth, iH=origImg.naturalHeight;
   const ratio=out/cs; // circle-px → export-px
 
-  // 1. Verschwommener Hintergrund (füllt Export-Canvas)
+  // 1. Verschwommener Hintergrund via Downscale-Trick (iOS-kompatibel)
+  const tiny=document.createElement('canvas'); tiny.width=20; tiny.height=20;
+  tiny.getContext('2d').drawImage(origImg,0,0,20,20);
   const bgScale=Math.max(out/iW,out/iH)*1.15;
-  ctx.save();
-  ctx.filter='blur(16px)';
-  ctx.drawImage(origImg,(out-iW*bgScale)/2,(out-iH*bgScale)/2,iW*bgScale,iH*bgScale);
-  ctx.restore();
+  ctx.drawImage(tiny,(out-iW*bgScale)/2,(out-iH*bgScale)/2,iW*bgScale,iH*bgScale);
 
   // 2. Scharfes Bild (genau wie im Modal, auf Export gemappt)
   ctx.save();
