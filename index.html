@@ -3079,15 +3079,123 @@ function addPlayerModal() {
 function previewPhoto(input, previewId, dataId) {
   const file = input.files[0]; if(!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
-    compressImage(e.target.result, 400, 0.8, data => {
-      const prev = document.getElementById(previewId);
-      if(prev) prev.innerHTML = `<img src="${data}" style="width:100%;height:100%;object-fit:cover">`;
-      const di = document.getElementById(dataId);
-      if(di) di.value = data;
-    });
-  };
+  reader.onload = e => openCropModal(e.target.result, previewId, dataId);
   reader.readAsDataURL(file);
+}
+
+// ── BILD-CROP MODAL ──
+let _crop = null;
+
+function openCropModal(dataUrl, previewId, dataId) {
+  _crop = { previewId, dataId, x:0, y:0, scale:1, minScale:1, lastX:0, lastY:0, lastDist:0 };
+  const ov = document.createElement('div');
+  ov.id = 'cropOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:#000;z-index:99999;display:flex;flex-direction:column';
+  ov.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;flex-shrink:0">
+      <button onclick="closeCropModal()" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;padding:8px">Abbrechen</button>
+      <span style="color:#fff;font-weight:700;font-size:16px">Foto zuschneiden</span>
+      <button onclick="confirmCrop()" style="background:#25D366;border:none;color:#fff;font-size:15px;font-weight:700;padding:8px 18px;border-radius:20px;cursor:pointer">Fertig ✓</button>
+    </div>
+    <div id="cropArea" style="flex:1;position:relative;overflow:hidden;touch-action:none;cursor:grab">
+      <img id="cropImg" src="${dataUrl}" style="position:absolute;transform-origin:0 0;will-change:transform;max-width:none;pointer-events:none">
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+        <div id="cropCircle" style="width:260px;height:260px;border-radius:50%;box-shadow:0 0 0 9999px rgba(0,0,0,.65);border:2px solid rgba(255,255,255,.85);flex-shrink:0"></div>
+      </div>
+    </div>
+    <div style="padding:12px;text-align:center;flex-shrink:0">
+      <span style="color:rgba(255,255,255,.5);font-size:12px">Ziehen zum Verschieben · Zwei Finger zum Zoomen</span>
+    </div>`;
+  document.body.appendChild(ov);
+
+  const img = document.getElementById('cropImg');
+  img.onload = () => {
+    const area = document.getElementById('cropArea');
+    const aW = area.clientWidth, aH = area.clientHeight;
+    const iW = img.naturalWidth,  iH = img.naturalHeight;
+    const min = Math.max(260 / iW, 260 / iH) * 1.05;
+    _crop.minScale = min;
+    _crop.scale = min;
+    _crop.x = (aW - iW * min) / 2;
+    _crop.y = (aH - iH * min) / 2;
+    _applyCrop();
+  };
+
+  const area = document.getElementById('cropArea');
+  area.addEventListener('touchstart',  _cropTS, {passive:false});
+  area.addEventListener('touchmove',   _cropTM, {passive:false});
+  area.addEventListener('touchend',    _cropTE, {passive:false});
+  area.addEventListener('mousedown',   _cropMD);
+  area.addEventListener('wheel',       _cropWH, {passive:false});
+}
+
+function _applyCrop() {
+  const img = document.getElementById('cropImg');
+  if(img && _crop) img.style.transform = `translate(${_crop.x}px,${_crop.y}px) scale(${_crop.scale})`;
+}
+
+function _cropTS(e) {
+  e.preventDefault();
+  if(e.touches.length === 1) { _crop.lastX = e.touches[0].clientX; _crop.lastY = e.touches[0].clientY; _crop.lastDist = 0; }
+  else if(e.touches.length === 2) { _crop.lastDist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); }
+}
+function _cropTM(e) {
+  e.preventDefault();
+  if(!_crop) return;
+  if(e.touches.length === 1) {
+    _crop.x += e.touches[0].clientX - _crop.lastX;
+    _crop.y += e.touches[0].clientY - _crop.lastY;
+    _crop.lastX = e.touches[0].clientX; _crop.lastY = e.touches[0].clientY;
+  } else if(e.touches.length === 2) {
+    const dist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    if(_crop.lastDist > 0) {
+      const cx = (e.touches[0].clientX+e.touches[1].clientX)/2;
+      const cy = (e.touches[0].clientY+e.touches[1].clientY)/2;
+      const ns = Math.max(_crop.minScale, Math.min(_crop.scale*(dist/_crop.lastDist), _crop.minScale*5));
+      const r = ns/_crop.scale;
+      _crop.x = cx+(_crop.x-cx)*r; _crop.y = cy+(_crop.y-cy)*r; _crop.scale = ns;
+    }
+    _crop.lastDist = dist;
+  }
+  _applyCrop();
+}
+function _cropTE() { _crop.lastDist = 0; }
+function _cropMD(e) {
+  let lx=e.clientX, ly=e.clientY;
+  const mm = e2=>{ _crop.x+=e2.clientX-lx; _crop.y+=e2.clientY-ly; lx=e2.clientX; ly=e2.clientY; _applyCrop(); };
+  const mu = ()=>{ document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',mu); };
+  document.addEventListener('mousemove',mm); document.addEventListener('mouseup',mu);
+}
+function _cropWH(e) {
+  e.preventDefault();
+  if(!_crop) return;
+  const ns = Math.max(_crop.minScale, Math.min(_crop.scale*(e.deltaY<0?1.1:0.9), _crop.minScale*5));
+  const r = ns/_crop.scale;
+  _crop.x = e.clientX+(_crop.x-e.clientX)*r; _crop.y = e.clientY+(_crop.y-e.clientY)*r; _crop.scale = ns;
+  _applyCrop();
+}
+
+function closeCropModal() { document.getElementById('cropOverlay')?.remove(); _crop = null; }
+
+function confirmCrop() {
+  if(!_crop) return;
+  const img = document.getElementById('cropImg');
+  const area = document.getElementById('cropArea');
+  if(!img||!area) return;
+  const aW=area.clientWidth, aH=area.clientHeight, cs=260;
+  const cx=(aW-cs)/2, cy=(aH-cs)/2;
+  const srcX=(cx-_crop.x)/_crop.scale, srcY=(cy-_crop.y)/_crop.scale, srcS=cs/_crop.scale;
+  const out=400, canvas=document.createElement('canvas');
+  canvas.width=out; canvas.height=out;
+  const ctx=canvas.getContext('2d');
+  ctx.beginPath(); ctx.arc(out/2,out/2,out/2,0,Math.PI*2); ctx.clip();
+  ctx.drawImage(img,srcX,srcY,srcS,srcS,0,0,out,out);
+  const data=canvas.toDataURL('image/jpeg',0.88);
+  const prev=document.getElementById(_crop.previewId);
+  if(prev) prev.innerHTML=`<img src="${data}" style="width:100%;height:100%;object-fit:cover">`;
+  const di=document.getElementById(_crop.dataId);
+  if(di) di.value=data;
+  closeCropModal();
 }
 
 function saveNewPlayer() {
