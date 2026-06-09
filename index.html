@@ -395,6 +395,14 @@ function initListeners() {
     }
     updateChatBadge();
   });
+  db.ref('/chatRead').on('value', s => {
+    const data = s.val() || {};
+    const names = Object.keys(data);
+    const fiveMinAgo = Date.now() - 5 * 60 * 1000;
+    const active = names.filter(n => data[n] > fiveMinAgo);
+    const el = document.getElementById('chatReadInfo');
+    if (el) el.textContent = active.length > 0 ? `👁 ${active.length} lesen gerade` : 'Mannschafts-Chat';
+  });
   db.ref('/photos').on('value', s => { STATE.photos = toArr(s.val()).sort((a,b) => (b.ts||0)-(a.ts||0)); if(currentPage==='galerie') renderGalerie(); });
   db.ref('/config').on('value', s => {
     STATE.config = s.val() || {};
@@ -734,6 +742,7 @@ function switchPage(page) {
     lastChatRead = Date.now();
     LSset('lastChatRead', String(lastChatRead));
     updateChatBadge();
+    markChatRead();
     renderChat();
     setTimeout(() => {
       fixChatHeight();
@@ -2330,6 +2339,13 @@ function renderChat() {
       } else {
         content = `<span style="font-size:14px;line-height:1.45;word-break:break-word">${escHtml(m.text||'')}</span>`;
       }
+      // Reply-Vorschau
+      if (m.replyTo && !m.deleted) {
+        content = `<div style="background:rgba(0,0,0,.06);border-left:3px solid #0A2540;border-radius:6px;padding:5px 8px;margin-bottom:5px;cursor:pointer" onclick="scrollToMsg('${m.replyTo.id}')">
+          <div style="font-size:11px;font-weight:700;color:#0A2540">${escHtml(m.replyTo.author)}</div>
+          <div style="font-size:12px;color:#6B7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">${escHtml(m.replyTo.text)}</div>
+        </div>` + content;
+      }
 
       // Reactions row
       const reactionRow = hasReactions ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;${mine?'justify-content:flex-end':''}">
@@ -2367,7 +2383,7 @@ function renderChat() {
       <div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">⚽</div>
       <div style="flex:1">
         <div style="font-size:15px;font-weight:700;color:#fff;line-height:1.2">FC Niksar Chat</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.6)">Mannschafts-Chat</div>
+        <div id="chatReadInfo" style="font-size:11px;color:rgba(255,255,255,.6)">Mannschafts-Chat</div>
       </div>
     </div>
     <div id="chatMessages">
@@ -2381,6 +2397,10 @@ function renderChat() {
     <div id="reactionPicker" style="display:none;justify-content:center;gap:6px;padding:8px 12px;background:#fff;border-top:1px solid #e5e7eb;flex-shrink:0">
       ${QUICK_REACTIONS.map(e=>`<button onclick="pickReaction('${e}')" style="background:#F3F4F6;border:none;width:44px;height:44px;border-radius:50%;font-size:24px;cursor:pointer">${e}</button>`).join('')}
       <button onclick="closeReactionPicker()" style="background:#F3F4F6;border:none;width:44px;height:44px;border-radius:50%;font-size:16px;cursor:pointer;color:#6B7280">✕</button>
+    </div>
+    <div id="replyBar" style="display:none;align-items:center;gap:8px;background:#E8F4FD;padding:8px 12px;border-top:2px solid #0A2540;flex-shrink:0">
+      <div style="flex:1;font-size:13px;color:#0A2540;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-left:3px solid #0A2540;padding-left:8px"><span id="replyBarText"></span></div>
+      <button onclick="cancelReply()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#6B7280;flex-shrink:0">✕</button>
     </div>
     <div class="wa-input-bar">
       ${!myName ? `
@@ -2444,17 +2464,54 @@ function toggleReaction(msgId, emoji) {
   const key = msgId + '_' + emoji;
   const msg = STATE.chat.find(m => m.id === msgId);
   if(!msg) return;
-  const current = (msg.reactions || {})[emoji] || 0;
+  msg.reactions = msg.reactions || {};
+  const current = msg.reactions[emoji] || 0;
   if(myReactions[key]) {
-    // Entfernen
     delete myReactions[key];
-    db.ref('/chat/' + msgId + '/reactions/' + emoji).set(Math.max(0, current - 1));
+    msg.reactions[emoji] = Math.max(0, current - 1);
+    db.ref('/chat/' + msgId + '/reactions/' + emoji).set(msg.reactions[emoji]);
   } else {
-    // Hinzufügen
     myReactions[key] = true;
-    db.ref('/chat/' + msgId + '/reactions/' + emoji).set(current + 1);
+    msg.reactions[emoji] = current + 1;
+    db.ref('/chat/' + msgId + '/reactions/' + emoji).set(msg.reactions[emoji]);
   }
   LSset('myReactions', JSON.stringify(myReactions));
+  updateMsgBubble(msgId);
+}
+
+// ── ANTWORTEN ──
+let replyToMsg = null;
+function startReply(id) {
+  const msg = STATE.chat.find(m => m.id === id);
+  if (!msg) return;
+  replyToMsg = msg;
+  const bar = document.getElementById('replyBar');
+  if (bar) {
+    document.getElementById('replyBarText').textContent = (msg.author||'?') + ': ' + (msg.text||'📎').slice(0,60);
+    bar.style.display = 'flex';
+  }
+  document.getElementById('chatInput')?.focus();
+}
+function cancelReply() {
+  replyToMsg = null;
+  const bar = document.getElementById('replyBar');
+  if (bar) bar.style.display = 'none';
+}
+
+function scrollToMsg(id) {
+  const el = document.querySelector(`[data-msg-id="${id}"]`);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.style.transition = 'background .2s';
+  el.style.background = 'rgba(10,37,64,.12)';
+  setTimeout(() => { el.style.background = ''; }, 1200);
+}
+
+// ── GELESEN ──
+function markChatRead() {
+  const myName = getChatName();
+  if (!myName) return;
+  db.ref('/chatRead/' + myName.replace(/[.#$/[\]]/g,'_')).set(Date.now());
 }
 
 function sendChatFile(input) {
@@ -2517,14 +2574,16 @@ function cancelMsgLongPress() {
 
 function chatMsgAction(id, author, text, isImage) {
   const myName = getChatName();
-  const isTrainer = STATE.config?.profileSwitchLocked === true;
+  const isTrainer = getProfile()?.playerId == null;
   const isMine = myName && author === myName;
   if (!isMine && !isTrainer) return;
 
   const canEdit = isMine && !isImage;
+  const canDelete = isMine || isTrainer;
   const btns = `
+    <button onclick="closeModal();startReply('${id}')" style="width:100%;padding:14px 16px;background:#fff;border:none;border-radius:12px;font-size:16px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:12px"><span style="font-size:20px">↩️</span><span style="font-weight:600">Antworten</span></button>
     ${canEdit ? `<button onclick="closeModal();editChatMsg('${id}',\`${text.replace(/`/g,'\\`')}\`)" style="width:100%;padding:14px 16px;background:#fff;border:none;border-radius:12px;font-size:16px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:12px"><span style="font-size:20px">✏️</span><span style="font-weight:600">Bearbeiten</span></button>` : ''}
-    <button onclick="closeModal();deleteChatMsg('${id}')" style="width:100%;padding:14px 16px;background:#fff;border:none;border-radius:12px;font-size:16px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:12px;color:#EF4444"><span style="font-size:20px">🗑️</span><span style="font-weight:600">Löschen</span></button>
+    ${canDelete ? `<button onclick="closeModal();deleteChatMsg('${id}')" style="width:100%;padding:14px 16px;background:#fff;border:none;border-radius:12px;font-size:16px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:12px;color:#EF4444"><span style="font-size:20px">🗑️</span><span style="font-weight:600">Löschen</span></button>` : ''}
     <button onclick="closeModal()" style="width:100%;padding:14px 16px;background:#F3F4F6;border:none;border-radius:12px;font-size:16px;text-align:center;cursor:pointer;color:#6B7280;font-weight:600;margin-top:4px">Abbrechen</button>`;
   showModal(`<div class="modal-handle"></div><div style="display:flex;flex-direction:column;gap:8px;padding-top:8px">${btns}</div>`);
 }
@@ -2598,9 +2657,14 @@ function sendChat() {
   const ep = document.getElementById('emojiPicker');
   if(ep) ep.style.display = 'none';
   emojiOpen = false;
-  db.ref('/chat').push({ author, text, ts: Date.now() });
+  const msgData = { author, text, ts: Date.now() };
+  if (replyToMsg) {
+    msgData.replyTo = { id: replyToMsg.id, author: replyToMsg.author||'?', text: (replyToMsg.text||'📎').slice(0,80) };
+    cancelReply();
+  }
+  db.ref('/chat').push(msgData);
+  markChatRead();
   notifyAll('💬 Neue Nachricht', author + ': ' + text, true, 'chat');
-  // Sofort nach unten scrollen
   setTimeout(() => {
     const c = document.getElementById('chatMessages');
     if (c) c.scrollTop = c.scrollHeight;
