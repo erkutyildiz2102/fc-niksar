@@ -629,9 +629,10 @@ function fixChatHeight() {
   const chat = document.getElementById('chatPage');
   if (!chat || currentPage !== 'chat') return;
   const vv = window.visualViewport;
-  const h = vv ? vv.height : window.innerHeight;
-  chat.style.top    = '0px';   // immer oben – Header springt nie
-  chat.style.height = h + 'px'; // Höhe = sichtbarer Bereich über Tastatur
+  const top = vv ? vv.offsetTop : 0;
+  const h   = vv ? vv.height   : window.innerHeight;
+  chat.style.top    = top + 'px';
+  chat.style.height = h + 'px';
   chat.style.bottom = 'auto';
   const inputBar = document.querySelector('.wa-input-bar');
   if (inputBar) {
