@@ -3266,7 +3266,7 @@ function toggleActual(tid, pid, val){ db.ref('/trainings/'+tid+'/actual/'+pid).s
 
 // ---- SPIELE TAB ----
 function renderSpieleTab(c) {
-  const sorted = [...STATE.games].sort((a,b) => new Date(b.date) - new Date(a.date));
+  const sorted = [...STATE.games].sort((a,b) => new Date(a.date) - new Date(b.date));
   c.innerHTML = `
     <button class="btn-primary" onclick="addGameModal()"><i class="fa fa-plus"></i> Spiel hinzufügen</button>
     ${sorted.map(g => {
