@@ -2539,12 +2539,18 @@ function editChatMsg(id, currentText) {
 function saveEditChatMsg(id) {
   const val = (document.getElementById('editMsgInput')?.value || '').trim();
   if (!val) return;
+  const msg = STATE.chat.find(m => m.id === id);
+  if (msg) { msg.text = val; msg.edited = true; }
   db.ref('/chat/' + id).update({ text: val, edited: true });
   closeModal();
+  renderChat();
 }
 
 function deleteChatMsg(id) {
+  const msg = STATE.chat.find(m => m.id === id);
+  if (msg) { msg.deleted = true; msg.text = ''; }
   db.ref('/chat/' + id).update({ deleted: true, text: '' });
+  renderChat();
 }
 
 function sendChat() {
