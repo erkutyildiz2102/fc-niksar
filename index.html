@@ -3186,28 +3186,26 @@ function confirmCrop() {
   if(!img||!area) return;
   const aW=area.clientWidth, aH=area.clientHeight, cs=300;
   const cx=(aW-cs)/2, cy=(aH-cs)/2;
-  const srcX=(cx-_crop.x)/_crop.scale, srcY=(cy-_crop.y)/_crop.scale, srcS=cs/_crop.scale;
-  const snap = { previewId:_crop.previewId, dataId:_crop.dataId, blobUrl:_crop.blobUrl, srcX, srcY, srcS };
+  // Map image position from crop-area coords to 400x400 canvas coords
+  const ratio = 400/cs;
+  const dX = (_crop.x - cx) * ratio;
+  const dY = (_crop.y - cy) * ratio;
+  const dW = img.naturalWidth  * _crop.scale * ratio;
+  const dH = img.naturalHeight * _crop.scale * ratio;
+  const snap = { previewId:_crop.previewId, dataId:_crop.dataId, blobUrl:_crop.blobUrl, dX, dY, dW, dH };
   closeCropModal();
-  function _doCanvas(imgEl) {
-    const out=400, canvas=document.createElement('canvas');
-    canvas.width=out; canvas.height=out;
-    const ctx=canvas.getContext('2d');
-    ctx.beginPath(); ctx.arc(out/2,out/2,out/2,0,Math.PI*2); ctx.clip();
-    ctx.drawImage(imgEl,snap.srcX,snap.srcY,snap.srcS,snap.srcS,0,0,out,out);
-    const data=canvas.toDataURL('image/jpeg',0.88);
-    const prev=document.getElementById(snap.previewId);
-    if(prev) prev.innerHTML=`<img src="${data}" style="width:100%;height:100%;object-fit:cover">`;
-    const di=document.getElementById(snap.dataId);
-    if(di) di.value=data;
-    if(snap.blobUrl) URL.revokeObjectURL(snap.blobUrl);
-  }
-  if(snap.blobUrl) {
-    // img already loaded with blobUrl — reuse it
-    _doCanvas(img);
-  } else {
-    _doCanvas(img);
-  }
+  const out=400, canvas=document.createElement('canvas');
+  canvas.width=out; canvas.height=out;
+  const ctx=canvas.getContext('2d');
+  ctx.beginPath(); ctx.arc(out/2,out/2,out/2,0,Math.PI*2); ctx.clip();
+  ctx.fillStyle='#e5e7eb'; ctx.fillRect(0,0,out,out); // fallback bg when zoomed out
+  ctx.drawImage(img, snap.dX, snap.dY, snap.dW, snap.dH);
+  const data=canvas.toDataURL('image/jpeg',0.88);
+  const prev=document.getElementById(snap.previewId);
+  if(prev) prev.innerHTML=`<img src="${data}" style="width:100%;height:100%;object-fit:cover">`;
+  const di=document.getElementById(snap.dataId);
+  if(di) di.value=data;
+  if(snap.blobUrl) URL.revokeObjectURL(snap.blobUrl);
 }
 
 function saveNewPlayer() {
