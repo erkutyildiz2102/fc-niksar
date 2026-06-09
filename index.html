@@ -2262,6 +2262,19 @@ function appendNewChatMessages() {
     let content = '';
     if (m.image) {
       content = `<img src="${m.image}" onclick="viewChatImage('${m.id}')" style="max-width:220px;max-height:200px;border-radius:8px;display:block;cursor:pointer;object-fit:cover">`;
+    } else if (m.file) {
+      const icon = m.fileType?.includes('pdf') ? 'fa-file-pdf' : m.fileType?.includes('word') ? 'fa-file-word' : 'fa-file';
+      const iconColor = m.fileType?.includes('pdf') ? '#EF4444' : m.fileType?.includes('word') ? '#2563EB' : '#6B7280';
+      const formatFileSize = s => s > 1048576 ? (s/1048576).toFixed(1)+' MB' : (s/1024).toFixed(0)+' KB';
+      content = `<div class="wa-file" onclick="downloadFile('${m.id}')">
+        <div style="width:40px;height:40px;border-radius:10px;background:${iconColor}20;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="fas ${icon}" style="color:${iconColor};font-size:18px"></i>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:#1f2937;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(m.fileName||'Datei')}</div>
+          <div style="font-size:11px;color:#6B7280;margin-top:1px">${formatFileSize(m.fileSize||0)} · Tippen zum Öffnen</div>
+        </div>
+      </div>`;
     } else {
       content = `<span style="font-size:14px;line-height:1.45;word-break:break-word">${escHtml(m.text||'')}</span>`;
     }
@@ -2565,12 +2578,31 @@ function sendChatFile(input) {
 function downloadFile(id) {
   const m = STATE.chat.find(x => x.id === id);
   if(!m?.file) return;
-  const a = document.createElement('a');
-  a.href = m.file;
-  a.download = m.fileName || 'datei';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  // Base64 → Blob → Object URL (funktioniert auf iOS für PDFs)
+  try {
+    const byteString = atob(m.file.split(',')[1]);
+    const mimeType = m.fileType || 'application/octet-stream';
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for(let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+    const blob = new Blob([ab], {type: mimeType});
+    const url = URL.createObjectURL(blob);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if(isIOS) {
+      window.open(url, '_blank');
+    } else {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = m.fileName || 'datei';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch(e) {
+    // Fallback: direkte Data-URL öffnen
+    window.open(m.file, '_blank');
+  }
 }
 
 function viewChatImage(id) {
