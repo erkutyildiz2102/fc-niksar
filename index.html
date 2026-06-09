@@ -3097,9 +3097,11 @@ function openCropModal(dataUrl, previewId, dataId, file) {
       <button onclick="confirmCrop()" style="background:#25D366;border:none;color:#fff;font-size:15px;font-weight:700;padding:8px 18px;border-radius:20px;cursor:pointer">Fertig ✓</button>
     </div>
     <div id="cropArea" style="flex:1;position:relative;overflow:hidden;touch-action:none;cursor:grab">
+      <img id="cropBg" src="${dataUrl}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(18px);transform:scale(1.08);pointer-events:none;visibility:hidden">
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.45);pointer-events:none"></div>
       <img id="cropImg" src="${dataUrl}" style="position:absolute;transform-origin:0 0;will-change:transform;max-width:none;pointer-events:none;visibility:hidden">
       <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
-        <div id="cropCircle" style="width:300px;height:300px;border-radius:50%;box-shadow:0 0 0 9999px rgba(0,0,0,.65);border:2px solid rgba(255,255,255,.85);flex-shrink:0"></div>
+        <div id="cropCircle" style="width:300px;height:300px;border-radius:50%;box-shadow:0 0 0 9999px rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.85);flex-shrink:0"></div>
       </div>
     </div>
     <div style="padding:12px;text-align:center;flex-shrink:0">
@@ -3119,6 +3121,8 @@ function openCropModal(dataUrl, previewId, dataId, file) {
     _crop.y = (aH - iH * min) / 2;
     _applyCrop();
     img.style.visibility = 'visible';
+    const bg = document.getElementById('cropBg');
+    if(bg) bg.style.visibility = 'visible';
   };
 
   const area = document.getElementById('cropArea');
