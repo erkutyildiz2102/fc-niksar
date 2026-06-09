@@ -3078,16 +3078,15 @@ function addPlayerModal() {
 
 function previewPhoto(input, previewId, dataId) {
   const file = input.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => openCropModal(e.target.result, previewId, dataId);
-  reader.readAsDataURL(file);
+  const blobUrl = URL.createObjectURL(file);
+  openCropModal(blobUrl, previewId, dataId, file);
 }
 
 // ── BILD-CROP MODAL ──
 let _crop = null;
 
-function openCropModal(dataUrl, previewId, dataId) {
-  _crop = { previewId, dataId, x:0, y:0, scale:1, minScale:1, lastX:0, lastY:0, lastDist:0 };
+function openCropModal(dataUrl, previewId, dataId, file) {
+  _crop = { previewId, dataId, file: file||null, blobUrl: (file ? dataUrl : null), x:0, y:0, scale:1, minScale:1, lastX:0, lastY:0, lastDist:0 };
   const ov = document.createElement('div');
   ov.id = 'cropOverlay';
   ov.style.cssText = 'position:fixed;inset:0;background:#000;z-index:99999;display:flex;flex-direction:column';
@@ -3191,17 +3190,27 @@ function confirmCrop() {
   const aW=area.clientWidth, aH=area.clientHeight, cs=300;
   const cx=(aW-cs)/2, cy=(aH-cs)/2;
   const srcX=(cx-_crop.x)/_crop.scale, srcY=(cy-_crop.y)/_crop.scale, srcS=cs/_crop.scale;
-  const out=400, canvas=document.createElement('canvas');
-  canvas.width=out; canvas.height=out;
-  const ctx=canvas.getContext('2d');
-  ctx.beginPath(); ctx.arc(out/2,out/2,out/2,0,Math.PI*2); ctx.clip();
-  ctx.drawImage(img,srcX,srcY,srcS,srcS,0,0,out,out);
-  const data=canvas.toDataURL('image/jpeg',0.88);
-  const prev=document.getElementById(_crop.previewId);
-  if(prev) prev.innerHTML=`<img src="${data}" style="width:100%;height:100%;object-fit:cover">`;
-  const di=document.getElementById(_crop.dataId);
-  if(di) di.value=data;
+  const snap = { previewId:_crop.previewId, dataId:_crop.dataId, blobUrl:_crop.blobUrl, srcX, srcY, srcS };
   closeCropModal();
+  function _doCanvas(imgEl) {
+    const out=400, canvas=document.createElement('canvas');
+    canvas.width=out; canvas.height=out;
+    const ctx=canvas.getContext('2d');
+    ctx.beginPath(); ctx.arc(out/2,out/2,out/2,0,Math.PI*2); ctx.clip();
+    ctx.drawImage(imgEl,snap.srcX,snap.srcY,snap.srcS,snap.srcS,0,0,out,out);
+    const data=canvas.toDataURL('image/jpeg',0.88);
+    const prev=document.getElementById(snap.previewId);
+    if(prev) prev.innerHTML=`<img src="${data}" style="width:100%;height:100%;object-fit:cover">`;
+    const di=document.getElementById(snap.dataId);
+    if(di) di.value=data;
+    if(snap.blobUrl) URL.revokeObjectURL(snap.blobUrl);
+  }
+  if(snap.blobUrl) {
+    // img already loaded with blobUrl — reuse it
+    _doCanvas(img);
+  } else {
+    _doCanvas(img);
+  }
 }
 
 function saveNewPlayer() {
