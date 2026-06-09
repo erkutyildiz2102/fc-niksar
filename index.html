@@ -92,7 +92,7 @@ input[type="date"].input-field,input[type="time"].input-field{display:block;widt
 /* New event banner */
 @keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes slideUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}
-#chatPage{display:none;flex-direction:column;position:fixed;left:0;right:0;top:0;height:100svh;background:#ECE5DD;z-index:100;overflow:hidden}
+#chatPage{display:none;flex-direction:column;position:fixed;left:0;right:0;top:0;bottom:0;background:#ECE5DD;z-index:100;overflow:hidden}
 #chatPage.active{display:flex}
 #chatPageHeader{flex-shrink:0;background:#0A2540;display:flex;align-items:center;gap:12px;padding:max(env(safe-area-inset-top),14px) 16px 12px}
 #chatMessages{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
@@ -628,20 +628,11 @@ function showApp() {
 function fixChatHeight() {
   const chat = document.getElementById('chatPage');
   if (!chat || currentPage !== 'chat') return;
-  const vv = window.visualViewport;
-  // top immer auf 0 fixieren – NIEMALS vv.offsetTop verwenden (würde Header springen lassen)
-  // Nur die Höhe anpassen: vv.height = sichtbarer Bereich über der Tastatur
-  const h = vv ? vv.height : window.innerHeight;
-  chat.style.top    = '0px';
-  chat.style.height = h + 'px';
-  chat.style.bottom = 'auto';
-  // Wenn Tastatur offen: safe-area-inset-bottom entfernen (kein Home-Indicator sichtbar)
-  const inputBar = document.querySelector('.wa-input-bar');
-  if (inputBar) {
-    const keyboardOpen = vv && vv.height < window.innerHeight * 0.75;
-    inputBar.style.paddingBottom = keyboardOpen ? '0px' : '';
-  }
-  // Nach Layout-Änderung immer nach unten scrollen
+  // Inline-Styles entfernen – CSS (height:100vh + interactive-widget=resizes-content) übernimmt
+  chat.style.top    = '';
+  chat.style.height = '';
+  chat.style.bottom = '';
+  // Nachrichten nach unten scrollen
   const msgs = document.getElementById('chatMessages');
   if (msgs) requestAnimationFrame(() => { msgs.scrollTop = msgs.scrollHeight; });
 }
