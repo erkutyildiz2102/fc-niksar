@@ -2255,6 +2255,18 @@ function appendNewChatMessages() {
     } else {
       content = `<span style="font-size:14px;line-height:1.45;word-break:break-word">${escHtml(m.text||'')}</span>`;
     }
+    if (m.replyTo) {
+      content = `<div style="background:rgba(0,0,0,.06);border-left:3px solid #0A2540;border-radius:6px;padding:5px 8px;margin-bottom:5px;cursor:pointer" onclick="scrollToMsg('${m.replyTo.id}')">
+        <div style="font-size:11px;font-weight:700;color:#0A2540">${escHtml(m.replyTo.author)}</div>
+        <div style="font-size:12px;color:#6B7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">${escHtml(m.replyTo.text)}</div>
+      </div>` + content;
+    }
+    const reactions = m.reactions || {};
+    const reactionEntries = Object.entries(reactions).filter(([,c]) => c > 0);
+    const reactionRow = reactionEntries.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;${mine?'justify-content:flex-end':''}">${reactionEntries.map(([e,c]) => {
+      const isMineR = myReactions[m.id+'_'+e];
+      return `<button onclick="toggleReaction('${m.id}','${e}')" style="background:${isMineR?'#DCF8C6':'#fff'};border:1.5px solid ${isMineR?'#25D366':'#e5e7eb'};border-radius:20px;padding:2px 8px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:3px">${e}<span style="font-size:11px;font-weight:700;color:#374151">${c}</span></button>`;
+    }).join('')}</div>` : '';
     const div = document.createElement('div');
     div.dataset.msgId = m.id;
     div.style.cssText = `display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};max-width:85%;${mine?'align-self:flex-end':'align-self:flex-start'}`;
@@ -2273,7 +2285,8 @@ function appendNewChatMessages() {
           </div>
         </div>
         <button onclick="openReactionPicker('${m.id}')" style="background:none;border:none;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.35;color:#666">😊</button>
-      </div>`;
+      </div>
+      ${reactionRow}`;
     container.appendChild(div);
   });
 
@@ -2626,6 +2639,12 @@ function updateMsgBubble(id) {
     content = `<span style="font-size:14px;color:#9CA3AF;font-style:italic">🚫 Nachricht gelöscht</span>`;
   } else {
     content = `<span style="font-size:14px;line-height:1.45;word-break:break-word">${escHtml(msg.text||'')}</span>`;
+    if (msg.replyTo) {
+      content = `<div style="background:rgba(0,0,0,.06);border-left:3px solid #0A2540;border-radius:6px;padding:5px 8px;margin-bottom:5px;cursor:pointer" onclick="scrollToMsg('${msg.replyTo.id}')">
+        <div style="font-size:11px;font-weight:700;color:#0A2540">${escHtml(msg.replyTo.author)}</div>
+        <div style="font-size:12px;color:#6B7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">${escHtml(msg.replyTo.text)}</div>
+      </div>` + content;
+    }
   }
   el.innerHTML = `
     <div style="display:flex;align-items:flex-end;gap:5px;${mine?'flex-direction:row-reverse':''}">
