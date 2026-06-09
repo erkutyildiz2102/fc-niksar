@@ -3084,6 +3084,7 @@ function addTrainingModal() {
     </div>
 
     <div id="tEinzelFields">
+      <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Datum</div>
       <input id="tDate" class="input-field" type="date" value="${today}" style="margin-bottom:10px">
     </div>
     <div id="tSerieFields" style="display:none">
@@ -3119,8 +3120,10 @@ function addTrainingModal() {
         <input id="tTimeTo" class="input-field" type="time" value="18:30">
       </div>
     </div>
-    <input id="tLocation" class="input-field" placeholder="Ort (z.B. Sportplatz Nord)" style="margin-bottom:10px">
-    <textarea id="tNotes" class="input-field" placeholder="Hinweise (optional)" rows="2" style="margin-bottom:16px;resize:none"></textarea>
+    <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Ort</div>
+    <input id="tLocation" class="input-field" placeholder="z.B. Sportplatz Nord" style="margin-bottom:10px">
+    <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Hinweise (optional)</div>
+    <textarea id="tNotes" class="input-field" placeholder="" rows="2" style="margin-bottom:16px;resize:none"></textarea>
     <button class="btn-primary" onclick="saveTraining()">Training speichern</button>`);
 }
 
@@ -3322,11 +3325,16 @@ function addGameModal(editId) {
   const g = editId ? STATE.games.find(x => x.id === editId) : null;
   showModal(`<div class="modal-handle"></div>
     <div style="font-size:18px;font-weight:700;margin-bottom:16px">${g ? 'Spiel bearbeiten' : 'Spiel hinzufügen'}</div>
-    <input id="gOpp" class="input-field" placeholder="Bezeichnung (z.B. Heimspiel FC Niksar)" value="${g ? escHtml(g.opponent||'') : ''}" style="margin-bottom:10px">
+    <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Bezeichnung</div>
+    <input id="gOpp" class="input-field" placeholder="z.B. Heimspiel FC Niksar" value="${g ? escHtml(g.opponent||'') : ''}" style="margin-bottom:10px">
+    <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Datum</div>
     <input id="gDate" class="input-field" type="date" value="${g ? g.date : today}" style="margin-bottom:10px">
-    <input id="gTime" class="input-field" type="text" placeholder="Treffpunkt (z.B. 10 oder 10:30)" value="${g ? escHtml(g.time||'') : ''}" onblur="this.value=formatTreffpunkt(this.value)" style="margin-bottom:10px">
-    <input id="gLoc" class="input-field" placeholder="Ort" value="${g ? escHtml(g.location||'') : ''}" style="margin-bottom:10px">
-    <textarea id="gNotes" class="input-field" placeholder="Hinweise (optional)" rows="2" style="margin-bottom:16px;resize:none">${g ? escHtml(g.notes||'') : ''}</textarea>
+    <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Treffpunkt</div>
+    <input id="gTime" class="input-field" type="text" placeholder="z.B. 10:00 oder 10:30" value="${g ? escHtml(g.time||'') : ''}" onblur="this.value=formatTreffpunkt(this.value)" style="margin-bottom:10px">
+    <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Ort</div>
+    <input id="gLoc" class="input-field" placeholder="z.B. Sportplatz Nord" value="${g ? escHtml(g.location||'') : ''}" style="margin-bottom:10px">
+    <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Hinweise (optional)</div>
+    <textarea id="gNotes" class="input-field" placeholder="" rows="2" style="margin-bottom:16px;resize:none">${g ? escHtml(g.notes||'') : ''}</textarea>
     <button class="btn-primary" onclick="saveGame('${editId||''}')">${g ? 'Änderungen speichern' : 'Spiel speichern'}</button>`);
 }
 
