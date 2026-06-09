@@ -1,6 +1,6 @@
-// FC Niksar Service Worker v10
+// FC Niksar Service Worker v11
 // index.html: Network-First (immer aktuell), Bilder/Icons: Cache-First (schnell)
-const CACHE = 'fcn-v10';
+const CACHE = 'fcn-v11';
 
 self.addEventListener('message', e => {
   if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
