@@ -2659,9 +2659,10 @@ function editChatMsg(id, currentText) {
     if(!t) return;
     t.style.height = 'auto';
     t.style.height = t.scrollHeight + 'px';
-    const len = t.value.length;
     t.focus();
-    setTimeout(() => { t.setSelectionRange(len, len); }, 50);
+    const val = t.value;
+    t.value = '';
+    t.value = val;
   }, 150);
 }
 
