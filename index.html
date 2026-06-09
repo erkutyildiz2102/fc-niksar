@@ -2056,7 +2056,8 @@ function addToCalendar(title, dateStr, timeStr, location, durationMin) {
   if(!dateStr) return;
   const pad = n => String(n).padStart(2,'0');
   const fmtIcs = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-  const start = new Date(dateStr + 'T' + (timeStr||'10:00'));
+  const cleanTime = (timeStr||'10:00').replace(/\s*Uhr\s*/i,'').trim() || '10:00';
+  const start = new Date(dateStr + 'T' + cleanTime);
   const end   = new Date(start.getTime() + (durationMin||90) * 60000);
   const fmtGoogle = d => d.toISOString().replace(/[-:]/g,'').replace('.000','');
   const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${fmtGoogle(start)}/${fmtGoogle(end)}&details=${encodeURIComponent('FC Niksar F1/U9 – Saison 26/27')}&location=${encodeURIComponent(location||'')}`;
@@ -2087,7 +2088,8 @@ function addToCalendarICS(titleEnc, dateStr, timeStr, locationEnc, durationMin) 
   const location = decodeURIComponent(locationEnc);
   const pad = n => String(n).padStart(2,'0');
   const fmtIcs = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-  const start = new Date(dateStr + 'T' + (timeStr||'10:00'));
+  const cleanTime = (timeStr||'10:00').replace(/\s*Uhr\s*/i,'').trim() || '10:00';
+  const start = new Date(dateStr + 'T' + cleanTime);
   const end   = new Date(start.getTime() + (durationMin||90) * 60000);
   const ics = [
     'BEGIN:VCALENDAR',
