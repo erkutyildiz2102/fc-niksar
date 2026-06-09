@@ -239,11 +239,10 @@ const LSset = (k, v) => localStorage.setItem('fcniksar_' + k, typeof v === 'stri
 const toArr = val => Object.entries(val || {}).map(([id, v]) => ({ ...v, id }));
 const escHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function replyPreviewHtml(replyTo, mine, msgId) {
-  const bg     = mine ? 'rgba(0,0,0,.18)'        : 'rgba(0,0,0,.06)';
-  const border = mine ? 'rgba(255,255,255,.9)'   : '#0A2540';
-  const nameCol= mine ? '#ffffff'                : '#0A2540';
-  const textCol= mine ? 'rgba(255,255,255,.92)'  : '#6B7280';
-  return `<div style="background:${bg};border-left:3px solid ${border};border-radius:6px;padding:5px 8px;margin-bottom:6px;cursor:pointer" onclick="scrollToMsg('${replyTo.id}')">
+  const border = mine ? 'rgba(255,255,255,.85)' : '#0A2540';
+  const nameCol= mine ? 'rgba(255,255,255,.95)' : '#0A2540';
+  const textCol= mine ? 'rgba(255,255,255,.75)' : '#6B7280';
+  return `<div style="border-left:3px solid ${border};padding:3px 8px;margin-bottom:6px;cursor:pointer" onclick="scrollToMsg('${replyTo.id}')">
     <div style="font-size:11px;font-weight:700;color:${nameCol}">${escHtml(replyTo.author)}</div>
     <div style="font-size:12px;color:${textCol};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">${escHtml(replyTo.text)}</div>
   </div>`;
