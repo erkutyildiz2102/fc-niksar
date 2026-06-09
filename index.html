@@ -2654,14 +2654,20 @@ function editChatMsg(id, currentText) {
     <div style="font-size:18px;font-weight:800;color:#0A2540;margin-bottom:16px">Nachricht bearbeiten</div>
     <textarea id="editMsgInput" style="width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:10px;font-size:15px;resize:none;min-height:100px;box-sizing:border-box;outline:none;line-height:1.5;overflow:hidden" onfocus="this.style.borderColor='#0A2540'" onblur="this.style.borderColor='#e5e7eb'" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
     <button onclick="saveEditChatMsg('${id}')" style="width:100%;margin-top:12px;padding:14px;background:#0A2540;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer">Speichern</button>`);
-  setTimeout(() => {
-    const t = document.getElementById('editMsgInput');
-    if(!t) return;
+  // Sofort nach Render: Wert setzen + focus (noch im User-Gesture-Kontext)
+  const t = document.getElementById('editMsgInput');
+  if(t) {
     t.value = currentText;
     t.style.height = 'auto';
     t.style.height = t.scrollHeight + 'px';
     t.focus();
-  }, 100);
+    // Nach Tastatur-Animation Cursor ans Ende
+    setTimeout(() => {
+      if(document.getElementById('editMsgInput')) {
+        t.selectionStart = t.selectionEnd = t.value.length;
+      }
+    }, 400);
+  }
 }
 
 function saveEditChatMsg(id) {
