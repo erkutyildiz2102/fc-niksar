@@ -238,6 +238,12 @@ const LS = k => localStorage.getItem('fcniksar_' + k);
 const LSset = (k, v) => localStorage.setItem('fcniksar_' + k, typeof v === 'string' ? v : JSON.stringify(v));
 const toArr = val => Object.entries(val || {}).map(([id, v]) => ({ ...v, id }));
 const escHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const SENDER_COLORS = ['#1565C0','#6A1B9A','#C75000','#00695C','#AD1457','#4527A0','#2E7D32','#0277BD','#795548','#D84315'];
+function getSenderColor(name) {
+  let h = 0;
+  for (let i = 0; i < (name||'').length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xFFFFFFFF;
+  return SENDER_COLORS[Math.abs(h) % SENDER_COLORS.length];
+}
 const linkify = s => escHtml(s).replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:#60A5FA;text-decoration:underline;word-break:break-all">$1</a>');
 const fmt = d => { try { return new Date(d).toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'}); } catch(e){ return d; }};
 const fmtFull = d => { try { return new Date(d).toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long'}); } catch(e){ return d; }};
@@ -2243,7 +2249,7 @@ function appendNewChatMessages() {
     const div = document.createElement('div');
     div.style.cssText = `display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};max-width:85%;${mine?'align-self:flex-end':'align-self:flex-start'}`;
     div.innerHTML = `
-      ${!mine?`<div style="font-size:12px;font-weight:700;color:#075E54;margin-bottom:3px;padding:0 4px">${escHtml(m.author||'?')}</div>`:''}
+      ${!mine?`<div style="font-size:12px;font-weight:700;color:${getSenderColor(m.author||'')};margin-bottom:3px;padding:0 4px">${escHtml(m.author||'?')}</div>`:''}
       <div style="display:flex;align-items:flex-end;gap:5px;${mine?'flex-direction:row-reverse':''}">
         <div class="${mine?'wa-mine':'wa-other'}" style="padding:8px 10px;position:relative;max-width:280px">
           ${content}
@@ -2327,7 +2333,7 @@ function renderChat() {
       </div>` : '';
 
       msgsHtml += `<div style="display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};max-width:85%;${mine?'align-self:flex-end':'align-self:flex-start'}">
-        ${!mine?`<div style="font-size:12px;font-weight:700;color:#075E54;margin-bottom:3px;padding:0 4px">${escHtml(m.author||'?')}</div>`:''}
+        ${!mine?`<div style="font-size:12px;font-weight:700;color:${getSenderColor(m.author||'')};margin-bottom:3px;padding:0 4px">${escHtml(m.author||'?')}</div>`:''}
         <div style="display:flex;align-items:flex-end;gap:5px;${mine?'flex-direction:row-reverse':''}">
           <div class="${mine?'wa-mine':'wa-other'}" style="padding:8px 10px;position:relative;max-width:280px">
             ${content}
