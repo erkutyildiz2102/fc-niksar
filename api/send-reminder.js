@@ -6,9 +6,18 @@ const DB_URL = 'https://fc-niksar-default-rtdb.europe-west1.firebasedatabase.app
 
 webpush.setVapidDetails('mailto:fc-niksar@example.com', VAPID_PUBLIC, VAPID_PRIVATE);
 
-async function sendPush(subs, toDelete, key, payload) {
-  const sub = subs[key];
-  if (!sub) return;
+const BASE_URL = 'https://fc-niksar-f1.github.io/fc-niksar/';
+
+// Datum formatieren: "Fr, 13. Jun"
+function fmtDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const days   = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  return `${days[d.getDay()]}, ${d.getDate()}. ${months[d.getMonth()]}`;
+}
+
+// Push an eine Subscription senden
+async function sendPush(sub, toDelete, key, payload) {
   try {
     await webpush.sendNotification(sub, JSON.stringify(payload));
     return true;
@@ -18,130 +27,177 @@ async function sendPush(subs, toDelete, key, payload) {
   }
 }
 
+// Push an ALLE Subscriber senden
+async function pushToAll(subs, toDelete, payload) {
+  let sent = 0;
+  await Promise.allSettled(Object.entries(subs).map(async ([key, sub]) => {
+    const ok = await sendPush(sub, toDelete, key, payload);
+    if (ok) sent++;
+  }));
+  return sent;
+}
+
+// Firebase-Wert schreiben
+async function fbSet(path, value) {
+  await fetch(`${DB_URL}/${path}.json`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(value)
+  });
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const today = new Date();
-    const todayStr = today.toISOString().slice(0, 10);
+    const now = Date.now();
+    const REMIND_AFTER_MS = 5 * 60 * 60 * 1000;  // 5 Stunden
+    const WINDOW_MS       = 60 * 60 * 1000;        // 1 Stunde Fenster (Cron läuft stündlich)
+    const todayStr = new Date().toISOString().slice(0, 10);
 
-    // Datum-Hilfsfunktion
-    const fmtDate = (dateStr) => {
-      const d = new Date(dateStr + 'T12:00:00');
-      const days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
-      const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
-      return `${days[d.getDay()]}, ${d.getDate()}. ${months[d.getMonth()]}`;
-    };
+    // Nur zwischen 08:00 und 21:00 Uhr (Europe/Berlin) senden
+    const berlinHour = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin', hour: 'numeric', hour12: false });
+    const hour = parseInt(berlinHour);
+    if (hour < 8 || hour >= 21) {
+      return res.status(200).json({ sent: 0, message: `Außerhalb Sendezeit (${hour}:xx Uhr)` });
+    }
 
-    // Alle Daten aus Firebase laden
-    const [trainingsRes, gamesRes, playersRes, subsRes] = await Promise.all([
+    // Alles aus Firebase laden
+    const [trainingsRes, gamesRes, pollsRes, subsRes] = await Promise.all([
       fetch(`${DB_URL}/trainings.json`),
       fetch(`${DB_URL}/games.json`),
-      fetch(`${DB_URL}/players.json`),
+      fetch(`${DB_URL}/polls.json`),
       fetch(`${DB_URL}/pushSubscriptions.json`)
     ]);
 
-    const [trainingsData, gamesData, playersData, subs] = await Promise.all([
+    const [trainingsData, gamesData, pollsData, subs] = await Promise.all([
       trainingsRes.json(),
       gamesRes.json(),
-      playersRes.json(),
+      pollsRes.json(),
       subsRes.json()
     ]);
 
     if (!subs) return res.status(200).json({ sent: 0, message: 'Keine Subscriptions' });
 
     const toDelete = [];
-    let sentCount = 0;
+    let sentCount  = 0;
 
-    // ── 1. TRAINING-REMINDER: Training in 2 Tagen, noch keine Abstimmung ──
+    // ──────────────────────────────────────────────
+    // 1. TRAINING: 5h nach Erstellung, noch offene Stimmen
+    // ──────────────────────────────────────────────
     if (trainingsData) {
-      const in2Days = new Date(today);
-      in2Days.setDate(today.getDate() + 2);
-      const in2DaysStr = in2Days.toISOString().slice(0, 10);
+      for (const [id, t] of Object.entries(trainingsData)) {
+        if (t.reminderSent) continue;           // schon erinnert
+        if (!t.createdAt) continue;
+        if (t.date < todayStr) continue;        // vergangene Trainings überspringen
 
-      const upcoming = Object.values(trainingsData).filter(t => t.date === in2DaysStr);
+        const age = now - t.createdAt;
+        if (age < REMIND_AFTER_MS || age > REMIND_AFTER_MS + WINDOW_MS) continue;
 
-      for (const training of upcoming) {
+        // Wer hat noch nicht geantwortet?
+        const attendances = t.attendances || {};
+        const total    = Object.keys(attendances).length;
+        const answered = Object.values(attendances).filter(v => v === 'yes' || v === 'no').length;
+        const open     = total - answered;
+
+        if (open === 0) {
+          // Alle haben geantwortet → nur als erinnert markieren
+          await fbSet(`trainings/${id}/reminderSent`, true);
+          continue;
+        }
+
         const payload = {
-          title: '⏰ Training übermorgen!',
-          body: `${fmtDate(training.date)}${training.time ? ' · ' + training.time + ' Uhr' : ''}${training.location ? ' · ' + training.location : ''} – Bitte noch abstimmen!`,
-          url: 'https://fc-niksar-f1.github.io/fc-niksar/'
+          title: '⏰ Rückmeldung fürs Training fehlt noch!',
+          body: `${fmtDate(t.date)}${t.time ? ' · ' + t.time + ' Uhr' : ''}${t.location ? ' · ' + t.location : ''} – Bitte zu- oder absagen!`,
+          url: BASE_URL + '?page=termine'
         };
 
-        // Nur an Spieler senden die noch nicht abgestimmt haben
-        // (pushSubscriptions sind pro Gerät, nicht pro Spieler → an alle senden)
-        await Promise.allSettled(Object.keys(subs).map(async key => {
-          const ok = await sendPush(subs, toDelete, key, payload);
-          if (ok) sentCount++;
-        }));
+        sentCount += await pushToAll(subs, toDelete, payload);
+        await fbSet(`trainings/${id}/reminderSent`, true);
       }
     }
 
-    // ── 2. SPIEL-KADER-REMINDER: Nominiert aber keine Rückmeldung seit ≥1 Tag ──
-    if (gamesData && playersData) {
-      const upcomingGames = Object.entries(gamesData)
-        .map(([id, g]) => ({ id, ...g }))
-        .filter(g => g.date >= todayStr);
+    // ──────────────────────────────────────────────
+    // 2. SPIEL: 5h nach Erstellung, Kader ohne Rückmeldung
+    // ──────────────────────────────────────────────
+    if (gamesData) {
+      for (const [id, g] of Object.entries(gamesData)) {
+        if (g.reminderSent) continue;
+        if (!g.createdAt) continue;
+        if (g.date < todayStr) continue;
 
-      // Spieler-Map: pushKey → playerId (gespeichert in Firebase unter players/{id}/pushKey)
-      // Da wir keinen direkten Mapping haben, nutzen wir players mit pushSubscriptionKey
-      const playerMap = {}; // playerId → pushSubscriptionKey
-      if (playersData) {
-        Object.entries(playersData).forEach(([id, p]) => {
-          if (p.pushKey) playerMap[id] = p.pushKey;
-        });
-      }
+        const age = now - g.createdAt;
+        if (age < REMIND_AFTER_MS || age > REMIND_AFTER_MS + WINDOW_MS) continue;
 
-      for (const game of upcomingGames) {
-        const squad = game.squad || {};
-        const squadConfirm = game.squadConfirm || {};
-        const createdAt = game.createdAt || 0;
+        // Nominierte Spieler ohne Bestätigung
+        const squad        = g.squad || {};
+        const squadConfirm = g.squadConfirm || {};
+        const nominated    = Object.keys(squad).filter(pid => squad[pid] === true);
+        const confirmed    = nominated.filter(pid => squadConfirm[pid] === 'yes' || squadConfirm[pid] === 'no');
+        const open         = nominated.length - confirmed.length;
 
-        // Spiel muss mindestens 1 Tag alt sein (damit erste Push schon raus ist)
-        const ageMs = Date.now() - createdAt;
-        const oneDayMs = 24 * 60 * 60 * 1000;
-        if (ageMs < oneDayMs) continue;
-
-        // Nominierte Spieler ohne Rückmeldung finden
-        const pendingPlayerIds = Object.keys(squad)
-          .filter(pid => squad[pid] === true)
-          .filter(pid => !squadConfirm[pid] || squadConfirm[pid] === 'open');
-
-        if (pendingPlayerIds.length === 0) continue;
+        if (nominated.length > 0 && open === 0) {
+          await fbSet(`games/${id}/reminderSent`, true);
+          continue;
+        }
 
         const payload = {
           title: '⚽ Rückmeldung fürs Spiel fehlt noch!',
-          body: `${game.opponent || 'Spiel'} · ${fmtDate(game.date)}${game.time ? ' · ' + game.time + ' Uhr' : ''} – Bitte zu- oder absagen!`,
-          url: 'https://fc-niksar-f1.github.io/fc-niksar/'
+          body: `${g.opponent || 'Spiel'} · ${fmtDate(g.date)}${g.time ? ' · ' + g.time + ' Uhr' : ''} – Bitte zu- oder absagen!`,
+          url: BASE_URL + '?page=termine'
         };
 
-        // An Spieler mit bekanntem pushKey senden
-        const sentToKeys = new Set();
-        for (const pid of pendingPlayerIds) {
-          const pushKey = playerMap[pid];
-          if (pushKey && subs[pushKey] && !sentToKeys.has(pushKey)) {
-            const ok = await sendPush(subs, toDelete, pushKey, payload);
-            if (ok) { sentCount++; sentToKeys.add(pushKey); }
-          }
-        }
-
-        // Falls kein pushKey-Mapping vorhanden: an alle senden (Fallback)
-        if (sentToKeys.size === 0 && pendingPlayerIds.length > 0) {
-          await Promise.allSettled(Object.keys(subs).map(async key => {
-            const ok = await sendPush(subs, toDelete, key, payload);
-            if (ok) sentCount++;
-          }));
-        }
+        sentCount += await pushToAll(subs, toDelete, payload);
+        await fbSet(`games/${id}/reminderSent`, true);
       }
     }
 
-    // Abgelaufene Subscriptions löschen
+    // ──────────────────────────────────────────────
+    // 3. ABSTIMMUNG: 5h nach Erstellung, noch nicht alle abgestimmt
+    // ──────────────────────────────────────────────
+    if (pollsData) {
+      const subsCount = Object.keys(subs).length;
+
+      for (const [id, p] of Object.entries(pollsData)) {
+        if (p.reminderSent) continue;
+        if (!p.createdAt) continue;
+
+        // Abgelaufene Abstimmungen überspringen
+        if (p.deadline && p.deadline < todayStr) continue;
+
+        const age = now - p.createdAt;
+        if (age < REMIND_AFTER_MS || age > REMIND_AFTER_MS + WINDOW_MS) continue;
+
+        const votes     = p.votes || {};
+        const voteCount = Object.keys(votes).length;
+
+        // Wenn alle abgestimmt haben, keinen Reminder nötig
+        if (subsCount > 0 && voteCount >= subsCount) {
+          await fbSet(`polls/${id}/reminderSent`, true);
+          continue;
+        }
+
+        const question = (p.question || 'Abstimmung').slice(0, 60);
+        const payload = {
+          title: '🗳️ Noch nicht abgestimmt?',
+          body: `„${question}" – Bitte jetzt abstimmen!`,
+          url: BASE_URL + '?page=home'
+        };
+
+        sentCount += await pushToAll(subs, toDelete, payload);
+        await fbSet(`polls/${id}/reminderSent`, true);
+      }
+    }
+
+    // Abgelaufene Subscriptions aufräumen
     await Promise.allSettled([...new Set(toDelete)].map(key =>
       fetch(`${DB_URL}/pushSubscriptions/${key}.json`, { method: 'DELETE' })
     ));
 
+    console.log(`Reminder: ${sentCount} Pushes gesendet, ${toDelete.length} Subs gelöscht`);
     return res.status(200).json({ sent: sentCount, deleted: toDelete.length });
+
   } catch (e) {
     console.error('Reminder-Fehler:', e);
     return res.status(500).json({ error: e.message });
