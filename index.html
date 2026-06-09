@@ -4398,6 +4398,11 @@ function renderEinstellungenTab(c) {
     <div class="card" style="padding:16px">
       <div style="font-size:15px;font-weight:700;margin-bottom:12px"><i class="fa fa-download"></i> Daten exportieren</div>
       <button class="btn-primary" onclick="exportData()"><i class="fa fa-file-export"></i> Als JSON exportieren</button>
+    </div>
+    <div class="card" style="padding:16px;border:1.5px solid #FECACA">
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px;color:#DC2626"><i class="fa fa-trash"></i> Chat leeren</div>
+      <div style="font-size:13px;color:#6B7280;margin-bottom:12px">Alle Nachrichten im Mannschafts-Chat unwiderruflich löschen.</div>
+      <button onclick="clearChat()" style="background:#DC2626;color:#fff;border:none;border-radius:10px;padding:11px 20px;font-size:14px;font-weight:700;width:100%;cursor:pointer">🗑 Chat jetzt leeren</button>
     </div>`;
 }
 
@@ -4433,6 +4438,25 @@ function uploadLogo(input) {
   };
   reader.readAsDataURL(file);
   input.value = '';
+}
+
+function clearChat() {
+  showModal(`
+    <div style="text-align:center;padding:8px 0">
+      <div style="font-size:40px;margin-bottom:12px">🗑</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:8px">Chat wirklich leeren?</div>
+      <div style="font-size:14px;color:#6B7280;margin-bottom:20px">Alle Nachrichten werden unwiderruflich gelöscht.</div>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeModal()" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid #e5e7eb;background:#fff;font-size:15px;cursor:pointer">Abbrechen</button>
+        <button onclick="
+          db.ref('/chat').remove();
+          db.ref('/chatRead').remove();
+          STATE.chat=[];
+          closeModal();
+          alert('✅ Chat wurde geleert.');
+        " style="flex:1;padding:12px;border-radius:10px;border:none;background:#DC2626;color:#fff;font-size:15px;font-weight:700;cursor:pointer">Löschen</button>
+      </div>
+    </div>`);
 }
 
 function exportData() {
