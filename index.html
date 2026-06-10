@@ -569,7 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // visibilitychange ist zuverlässiger als postMessage in diesem Fall
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && currentPage === 'chat') {
-      // Sicherstellen dass wir ganz unten sind
+      startChatScrollObserver();
       [0, 100, 300, 600].forEach(d =>
         setTimeout(() => { fixChatHeight(); scrollChatToBottom(); }, d)
       );
@@ -701,10 +701,31 @@ function showApp() {
 function scrollChatToBottom() {
   const c = document.getElementById('chatMessages');
   if (!c) return;
-  // scrollIntoView auf letztes Element ist auf iOS zuverlässiger als scrollTop=scrollHeight
   const last = c.lastElementChild;
   if (last) last.scrollIntoView({ block: 'end', behavior: 'instant' });
   else c.scrollTop = c.scrollHeight;
+}
+
+let _chatScrollObserver = null;
+function startChatScrollObserver() {
+  // Vorherigen Observer stoppen falls aktiv
+  if (_chatScrollObserver) { _chatScrollObserver.disconnect(); _chatScrollObserver = null; }
+  const c = document.getElementById('chatMessages');
+  if (!c) return;
+  // MutationObserver: scrollt nach unten sobald neue Nachrichten ins DOM kommen
+  _chatScrollObserver = new MutationObserver(() => {
+    scrollChatToBottom();
+    // Nach erfolgreichem Scroll Observer abschalten (nur für den Ladevorgang)
+    if (_chatScrollObserver) {
+      _chatScrollObserver.disconnect();
+      _chatScrollObserver = null;
+    }
+  });
+  _chatScrollObserver.observe(c, { childList: true, subtree: false });
+  // Fallback: nach 3s abschalten falls keine Nachrichten kamen
+  setTimeout(() => {
+    if (_chatScrollObserver) { _chatScrollObserver.disconnect(); _chatScrollObserver = null; }
+  }, 3000);
 }
 
 function fixChatHeight() {
@@ -810,8 +831,10 @@ function switchPage(page) {
     LSset('lastChatRead', String(lastChatRead));
     updateChatBadge();
     markChatRead();
+    // Observer VOR renderChat starten – fängt DOM-Änderungen beim Laden ab
+    startChatScrollObserver();
     renderChat();
-    // Mehrere Versuche – iOS berechnet Layout asynchron
+    // Zusätzliche Timeout-Fallbacks für den Fall dass Nachrichten schon im DOM sind
     [50, 200, 500, 1000].forEach(d => setTimeout(() => { fixChatHeight(); scrollChatToBottom(); }, d));
   }
   else if(page === 'team') renderTeam();
