@@ -1315,6 +1315,14 @@ function renderHome() {
 
     const notesHtml = isT && ev.notes ? `<div style="padding:0 12px 8px;font-size:11px;color:#6B7280;font-style:italic">${linkify(ev.notes)}</div>` : !isT && ev.notes ? `<div style="padding:0 12px 8px;font-size:11px;color:#6B7280">${linkify(ev.notes)}</div>` : '';
 
+    // Wetter für Training (nur wenn isT und location)
+    let weatherHtml = '';
+    if (isT && ev.location) {
+      weatherHtml = `<div id="weather-${ev.id}" data-date="${ev.date}" data-location="${escHtml(ev.location)}" style="display:flex;gap:2px;align-items:center;font-size:12px;font-weight:600">
+        <span style="opacity:.7">⏳</span>
+      </div>`;
+    }
+
     html += `<div id="evcard-${ev.id}" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.07)">
       <div style="background:${headerBg};padding:13px 16px;display:flex;align-items:center;gap:12px">
         <div style="background:rgba(255,255,255,.18);border-radius:10px;padding:6px 10px;text-align:center;min-width:48px">
@@ -1325,8 +1333,9 @@ function renderHome() {
           <div style="font-size:16px;font-weight:800;color:#fff${isCancelled?';text-decoration:line-through;opacity:.7':''}">${isCancelled?'🚨 ':(isT?'🏃 ':'⚽ ')}${isT?'Training':escHtml(ev.opponent||'Spiel')}</div>
           ${ev.location ? `<div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:2px">📍 ${escHtml(ev.location)}</div>` : ''}
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:11px">
           ${isNew(ev.createdAt)?'<span style="background:#EF4444;color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700">NEU</span>':''}
+          ${weatherHtml}
           <button onclick="event.stopPropagation();calBtn(this)" data-title="${isT?'FC Niksar Training':'FC Niksar - '+(ev.opponent||'')}" data-date="${ev.date||''}" data-time="${isT?(ev.time||''):(ev.time||'')}" data-loc="${(ev.location||'').replace(/"/g,'')}" data-dur="${isT?90:120}" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.25);border-radius:8px;padding:5px 8px;font-size:11px;color:rgba(255,255,255,.85);cursor:pointer"><i class="fas fa-calendar-plus"></i></button>
         </div>
       </div>
@@ -1546,6 +1555,34 @@ function _oldSlider_noop() { if(false) { [].forEach(t => {
       });
     }, {passive: true});
   });
+
+  // Wetter für nächste Trainings laden
+  setTimeout(() => loadWeatherForUpcomingTrainings(), 100);
+}
+
+// Wetter für alle angezeigten Trainings laden
+async function loadWeatherForUpcomingTrainings() {
+  const weatherEls = document.querySelectorAll('[id^="weather-"]');
+  for (const el of weatherEls) {
+    const date = el.dataset.date;
+    const location = el.dataset.location;
+    if (!date || !location) continue;
+
+    const coords = await geocodeLocation(location);
+    if (!coords) {
+      el.textContent = '';
+      continue;
+    }
+
+    const weather = await getWeather(coords.lat, coords.lon, date);
+    if (!weather) {
+      el.textContent = '';
+      continue;
+    }
+
+    const w = weatherIcon(weather.code, weather.temp, weather.rain);
+    el.innerHTML = `<span style="font-size:14px">${w.icon}</span><span style="font-size:10px;opacity:.8">${w.label}</span>`;
+  }
 }
 
 // ---- TERMINE / CALENDAR ----
@@ -4709,6 +4746,75 @@ function urlBase64ToUint8Array(b64){const pad='='.repeat((4-b64.length%4)%4);con
 async function notifyAll(title,body,excludeSelf=false,page=''){try{const excludeKey=excludeSelf?(LS('myPushKey')||null):null;await fetch(PUSH_API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,body,excludeKey,page})});}catch(e){}}
 async function notifyAllExceptMePage(title,body,page){return notifyAll(title,body,true,page);}
 async function notifyAllExceptMe(title,body){return notifyAll(title,body,true);}
+
+// ── WETTER-WIDGET mit Open-Meteo ──
+async function geocodeLocation(location) {
+  if (!location || location.length < 2) return null;
+  try {
+    const cache = LS(`weather_geo_${location}`);
+    if (cache) return JSON.parse(cache);
+
+    const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=de`, {timeout: 5000});
+    const data = await res.json();
+    if (!data.results || data.results.length === 0) return null;
+
+    const result = data.results[0];
+    const coords = { lat: result.latitude, lon: result.longitude };
+    LSset(`weather_geo_${location}`, JSON.stringify(coords));
+    return coords;
+  } catch(e) {
+    console.log('Geocoding Fehler:', e);
+    return null;
+  }
+}
+
+async function getWeather(lat, lon, date) {
+  if (!lat || !lon) return null;
+  try {
+    // Prüfe Cache (täglich)
+    const cacheKey = `weather_${lat}_${lon}_${date}`;
+    const cached = LS(cacheKey);
+    if (cached) {
+      const c = JSON.parse(cached);
+      const now = Date.now();
+      if (now - c.ts < 86400000) return c.data; // 24 Stunden
+    }
+
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weather_code,temperature_2m_max,precipitation_sum,precipitation_probability_max&timezone=Europe/Berlin`, {timeout: 5000});
+    const data = await res.json();
+    if (!data.daily) return null;
+
+    const dailyData = data.daily;
+    const idx = dailyData.time.indexOf(date);
+    if (idx === -1) return null;
+
+    const weather = {
+      code: dailyData.weather_code[idx],
+      temp: Math.round(dailyData.temperature_2m_max[idx]),
+      rain: dailyData.precipitation_probability_max[idx] || 0
+    };
+
+    LSset(cacheKey, JSON.stringify({ ts: Date.now(), data: weather }));
+    return weather;
+  } catch(e) {
+    console.log('Weather Fehler:', e);
+    return null;
+  }
+}
+
+function weatherIcon(code, temp, rain) {
+  // WMO Weather Codes
+  if (code === 0) return { icon: '☀️', label: temp + '°' };
+  if (code === 1 || code === 2) return { icon: '🌤️', label: temp + '°' };
+  if (code === 3) return { icon: '☁️', label: temp + '°' };
+  if (code >= 45 && code <= 48) return { icon: '🌫️', label: temp + '°' };
+  if (code >= 51 && code <= 67) return { icon: '🌧️', label: rain + '%' };
+  if (code >= 71 && code <= 77) return { icon: '❄️', label: temp + '°' };
+  if (code >= 80 && code <= 82) return { icon: '🌧️', label: rain + '%' };
+  if (code >= 85 && code <= 86) return { icon: '❄️', label: temp + '°' };
+  if (code === 95 || code === 96 || code === 99) return { icon: '⛈️', label: rain + '%' };
+  return { icon: '🌡️', label: temp + '°' };
+}
 async function subscribeToPush(){if(!('PushManager'in window)){alert('Push-Benachrichtigungen werden auf diesem Geraet nicht unterstuetzt.');return;}const p=await Notification.requestPermission();if(p!=='granted'){alert('Bitte erlaube Benachrichtigungen in den Einstellungen.');return;}try{const r=await navigator.serviceWorker.ready;const old=await r.pushManager.getSubscription();if(old)await old.unsubscribe();const s=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});const k=btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(-28);await db.ref('/pushSubscriptions/'+k).set(s.toJSON());LSset('pushEnabled','true');LSset('myPushKey',k);alert('✅ Benachrichtigungen aktiviert!');if(document.getElementById('pushBtn')){document.getElementById('pushBtn').textContent='✅ Aktiviert';document.getElementById('pushBtn').style.background='#10B981';document.getElementById('pushBtn').disabled=true;}}catch(e){alert('FEHLER bei Schritt: '+e.message);}}
 async function resubscribePush(){
   try {
