@@ -951,13 +951,15 @@ function renderHome() {
   const pid = profile?.playerId;
   const todayStr = new Date().toISOString().slice(0,10);
 
+  const _hideCancelled = ev => !ev.cancelled || !localStorage.getItem('seen_cancel_' + ev.id);
+
   const upcomingTrainings = STATE.trainings
-    .filter(t => t.date && t.date >= todayStr)
+    .filter(t => t.date && t.date >= todayStr && _hideCancelled(t))
     .map(t => ({...t, sortDate: parseSortDate(t.date, t.time)}))
     .sort((a,b) => a.sortDate - b.sortDate);
 
   const upcomingGames = STATE.games
-    .filter(g => g.date && g.date >= todayStr)
+    .filter(g => g.date && g.date >= todayStr && _hideCancelled(g))
     .map(g => ({...g, sortDate: parseSortDate(g.date, g.time)}))
     .sort((a,b) => a.sortDate - b.sortDate);
 
@@ -1473,12 +1475,13 @@ function renderTermine() {
 
   const eventMap = {};
 
-  STATE.trainings.forEach(t => {
+  const _hideCanc = ev => !ev.cancelled || !localStorage.getItem('seen_cancel_' + ev.id);
+  STATE.trainings.filter(_hideCanc).forEach(t => {
     if(!t.date) return;
     if(!eventMap[t.date]) eventMap[t.date] = [];
     eventMap[t.date].push({...t, _type:'training'});
   });
-  STATE.games.forEach(g => {
+  STATE.games.filter(_hideCanc).forEach(g => {
     if(!g.date) return;
     if(!eventMap[g.date]) eventMap[g.date] = [];
     eventMap[g.date].push({...g, _type:'game'});
@@ -3393,7 +3396,7 @@ function deletePlayer(id) {
 // ---- TRAINING TAB ----
 function renderTrainingTab(c) {
   const today = new Date().toISOString().slice(0,10);
-  const sorted = [...STATE.trainings].sort((a,b) => new Date(a.date) - new Date(b.date));
+  const sorted = [...STATE.trainings].filter(t => !t.cancelled).sort((a,b) => new Date(a.date) - new Date(b.date));
   c.innerHTML = `
     <button class="btn-primary" onclick="addTrainingModal()"><i class="fa fa-plus"></i> Training hinzufügen</button>
     ${sorted.map(t => {
@@ -3714,7 +3717,7 @@ function toggleActual(tid, pid, val){ db.ref('/trainings/'+tid+'/actual/'+pid).s
 
 // ---- SPIELE TAB ----
 function renderSpieleTab(c) {
-  const sorted = [...STATE.games].sort((a,b) => new Date(a.date) - new Date(b.date));
+  const sorted = [...STATE.games].filter(g => !g.cancelled).sort((a,b) => new Date(a.date) - new Date(b.date));
   c.innerHTML = `
     <button class="btn-primary" onclick="addGameModal()"><i class="fa fa-plus"></i> Spiel hinzufügen</button>
     ${sorted.map(g => {
@@ -4514,6 +4517,8 @@ function _showNextCancelPopup() {
   document.getElementById('cancelPopupOkBtn')?.addEventListener('click', () => {
     localStorage.setItem('seen_cancel_' + evId, '1');
     closeModal();
+    renderHome();
+    renderTermine();
     setTimeout(_showNextCancelPopup, 400);
   });
 }
