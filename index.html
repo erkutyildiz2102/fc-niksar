@@ -550,15 +550,15 @@ document.addEventListener('DOMContentLoaded', () => {
   if (urlPage) {
     // URL sauber halten (ohne ?page=...)
     history.replaceState(null, '', window.location.pathname);
-    setTimeout(() => navTap(urlPage), 800);
+    navTap(urlPage); // sofort, kein Delay
   }
 
   // Push-Benachrichtigung angeklickt während App offen war → postMessage vom SW
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', e => {
       if (e.data?.type === 'NAVIGATE' && e.data.url) {
-        const p = new URL(e.data.url).searchParams.get('page');
-        if (p) navTap(p);
+        const p = new URL(e.data.url).searchParams.get('page') || 'home';
+        navTap(p); // kein page-Param = home
       }
     });
   }
