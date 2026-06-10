@@ -550,15 +550,17 @@ document.addEventListener('DOMContentLoaded', () => {
   if (urlPage) {
     // URL sauber halten (ohne ?page=...)
     history.replaceState(null, '', window.location.pathname);
-    navTap(urlPage); // sofort, kein Delay
+    // Nur Chat geht in den Chat – alles andere (termine, etc.) → Startseite
+    navTap(urlPage === 'chat' ? 'chat' : 'home');
   }
 
   // Push-Benachrichtigung angeklickt während App offen war → postMessage vom SW
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', e => {
       if (e.data?.type === 'NAVIGATE' && e.data.url) {
-        const p = new URL(e.data.url).searchParams.get('page') || 'home';
-        navTap(p); // kein page-Param = home
+        const p = new URL(e.data.url).searchParams.get('page');
+        // Nur Chat geht in den Chat – alles andere → Startseite
+        navTap(p === 'chat' ? 'chat' : 'home');
       }
     });
   }
@@ -2382,7 +2384,11 @@ function appendNewChatMessages() {
 
   // Immer nach unten wenn Tastatur offen (Input fokussiert) oder User schon fast unten war
   const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
-  if (nearBottom || chatInputWasFocused) container.scrollTop = container.scrollHeight;
+  if (nearBottom || chatInputWasFocused) {
+    container.scrollTop = container.scrollHeight;
+    // Nochmal nach kurzer Zeit – für langsame Render-Pfade (z.B. App via Push geöffnet)
+    setTimeout(() => { container.scrollTop = container.scrollHeight; }, 200);
+  }
 }
 
 function renderChat() {
