@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>FC Niksar App – Funktionsübersicht</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#f1f5f9;color:#1e293b;font-size:13px}
+
+/* ── SEITEN ── */
+.page{width:210mm;min-height:297mm;margin:0 auto 12px;background:#fff;position:relative;overflow:hidden}
+
+/* ── DECKBLATT ── */
+.cover{background:linear-gradient(150deg,#0A2540 0%,#0d3b6e 50%,#1a56a0 100%);min-height:297mm;display:flex;flex-direction:column;padding:0}
+.cover-top{padding:48px 48px 0;flex:1;display:flex;flex-direction:column;justify-content:center}
+.cover-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:40px;padding:7px 18px;font-size:11px;font-weight:700;color:rgba(255,255,255,.85);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:28px;width:fit-content}
+.cover h1{font-size:46px;font-weight:900;color:#fff;line-height:1.1;margin-bottom:14px}
+.cover h1 em{color:#60a5fa;font-style:normal}
+.cover-sub{font-size:16px;color:rgba(255,255,255,.65);line-height:1.65;margin-bottom:44px;max-width:340px}
+.cover-stats{display:flex;gap:16px;margin-bottom:52px}
+.cstat{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:16px 20px;text-align:center;min-width:110px}
+.cstat-num{font-size:28px;font-weight:900;color:#fff}
+.cstat-lbl{font-size:11px;color:rgba(255,255,255,.55);margin-top:4px;font-weight:600}
+.cover-bottom{background:rgba(0,0,0,.2);padding:20px 48px;display:flex;justify-content:space-between;align-items:center}
+.cover-bottom-l{font-size:12px;color:rgba(255,255,255,.4)}
+.cover-bottom-r{font-size:12px;color:rgba(255,255,255,.4)}
+
+/* ── INHALTS-SEITEN ── */
+.cp{padding:42px 44px 36px;min-height:297mm;display:flex;flex-direction:column;page-break-after:always}
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;padding-bottom:14px;border-bottom:2px solid #f1f5f9}
+.page-header-l{display:flex;align-items:center;gap:10px}
+.ph-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.ph-title{font-size:18px;font-weight:900;color:#0A2540}
+.ph-sub{font-size:11px;color:#94a3b8;font-weight:600;margin-top:1px}
+.page-num{font-size:11px;color:#cbd5e1;font-weight:600}
+
+/* ── FEATURE-GRID ── */
+.feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.feat-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.feat-full{grid-column:1/-1}
+
+.fcard{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 16px}
+.fcard-head{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.fcard-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.fcard-title{font-size:13px;font-weight:800;color:#0A2540}
+.fcard-sub{font-size:11px;color:#94a3b8;margin-top:1px}
+.flist{list-style:none;display:flex;flex-direction:column;gap:5px}
+.flist li{display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:#475569;line-height:1.45}
+.flist li::before{content:'✓';color:#22c55e;font-weight:800;flex-shrink:0;margin-top:1px}
+
+/* ── SECTION LABEL ── */
+.section-label{font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;margin-bottom:10px;margin-top:6px}
+
+/* ── HIGHLIGHT ── */
+.hl{background:linear-gradient(135deg,#0A2540,#1a3f6f);border-radius:12px;padding:16px 20px;margin-bottom:14px}
+.hl-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.hl-icon{font-size:20px}
+.hl-title{font-size:14px;font-weight:800;color:#fff}
+.hl-body{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hl-item{display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:rgba(255,255,255,.75);line-height:1.45}
+.hl-item::before{content:'→';color:#60a5fa;font-weight:800;flex-shrink:0}
+
+/* ── BADGE CHIPS ── */
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:3px 9px;font-size:10px;font-weight:700}
+.chip-blue{background:#EFF6FF;color:#1d4ed8;border:1px solid #BFDBFE}
+.chip-green{background:#F0FDF4;color:#15803d;border:1px solid #BBF7D0}
+.chip-red{background:#FFF1F2;color:#be123c;border:1px solid #FECDD3}
+.chip-yellow{background:#FEFCE8;color:#854d0e;border:1px solid #FEF08A}
+.chip-purple{background:#F5F3FF;color:#6d28d9;border:1px solid #DDD6FE}
+.chip-gray{background:#F8FAFC;color:#475569;border:1px solid #E2E8F0}
+
+/* ── FOOTER ── */
+.footer{margin-top:auto;padding-top:16px;border-top:1.5px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center}
+.footer-brand{font-size:11px;font-weight:800;color:#0A2540}
+.footer-page{font-size:11px;color:#cbd5e1}
+
+/* ── TABELLEN ── */
+.tbl{width:100%;border-collapse:collapse;margin-bottom:14px}
+.tbl th{background:#0A2540;color:#fff;font-size:11px;font-weight:700;padding:9px 12px;text-align:left}
+.tbl th:first-child{border-radius:8px 0 0 0}
+.tbl th:last-child{border-radius:0 8px 0 0}
+.tbl td{padding:9px 12px;font-size:11.5px;color:#374151;border-bottom:1px solid #f1f5f9;vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:nth-child(even) td{background:#f8fafc}
+
+/* ── DIVIDER ── */
+.divider{height:1.5px;background:#f1f5f9;margin:14px 0}
+
+@media print{
+  body{background:#fff}
+  .page{margin:0;box-shadow:none}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     DECKBLATT
+══════════════════════════════════ -->
+<div class="page">
+<div class="cover">
+  <div class="cover-top">
+    <div class="cover-eyebrow">⚽ FC Niksar · App-Dokumentation</div>
+    <h1>Alles was die<br><em>FC Niksar App</em><br>kann.</h1>
+    <p class="cover-sub">Eine vollständige Übersicht aller Funktionen – für Trainer, Eltern und den Verein.</p>
+    <div class="cover-stats">
+      <div class="cstat"><div class="cstat-num">6</div><div class="cstat-lbl">Hauptbereiche</div></div>
+      <div class="cstat"><div class="cstat-num">40+</div><div class="cstat-lbl">Funktionen</div></div>
+      <div class="cstat"><div class="cstat-num">100%</div><div class="cstat-lbl">Kostenlos</div></div>
+    </div>
+  </div>
+  <div class="cover-bottom">
+    <div class="cover-bottom-l">Erstellt mit Claude · Juni 2026</div>
+    <div class="cover-bottom-r">fc-niksar-f1.github.io/fc-niksar</div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════
+     SEITE 2 – ÜBERSICHT / NAVIGATION
+══════════════════════════════════ -->
+<div class="page">
+<div class="cp">
+  <div class="page-header">
+    <div class="page-header-l">
+      <div class="ph-icon" style="background:#EFF6FF">🗺️</div>
+      <div><div class="ph-title">App-Übersicht</div><div class="ph-sub">Alle Bereiche auf einen Blick</div></div>
+    </div>
+    <div class="page-num">Seite 2 / 8</div>
+  </div>
+
+  <div class="hl">
+    <div class="hl-head"><div class="hl-icon">📱</div><div class="hl-title">Was ist die FC Niksar App?</div></div>
+    <div class="hl-body">
+      <div class="hl-item">PWA (Progressive Web App) – läuft im Browser, verhält sich wie eine native App</div>
+      <div class="hl-item">Keine Installation nötig – einfach als Icon auf den Homescreen hinzufügen</div>
+      <div class="hl-item">Funktioniert auf iOS (iPhone) und Android</div>
+      <div class="hl-item">Echtzeit-Synchronisation – alle sehen sofort die gleichen Daten</div>
+      <div class="hl-item">Push-Benachrichtigungen auch wenn die App geschlossen ist</div>
+      <div class="hl-item">Kostenlos – keine monatlichen Gebühren, keine Abonnements</div>
+    </div>
+  </div>
+
+  <div class="section-label">6 Hauptbereiche der App</div>
+  <div class="feat-grid">
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#EFF6FF">🏠</div>
+        <div><div class="fcard-title">1 · Start</div><div class="fcard-sub">Persönliche Übersicht</div></div>
+      </div>
+      <ul class="flist">
+        <li>Profil mit eigenem Foto & Kind-Zuordnung</li>
+        <li>Nächste Trainings & Spiele auf einen Blick</li>
+        <li>Offene Rückmeldungen direkt sichtbar</li>
+        <li>Aktive Abstimmungen mit Ergebnissen</li>
+        <li>Persönliche Statistik (Zusagen, Absagen, Spiele)</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#FEF9C3">📅</div>
+        <div><div class="fcard-title">2 · Termine</div><div class="fcard-sub">Kalender & Planung</div></div>
+      </div>
+      <ul class="flist">
+        <li>Monatskalender mit allen Events</li>
+        <li>Rückmeldung zu Trainings & Spielen</li>
+        <li>Abwesenheiten eintragen</li>
+        <li>Abstimmungen & Umfragen</li>
+        <li>Kalender-Export (Google, Apple, Outlook)</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#F0FDF4">👕</div>
+        <div><div class="fcard-title">3 · Team</div><div class="fcard-sub">Mannschaft</div></div>
+      </div>
+      <ul class="flist">
+        <li>Alle Spieler mit Foto & Rückennummer</li>
+        <li>Geburtstage mit Countdown</li>
+        <li>Sortierung nach Nummer</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#ECFDF5">💬</div>
+        <div><div class="fcard-title">4 · Chat</div><div class="fcard-sub">Mannschafts-Chat</div></div>
+      </div>
+      <ul class="flist">
+        <li>WhatsApp-ähnlicher Gruppen-Chat</li>
+        <li>Bilder & Dateien versenden</li>
+        <li>Emoji-Reaktionen auf Nachrichten</li>
+        <li>Antworten auf einzelne Nachrichten</li>
+        <li>Automatische Ankündigungen bei Absagen</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#FFF7ED">🖼️</div>
+        <div><div class="fcard-title">5 · Galerie</div><div class="fcard-sub">Fotos</div></div>
+      </div>
+      <ul class="flist">
+        <li>Foto-Gitter aller Mannschaftsfotos</li>
+        <li>Vollbild-Ansicht per Tap</li>
+        <li>Trainer kann Fotos hochladen & löschen</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#F5F3FF">🔧</div>
+        <div><div class="fcard-title">6 · Trainer-Bereich</div><div class="fcard-sub">Admin (PIN-geschützt)</div></div>
+      </div>
+      <ul class="flist">
+        <li>Spielerverwaltung</li>
+        <li>Trainings erstellen & verwalten</li>
+        <li>Spiele & Kader verwalten</li>
+        <li>Statistiken & Anwesenheit</li>
+        <li>App-Einstellungen</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-brand">⚽ FC Niksar App</div>
+    <div class="footer-page">Seite 2 von 8</div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════
+     SEITE 3 – START & TERMINE
+══════════════════════════════════ -->
+<div class="page">
+<div class="cp">
+  <div class="page-header">
+    <div class="page-header-l">
+      <div class="ph-icon" style="background:#EFF6FF">🏠</div>
+      <div><div class="ph-title">Start & Termine</div><div class="ph-sub">Für Eltern & Spieler</div></div>
+    </div>
+    <div class="page-num">Seite 3 / 8</div>
+  </div>
+
+  <div class="section-label">Startseite</div>
+  <div class="feat-grid">
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#EFF6FF">👤</div>
+        <div><div class="fcard-title">Mein Profil</div></div>
+      </div>
+      <ul class="flist">
+        <li>Name & Foto hinterlegen</li>
+        <li>Kind dem eigenen Profil zuordnen (PIN)</li>
+        <li>Statistik: Zusagen / Absagen / Spiele</li>
+        <li>Profil jederzeit bearbeitbar</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#FEF9C3">⚡</div>
+        <div><div class="fcard-title">Schnell-Aktionen</div></div>
+      </div>
+      <ul class="flist">
+        <li>Offene Rückmeldungen werden als Banner angezeigt</li>
+        <li>Direkter Sprung zum Training per Tap</li>
+        <li>Abstimmungen sofort sichtbar & abstimmbar</li>
+        <li>Ergebnisse als Balkendiagramm</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-label">Termine-Tab (3 Bereiche)</div>
+  <div class="feat-grid">
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#FEF9C3">📆</div>
+        <div><div class="fcard-title">Kalender</div></div>
+      </div>
+      <ul class="flist">
+        <li>Monatsansicht mit farbigen Punkten</li>
+        <li>Blau = Training · Orange = Spiel</li>
+        <li>Tap auf Tag → alle Details</li>
+        <li>Rückmeldung direkt im Kalender</li>
+        <li>Export zu Google, Apple, Outlook</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#FEE2E2">🤒</div>
+        <div><div class="fcard-title">Abwesenheiten</div></div>
+      </div>
+      <ul class="flist">
+        <li>Krank / Urlaub / Sonstiges melden</li>
+        <li>Einzeltag oder Zeitraum auswählen</li>
+        <li>Optionale Notiz hinzufügen</li>
+        <li>Betroffene Trainings werden angezeigt</li>
+        <li>Trainer sieht alle Abwesenheiten</li>
+      </ul>
+    </div>
+    <div class="fcard feat-full">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#F0FDF4">🗳️</div>
+        <div><div class="fcard-title">Abstimmungen</div></div>
+      </div>
+      <ul class="flist" style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+        <li>Trainer erstellt Umfragen mit beliebigen Optionen</li>
+        <li>Eltern stimmen per Tap ab</li>
+        <li>Deadline (Enddatum) einstellbar</li>
+        <li>Ergebnisse in Echtzeit sichtbar</li>
+        <li>Abgelaufene Abstimmungen archiviert</li>
+        <li>Push-Benachrichtigung bei neuer Abstimmung</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-label">Rückmeldung zu Trainings & Spielen</div>
+  <div class="feat-grid-3">
+    <div class="fcard" style="border-color:#BBF7D0">
+      <div style="font-size:22px;margin-bottom:6px">✅</div>
+      <div style="font-size:12px;font-weight:800;color:#15803d;margin-bottom:4px">Zusagen</div>
+      <div style="font-size:11px;color:#475569">Bestätigt die Teilnahme am Training oder Spiel</div>
+    </div>
+    <div class="fcard" style="border-color:#FECACA">
+      <div style="font-size:22px;margin-bottom:6px">❌</div>
+      <div style="font-size:12px;font-weight:800;color:#dc2626;margin-bottom:4px">Absagen</div>
+      <div style="font-size:11px;color:#475569">Meldet die Abwesenheit – Trainer sieht sofort wer fehlt</div>
+    </div>
+    <div class="fcard" style="border-color:#FDE68A">
+      <div style="font-size:22px;margin-bottom:6px">⏳</div>
+      <div style="font-size:12px;font-weight:800;color:#92400E;margin-bottom:4px">Offen</div>
+      <div style="font-size:11px;color:#475569">Noch keine Rückmeldung – Erinnerung wird automatisch gesendet</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-brand">⚽ FC Niksar App</div>
+    <div class="footer-page">Seite 3 von 8</div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════
+     SEITE 4 – CHAT & GALERIE
+══════════════════════════════════ -->
+<div class="page">
+<div class="cp">
+  <div class="page-header">
+    <div class="page-header-l">
+      <div class="ph-icon" style="background:#ECFDF5">💬</div>
+      <div><div class="ph-title">Chat & Galerie</div><div class="ph-sub">Kommunikation & Fotos</div></div>
+    </div>
+    <div class="page-num">Seite 4 / 8</div>
+  </div>
+
+  <div class="section-label">Mannschafts-Chat</div>
+  <div class="feat-grid">
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#ECFDF5">💬</div>
+        <div><div class="fcard-title">Nachrichten</div></div>
+      </div>
+      <ul class="flist">
+        <li>WhatsApp-ähnliche Oberfläche</li>
+        <li>Eigene Nachrichten rechts (grün), andere links (weiß)</li>
+        <li>Datum-Trennlinien (Heute, Gestern, …)</li>
+        <li>Zeitstempel bei jeder Nachricht</li>
+        <li>Ungelesene Nachrichten als Badge im Tab</li>
+        <li>Scroll-Button zum schnellen Runterscrollen</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#FEF9C3">📎</div>
+        <div><div class="fcard-title">Medien & Dateien</div></div>
+      </div>
+      <ul class="flist">
+        <li>Bilder direkt im Chat anzeigen</li>
+        <li>Vollbild per Tap</li>
+        <li>PDF, Word, Excel, Video versenden</li>
+        <li>Dateigröße & Typ werden angezeigt</li>
+        <li>Direktes Öffnen per Tap</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#F5F3FF">😊</div>
+        <div><div class="fcard-title">Reaktionen & Antworten</div></div>
+      </div>
+      <ul class="flist">
+        <li>Emoji-Reaktionen auf jede Nachricht</li>
+        <li>Reaktionszähler sichtbar</li>
+        <li>Auf einzelne Nachrichten antworten</li>
+        <li>Zitatvorschau beim Antworten</li>
+        <li>Nachricht kopieren oder löschen</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#FEE2E2">🚨</div>
+        <div><div class="fcard-title">Automatische Ankündigungen</div></div>
+      </div>
+      <ul class="flist">
+        <li>Bei Training- oder Spielabsage: roter Ankündigungs-Block im Chat</li>
+        <li>Enthält Event-Info (Datum, Ort) + Absagegrund</li>
+        <li>Wird automatisch gesendet – kein manueller Aufwand</li>
+        <li>Auffällig gestaltet damit niemand es übersieht</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-label">Galerie</div>
+  <div class="feat-grid">
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#FFF7ED">🖼️</div>
+        <div><div class="fcard-title">Foto-Galerie</div></div>
+      </div>
+      <ul class="flist">
+        <li>Alle Mannschaftsfotos in einem Gitter</li>
+        <li>Tap auf Foto → Vollbild-Ansicht</li>
+        <li>Fotos bleiben dauerhaft gespeichert</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#F0FDF4">⬆️</div>
+        <div><div class="fcard-title">Upload (nur Trainer)</div></div>
+      </div>
+      <ul class="flist">
+        <li>Mehrere Fotos gleichzeitig hochladen</li>
+        <li>Automatische Komprimierung (schnelles Laden)</li>
+        <li>Fotos löschen mit Bestätigung</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-brand">⚽ FC Niksar App</div>
+    <div class="footer-page">Seite 4 von 8</div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════
+     SEITE 5 – TRAINER-BEREICH
+══════════════════════════════════ -->
+<div class="page">
+<div class="cp">
+  <div class="page-header">
+    <div class="page-header-l">
+      <div class="ph-icon" style="background:#F5F3FF">🔧</div>
+      <div><div class="ph-title">Trainer-Bereich</div><div class="ph-sub">PIN-geschützter Admin-Bereich</div></div>
+    </div>
+    <div class="page-num">Seite 5 / 8</div>
+  </div>
+
+  <div class="hl">
+    <div class="hl-head"><div class="hl-icon">🔒</div><div class="hl-title">Zugang nur für Trainer – per PIN geschützt</div></div>
+    <div class="hl-body">
+      <div class="hl-item">4-stelliger PIN – nur Trainer kennen ihn</div>
+      <div class="hl-item">PIN kann jederzeit im Einstellungen-Tab geändert werden</div>
+      <div class="hl-item">Eltern können den Trainer-Bereich nicht öffnen</div>
+      <div class="hl-item">Profilwechsel kann für Eltern gesperrt werden</div>
+    </div>
+  </div>
+
+  <div class="feat-grid">
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#EFF6FF">👦</div>
+        <div><div class="fcard-title">Spieler verwalten</div></div>
+      </div>
+      <ul class="flist">
+        <li>Spieler hinzufügen: Name, Nummer, Geburtstag, Foto</li>
+        <li>Foto zuschneiden (Crop-Tool eingebaut)</li>
+        <li>PIN pro Spieler generieren (für Eltern-Zuordnung)</li>
+        <li>PIN per WhatsApp an Eltern versenden</li>
+        <li>Spieler bearbeiten oder löschen</li>
+        <li>Abwesenheiten aller Spieler im Überblick</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#FEF9C3">🏃</div>
+        <div><div class="fcard-title">Trainings verwalten</div></div>
+      </div>
+      <ul class="flist">
+        <li>Einzeltermin oder Trainingsserie erstellen</li>
+        <li>Serie: Wochentag + Zeitraum → alle Termine automatisch</li>
+        <li>Uhrzeit (von/bis), Ort, Hinweise einstellbar</li>
+        <li>Training bearbeiten (einzeln oder ganze Serie)</li>
+        <li>Training absagen mit Grund → Push + Chat-Ankündigung</li>
+        <li>Löschen mit Bestätigung</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#FFF7ED">⚽</div>
+        <div><div class="fcard-title">Spiele verwalten</div></div>
+      </div>
+      <ul class="flist">
+        <li>Spiel erstellen: Gegner, Datum, Uhrzeit, Ort</li>
+        <li>Kader zusammenstellen (Spieler nominieren)</li>
+        <li>Nominierte Spieler bestätigen/ablehnen</li>
+        <li>Abwesende Spieler werden mit Warnung angezeigt</li>
+        <li>Spielergebnis eintragen</li>
+        <li>Spiel absagen mit Grund → Push + Chat-Ankündigung</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#F0FDF4">📊</div>
+        <div><div class="fcard-title">Statistik</div></div>
+      </div>
+      <ul class="flist">
+        <li>Anwesenheits-Tabelle für alle Spieler</li>
+        <li>Prozentwert & Quote pro Spieler (z.B. 8/10)</li>
+        <li>Farbcode: Grün ≥75% · Orange ≥40% · Rot &lt;40%</li>
+        <li>Spalten für jedes Training und Spiel</li>
+        <li>Getrennte Ansicht: Trainings / Spiele</li>
+        <li>Gesamt-Durchschnitt der Mannschaft</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-label">Einstellungen (Trainer)</div>
+  <div class="feat-grid-3">
+    <div class="fcard">
+      <div style="font-size:20px;margin-bottom:6px">🔔</div>
+      <div style="font-size:12px;font-weight:800;color:#0A2540;margin-bottom:4px">Push verwalten</div>
+      <div style="font-size:11px;color:#475569">Status prüfen, neu verbinden, deaktivieren</div>
+    </div>
+    <div class="fcard">
+      <div style="font-size:20px;margin-bottom:6px">🔑</div>
+      <div style="font-size:12px;font-weight:800;color:#0A2540;margin-bottom:4px">PIN ändern</div>
+      <div style="font-size:11px;color:#475569">Neuen Trainer-PIN festlegen</div>
+    </div>
+    <div class="fcard">
+      <div style="font-size:20px;margin-bottom:6px">🏷️</div>
+      <div style="font-size:12px;font-weight:800;color:#0A2540;margin-bottom:4px">Vereinslogo</div>
+      <div style="font-size:11px;color:#475569">Logo hochladen für Splash-Screen</div>
+    </div>
+    <div class="fcard">
+      <div style="font-size:20px;margin-bottom:6px">💬</div>
+      <div style="font-size:12px;font-weight:800;color:#0A2540;margin-bottom:4px">Chat leeren</div>
+      <div style="font-size:11px;color:#475569">Alle Nachrichten löschen</div>
+    </div>
+    <div class="fcard">
+      <div style="font-size:20px;margin-bottom:6px">📤</div>
+      <div style="font-size:12px;font-weight:800;color:#0A2540;margin-bottom:4px">Daten-Export</div>
+      <div style="font-size:11px;color:#475569">Alle Daten als JSON exportieren</div>
+    </div>
+    <div class="fcard">
+      <div style="font-size:20px;margin-bottom:6px">🔒</div>
+      <div style="font-size:12px;font-weight:800;color:#0A2540;margin-bottom:4px">Profil sperren</div>
+      <div style="font-size:11px;color:#475569">Eltern können Profil nicht wechseln</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-brand">⚽ FC Niksar App</div>
+    <div class="footer-page">Seite 5 von 8</div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════
+     SEITE 6 – PUSH-BENACHRICHTIGUNGEN & REMINDER
+══════════════════════════════════ -->
+<div class="page">
+<div class="cp">
+  <div class="page-header">
+    <div class="page-header-l">
+      <div class="ph-icon" style="background:#FEF9C3">🔔</div>
+      <div><div class="ph-title">Push-Benachrichtigungen & Erinnerungen</div><div class="ph-sub">Automatisch – kein manueller Aufwand</div></div>
+    </div>
+    <div class="page-num">Seite 6 / 8</div>
+  </div>
+
+  <div class="hl">
+    <div class="hl-head"><div class="hl-icon">🤖</div><div class="hl-title">Vollautomatisch – der Trainer muss nichts manuell versenden</div></div>
+    <div class="hl-body">
+      <div class="hl-item">Alle Push-Nachrichten werden automatisch an alle Eltern gesendet</div>
+      <div class="hl-item">Funktioniert auch wenn die App geschlossen ist</div>
+      <div class="hl-item">Abgelaufene Geräte-Verbindungen werden automatisch bereinigt</div>
+      <div class="hl-item">Nur zwischen 08:00 und 21:00 Uhr – keine nächtlichen Nachrichten</div>
+    </div>
+  </div>
+
+  <div class="section-label">Sofortige Push-Nachrichten (werden direkt beim Erstellen gesendet)</div>
+  <table class="tbl">
+    <thead><tr><th>Ereignis</th><th>Push-Titel</th><th>Inhalt</th><th>Ziel im App</th></tr></thead>
+    <tbody>
+      <tr><td>🏃 Neues Training erstellt</td><td>🏃 Neues Training!</td><td>Datum, Uhrzeit, Ort</td><td>Startseite</td></tr>
+      <tr><td>🏃 Trainingsserie erstellt</td><td>🏃 Neue Trainingsserie!</td><td>Anzahl Termine, Zeit, Ort</td><td>Startseite</td></tr>
+      <tr><td>⚽ Neues Spiel erstellt</td><td>⚽ Neues Spiel!</td><td>Gegner, Datum</td><td>Startseite</td></tr>
+      <tr><td>🚨 Training abgesagt</td><td>🚨 Training abgesagt</td><td>Datum + Absagegrund</td><td>Startseite</td></tr>
+      <tr><td>🚨 Spiel abgesagt</td><td>🚨 Spiel abgesagt</td><td>Gegner + Absagegrund</td><td>Startseite</td></tr>
+      <tr><td>🗳️ Neue Abstimmung</td><td>🗳️ Neue Abstimmung!</td><td>Frage der Abstimmung</td><td>Startseite</td></tr>
+      <tr><td>💬 Neue Chat-Nachricht</td><td>💬 Neue Nachricht</td><td>Absender + Nachrichtenvorschau</td><td>Chat (direkt)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="section-label">Automatische Erinnerungen (werden vom System verschickt – ohne Trainer-Aktion)</div>
+  <table class="tbl">
+    <thead><tr><th>Wann</th><th>Push-Titel</th><th>Bedingung</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>5 Std. nach Trainingserstellung</td>
+        <td>⏰ Rückmeldung fürs Training fehlt noch!</td>
+        <td>Nur wenn noch offene Rückmeldungen vorhanden</td>
+      </tr>
+      <tr>
+        <td>5 Std. nach Spielerstellung</td>
+        <td>⚽ Rückmeldung fürs Spiel fehlt noch!</td>
+        <td>Nur wenn nominierte Spieler noch nicht bestätigt haben</td>
+      </tr>
+      <tr>
+        <td>5 Std. nach Abstimmungserstellung</td>
+        <td>🗳️ Noch nicht abgestimmt?</td>
+        <td>Nur wenn noch nicht alle abgestimmt haben</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="feat-grid" style="margin-top:4px">
+    <div class="fcard" style="border-color:#BBF7D0">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#F0FDF4">✅</div>
+        <div><div class="fcard-title">Kein Doppel-Reminder</div></div>
+      </div>
+      <ul class="flist">
+        <li>Jeder Reminder wird nur einmal gesendet</li>
+        <li>System merkt sich ob bereits erinnert wurde</li>
+        <li>Auch wenn alle geantwortet haben: kein unnötiger Push</li>
+      </ul>
+    </div>
+    <div class="fcard" style="border-color:#BFDBFE">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#EFF6FF">📱</div>
+        <div><div class="fcard-title">Navigation nach Tap</div></div>
+      </div>
+      <ul class="flist">
+        <li>Chat-Push → öffnet direkt den Chat</li>
+        <li>Alle anderen Pushes → öffnen die Startseite</li>
+        <li>Funktioniert ob App offen oder geschlossen</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-brand">⚽ FC Niksar App</div>
+    <div class="footer-page">Seite 6 von 8</div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════
+     SEITE 7 – TECHNISCHES & SICHERHEIT
+══════════════════════════════════ -->
+<div class="page">
+<div class="cp">
+  <div class="page-header">
+    <div class="page-header-l">
+      <div class="ph-icon" style="background:#F0FDF4">⚙️</div>
+      <div><div class="ph-title">Technisches & Sicherheit</div><div class="ph-sub">Wie die App funktioniert</div></div>
+    </div>
+    <div class="page-num">Seite 7 / 8</div>
+  </div>
+
+  <div class="feat-grid">
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#EFF6FF">🌐</div>
+        <div><div class="fcard-title">PWA – Kein App Store nötig</div></div>
+      </div>
+      <ul class="flist">
+        <li>Läuft im Browser (Safari / Chrome)</li>
+        <li>Als Icon auf dem Homescreen speicherbar</li>
+        <li>Verhält sich wie eine native App</li>
+        <li>Updates automatisch – Eltern müssen nichts tun</li>
+        <li>Funktioniert auf iOS ab 16.4 und Android</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#F0FDF4">🔒</div>
+        <div><div class="fcard-title">Datenschutz & Sicherheit</div></div>
+      </div>
+      <ul class="flist">
+        <li>Trainer-Bereich per PIN gesperrt</li>
+        <li>Eltern sehen nur ihre eigenen Daten</li>
+        <li>Kind-Zuordnung nur mit Spieler-PIN möglich</li>
+        <li>Profilwechsel kann gesperrt werden</li>
+        <li>Keine öffentlichen Profil-URLs</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#FEF9C3">⚡</div>
+        <div><div class="fcard-title">Echtzeit-Synchronisation</div></div>
+      </div>
+      <ul class="flist">
+        <li>Firebase Realtime Database (Google)</li>
+        <li>Alle Daten sofort auf allen Geräten sichtbar</li>
+        <li>Offline-Erkennung mit Hinweis-Banner</li>
+        <li>Automatische Wiederverbindung</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#F5F3FF">🖼️</div>
+        <div><div class="fcard-title">Foto-Verwaltung</div></div>
+      </div>
+      <ul class="flist">
+        <li>Integriertes Bild-Zuschneiden (Crop)</li>
+        <li>Automatische Komprimierung vor Upload</li>
+        <li>Fotos werden in Firebase gespeichert</li>
+        <li>Splash-Screen mit Vereinslogo</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#FEE2E2">📵</div>
+        <div><div class="fcard-title">Offline-Fähigkeit</div></div>
+      </div>
+      <ul class="flist">
+        <li>App startet auch ohne Internet</li>
+        <li>Zuletzt geladene Daten bleiben sichtbar</li>
+        <li>Service Worker cacht die App-Shell</li>
+        <li>Sobald Verbindung da: automatisch aktuell</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <div class="fcard-head">
+        <div class="fcard-icon" style="background:#ECFDF5">📲</div>
+        <div><div class="fcard-title">Installation für Eltern</div></div>
+      </div>
+      <ul class="flist">
+        <li>iPhone: Safari → Teilen → "Zum Home-Bildschirm"</li>
+        <li>Android: Chrome → Menü → "App installieren"</li>
+        <li>Danach wie jede normale App öffnen</li>
+        <li>Push-Erlaubnis einmalig bestätigen</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-label">Kalender-Integration</div>
+  <div class="feat-grid-3">
+    <div class="fcard" style="text-align:center;padding:14px 10px">
+      <div style="font-size:24px;margin-bottom:6px">📅</div>
+      <div style="font-size:12px;font-weight:800;color:#0A2540">Google Kalender</div>
+      <div style="font-size:11px;color:#475569;margin-top:4px">Direkt hinzufügen</div>
+    </div>
+    <div class="fcard" style="text-align:center;padding:14px 10px">
+      <div style="font-size:24px;margin-bottom:6px">🍎</div>
+      <div style="font-size:12px;font-weight:800;color:#0A2540">Apple Kalender</div>
+      <div style="font-size:11px;color:#475569;margin-top:4px">iPhone / iPad</div>
+    </div>
+    <div class="fcard" style="text-align:center;padding:14px 10px">
+      <div style="font-size:24px;margin-bottom:6px">📧</div>
+      <div style="font-size:12px;font-weight:800;color:#0A2540">Outlook</div>
+      <div style="font-size:11px;color:#475569;margin-top:4px">Windows / Web</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-brand">⚽ FC Niksar App</div>
+    <div class="footer-page">Seite 7 von 8</div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════
+     SEITE 8 – ZUSAMMENFASSUNG
+══════════════════════════════════ -->
+<div class="page">
+<div class="cp">
+  <div class="page-header">
+    <div class="page-header-l">
+      <div class="ph-icon" style="background:#FEF9C3">⭐</div>
+      <div><div class="ph-title">Zusammenfassung</div><div class="ph-sub">Alle Funktionen auf einen Blick</div></div>
+    </div>
+    <div class="page-num">Seite 8 / 8</div>
+  </div>
+
+  <table class="tbl">
+    <thead><tr><th>Bereich</th><th>Funktion</th><th>Für wen</th></tr></thead>
+    <tbody>
+      <tr><td>🏠 Start</td><td>Persönliches Profil, Statistik, offene Rückmeldungen, Abstimmungen</td><td><span class="chip chip-blue">Eltern</span> <span class="chip chip-purple">Trainer</span></td></tr>
+      <tr><td>📅 Termine</td><td>Kalender, Rückmeldung, Abwesenheiten melden, Abstimmungen</td><td><span class="chip chip-blue">Eltern</span> <span class="chip chip-purple">Trainer</span></td></tr>
+      <tr><td>👕 Team</td><td>Spieler-Übersicht mit Fotos, Nummern, Geburtstagen</td><td><span class="chip chip-blue">Eltern</span> <span class="chip chip-purple">Trainer</span></td></tr>
+      <tr><td>💬 Chat</td><td>Gruppen-Chat, Bilder/Dateien, Reaktionen, Antworten, Ankündigungen</td><td><span class="chip chip-blue">Eltern</span> <span class="chip chip-purple">Trainer</span></td></tr>
+      <tr><td>🖼️ Galerie</td><td>Mannschaftsfotos anzeigen & hochladen</td><td><span class="chip chip-blue">Eltern</span> <span class="chip chip-purple">Trainer</span></td></tr>
+      <tr><td>🏃 Trainings</td><td>Erstellen (Einzel/Serie), absagen, bearbeiten, löschen</td><td><span class="chip chip-purple">Trainer</span></td></tr>
+      <tr><td>⚽ Spiele</td><td>Erstellen, Kader, Ergebnis, absagen</td><td><span class="chip chip-purple">Trainer</span></td></tr>
+      <tr><td>👦 Spieler</td><td>Hinzufügen, Foto, PIN, Abwesenheiten</td><td><span class="chip chip-purple">Trainer</span></td></tr>
+      <tr><td>📊 Statistik</td><td>Anwesenheits-Tabelle, Quoten, Farbcodierung</td><td><span class="chip chip-purple">Trainer</span></td></tr>
+      <tr><td>🔔 Push sofort</td><td>Neues Training/Spiel, Absagen, Chat-Nachrichten, Abstimmungen</td><td><span class="chip chip-blue">Eltern</span></td></tr>
+      <tr><td>⏰ Push automatisch</td><td>Erinnerung 5h nach Erstellung wenn keine Rückmeldung</td><td><span class="chip chip-blue">Eltern</span></td></tr>
+      <tr><td>🗓️ Kalender</td><td>Events direkt zu Google, Apple oder Outlook exportieren</td><td><span class="chip chip-blue">Eltern</span> <span class="chip chip-purple">Trainer</span></td></tr>
+      <tr><td>⚙️ Einstellungen</td><td>PIN ändern, Logo, Chat leeren, Daten-Export, Profil sperren</td><td><span class="chip chip-purple">Trainer</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="hl" style="margin-top:8px">
+    <div class="hl-head"><div class="hl-icon">💡</div><div class="hl-title">In Planung – nächste Features</div></div>
+    <div class="hl-body">
+      <div class="hl-item">🌤️ Wetter-Widget – Vorhersage direkt auf der Training-Karte</div>
+      <div class="hl-item">🏅 Anwesenheits-Badges – automatische Abzeichen für fleißige Spieler</div>
+      <div class="hl-item">⚽ Tor & Assist Statistik – Torjägerliste im Team-Tab</div>
+      <div class="hl-item">🎂 Automatische Geburtstags-Push an die Mannschaft</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-brand">⚽ FC Niksar App · fc-niksar-f1.github.io/fc-niksar</div>
+    <div class="footer-page">Seite 8 von 8</div>
+  </div>
+</div>
+</div>
+
+</body>
+</html>
