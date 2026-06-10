@@ -96,6 +96,13 @@ input[type="date"].input-field,input[type="time"].input-field{display:block;widt
 #chatPage.active{display:flex}
 #chatPageHeader{flex-shrink:0;background:#0A2540;display:flex;align-items:center;gap:12px;padding:max(env(safe-area-inset-top),14px) 16px 12px}
 #chatMessages{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+/* Feste Dimensionen für alle Bilder im Chat → kein Layout-Shift beim Nachladen */
+#chatMessages img{display:block;flex-shrink:0}
+#chatMessages img[width]{width:attr(width px);height:attr(height px)}
+/* Avatar-Bilder: immer 36x36 */
+#chatMessages .chat-avatar img,#chatPageHeader img{width:36px;height:36px;min-width:36px;min-height:36px;border-radius:50%;object-fit:cover;flex-shrink:0}
+/* Chat-Medienbilder: feste max-Höhe damit scrollHeight stabil bleibt */
+#chatMessages .chat-img{width:220px;height:220px;max-width:220px;max-height:220px;object-fit:cover;border-radius:10px;display:block;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -706,6 +713,30 @@ function scrollChatToBottom() {
   else c.scrollTop = c.scrollHeight;
 }
 
+function scrollChatToBottomAfterImages() {
+  const c = document.getElementById('chatMessages');
+  if (!c) return;
+  const imgs = c.querySelectorAll('img');
+  if (!imgs.length) { scrollChatToBottom(); return; }
+  let pending = 0;
+  imgs.forEach(img => { if (!img.complete) pending++; });
+  if (!pending) { scrollChatToBottom(); return; }
+  // Auf alle noch nicht geladenen Bilder warten
+  let done = 0;
+  function imgLoaded() {
+    done++;
+    if (done >= pending) setTimeout(scrollChatToBottom, 30);
+  }
+  imgs.forEach(img => {
+    if (!img.complete) {
+      img.addEventListener('load',  imgLoaded, { once: true });
+      img.addEventListener('error', imgLoaded, { once: true });
+    }
+  });
+  // Sicherheits-Fallback: nach 2s auf jeden Fall scrollen
+  setTimeout(scrollChatToBottom, 2000);
+}
+
 let _chatScrollObserver = null;
 function startChatScrollObserver() {
   // Vorherigen Observer stoppen falls aktiv
@@ -834,8 +865,9 @@ function switchPage(page) {
     // Observer VOR renderChat starten – fängt DOM-Änderungen beim Laden ab
     startChatScrollObserver();
     renderChat();
-    // Zusätzliche Timeout-Fallbacks für den Fall dass Nachrichten schon im DOM sind
-    [50, 200, 500, 1000].forEach(d => setTimeout(() => { fixChatHeight(); scrollChatToBottom(); }, d));
+    // Sofort + nach Bild-Load + Timeout-Fallbacks
+    setTimeout(() => { fixChatHeight(); scrollChatToBottomAfterImages(); }, 50);
+    [200, 600, 1200].forEach(d => setTimeout(() => { fixChatHeight(); scrollChatToBottom(); }, d));
   }
   else if(page === 'team') renderTeam();
   else if(page === 'galerie') renderGalerie();
@@ -2374,7 +2406,7 @@ function appendNewChatMessages() {
     const timeStr = new Date(m.ts||0).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
     let content = '';
     if (m.image) {
-      content = `<img src="${m.image}" onclick="viewChatImage('${m.id}')" style="max-width:220px;max-height:200px;border-radius:8px;display:block;cursor:pointer;object-fit:cover">`;
+      content = `<img src="${m.image}" onclick="viewChatImage('${m.id}')" class="chat-img" style="width:220px;height:200px;border-radius:8px;display:block;cursor:pointer;object-fit:cover">`;
     } else if (m.file) {
       const icon = m.fileType?.includes('pdf') ? 'fa-file-pdf' : m.fileType?.includes('word') ? 'fa-file-word' : 'fa-file';
       const iconColor = m.fileType?.includes('pdf') ? '#EF4444' : m.fileType?.includes('word') ? '#2563EB' : '#6B7280';
@@ -2427,8 +2459,12 @@ function appendNewChatMessages() {
   const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
   if (isFirstLoad || nearBottom || chatInputWasFocused) {
     scrollChatToBottom();
-    const delays = isFirstLoad ? [50, 200, 500, 1000] : [150];
-    delays.forEach(d => setTimeout(() => { fixChatHeight(); scrollChatToBottom(); }, d));
+    if (isFirstLoad) {
+      setTimeout(() => { fixChatHeight(); scrollChatToBottomAfterImages(); }, 50);
+      [200, 600, 1200].forEach(d => setTimeout(() => { fixChatHeight(); scrollChatToBottom(); }, d));
+    } else {
+      setTimeout(() => { fixChatHeight(); scrollChatToBottom(); }, 150);
+    }
   }
 }
 
@@ -2489,7 +2525,7 @@ function renderChat() {
       if(m.deleted) {
         content = `<span style="font-size:14px;color:#9CA3AF;font-style:italic">🚫 Nachricht gelöscht</span>`;
       } else if(m.image) {
-        content = `<img src="${m.image}" onclick="viewChatImage('${m.id}')" style="max-width:220px;max-height:200px;border-radius:8px;display:block;cursor:pointer;object-fit:cover">`;
+        content = `<img src="${m.image}" onclick="viewChatImage('${m.id}')" class="chat-img" style="width:220px;height:200px;border-radius:8px;display:block;cursor:pointer;object-fit:cover">`;
       } else if(m.file) {
         const icon = getFileIcon(m.fileName||'');
         const iconColor = icon.includes('pdf')?'#EF4444':icon.includes('word')?'#3B82F6':icon.includes('excel')?'#10B981':icon.includes('video')?'#8B5CF6':'#6B7280';
