@@ -3164,6 +3164,7 @@ function trainerLogout(){
 // Markiere dieses Gerät als Trainer-Gerät (für Geburtstags-Pushs)
 function markDeviceAsTrainer() {
   const myPushKey = LS('myPushKey');
+  console.log('✅ markDeviceAsTrainer:', myPushKey);
   if (myPushKey) {
     db.ref('/trainerDevices/' + myPushKey).set({ ts: Date.now() });
   }
@@ -3172,8 +3173,12 @@ function markDeviceAsTrainer() {
 // Entferne Trainer-Markierung von diesem Gerät
 function unmarkDeviceAsTrainer() {
   const myPushKey = LS('myPushKey');
+  console.log('❌ unmarkDeviceAsTrainer:', myPushKey);
   if (myPushKey) {
     db.ref('/trainerDevices/' + myPushKey).remove();
+    console.log('🗑️ Gelöscht aus /trainerDevices');
+  } else {
+    console.log('⚠️ Kein myPushKey gefunden!');
   }
 }
 
