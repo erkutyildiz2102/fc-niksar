@@ -1239,15 +1239,7 @@ function renderHome() {
 
       if(pid) {
         if(showButtons) {
-          // Wetter-Widget
-          let weatherLine = '';
-          if (ev.location) {
-            weatherLine = `<div id="weather-${ev.id}" data-date="${ev.date}" data-location="${escHtml(ev.location)}" style="display:flex;gap:6px;align-items:center;font-size:12px;font-weight:600;color:#6B7280;margin-bottom:10px;padding:8px 12px;background:#F9FAFB;border-radius:10px">
-              <span>🌡️</span><span style="opacity:.7">Wetter wird geladen...</span>
-            </div>`;
-          }
           rsvpRow = `<div id="trsvp-${ev.id}" style="padding:8px 12px 12px">
-            ${weatherLine}
             <div style="font-size:11px;font-weight:700;color:#F59E0B;margin-bottom:7px">⏳ Noch keine Antwort</div>
             <div style="display:flex;gap:8px">
               <button onclick="setRsvpHome('${ev.id}','${pid}','yes')" style="flex:1;padding:11px 4px;border-radius:12px;border:2px solid #6EE7B7;background:#F0FDF4;color:#065F46;font-size:13px;font-weight:800;cursor:pointer">✅ Zusagen</button>
@@ -1554,43 +1546,6 @@ function _oldSlider_noop() { if(false) { [].forEach(t => {
       });
     }, {passive: true});
   });
-
-  // Wetter für nächste Trainings laden (mit Verzögerung damit DOM vollständig ist)
-  setTimeout(() => loadWeatherForUpcomingTrainings(), 300);
-}
-
-// Wetter für alle angezeigten Trainings laden
-async function loadWeatherForUpcomingTrainings() {
-  const weatherEls = document.querySelectorAll('[id^="weather-"]');
-  console.log(`📍 Finde ${weatherEls.length} Wetter-Elemente`);
-
-  for (const el of weatherEls) {
-    const date = el.dataset.date;
-    const location = el.dataset.location;
-    if (!date || !location) {
-      console.log('❌ Wetter-Element hat kein date/location:', el);
-      continue;
-    }
-
-    console.log(`🌡️ Lade Wetter für: ${location} am ${date}`);
-    const coords = await geocodeLocation(location);
-    if (!coords) {
-      console.log(`❌ Geocoding fehlgeschlagen für: ${location}`);
-      el.innerHTML = '<span style="color:#9CA3AF">📍 Ort nicht erkannt</span>';
-      continue;
-    }
-
-    const weather = await getWeather(coords.lat, coords.lon, date);
-    if (!weather) {
-      console.log(`❌ Wetter fehlgeschlagen für: ${location}`);
-      el.innerHTML = '<span style="color:#9CA3AF">🌤️ Wetter nicht verfügbar</span>';
-      continue;
-    }
-
-    const w = weatherIcon(weather.code, weather.temp, weather.rain);
-    console.log(`✅ Wetter: ${location} → ${w.icon} ${w.label}`);
-    el.innerHTML = `<span style="font-size:14px">${w.icon}</span><span style="font-size:10px;opacity:.8">${w.label}</span>`;
-  }
 }
 
 // ---- TERMINE / CALENDAR ----
@@ -3757,8 +3712,7 @@ function addTrainingModal() {
       </div>
     </div>
     <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Ort</div>
-    <input id="tLocation" class="input-field" placeholder="z.B. Sportplatz Nord" oninput="validateLocationInput('tLocation')" style="margin-bottom:4px">
-    <div id="tLocationFeedback" style="font-size:11px;margin-bottom:10px;min-height:18px"></div>
+    <input id="tLocation" class="input-field" placeholder="z.B. Sportplatz Nord" style="margin-bottom:10px">
     <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Hinweise (optional)</div>
     <textarea id="tNotes" class="input-field" placeholder="" rows="2" style="margin-bottom:16px;resize:none"></textarea>
     <button class="btn-primary" onclick="saveTraining()">Training speichern</button>`);
@@ -3971,8 +3925,7 @@ function addGameModal(editId) {
     <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Treffpunkt</div>
     <input id="gTime" class="input-field" type="text" placeholder="z.B. 10:00 oder 10:30" value="${g ? escHtml(g.time||'') : ''}" onblur="this.value=formatTreffpunkt(this.value)" style="margin-bottom:10px">
     <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Ort</div>
-    <input id="gLoc" class="input-field" placeholder="z.B. Sportplatz Nord" value="${g ? escHtml(g.location||'') : ''}" oninput="validateLocationInput('gLoc')" style="margin-bottom:4px">
-    <div id="gLocFeedback" style="font-size:11px;margin-bottom:10px;min-height:18px"></div>
+    <input id="gLoc" class="input-field" placeholder="z.B. Sportplatz Nord" value="${g ? escHtml(g.location||'') : ''}" style="margin-bottom:10px">
     <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Hinweise (optional)</div>
     <textarea id="gNotes" class="input-field" placeholder="" rows="2" style="margin-bottom:16px;resize:none">${g ? escHtml(g.notes||'') : ''}</textarea>
     <button class="btn-primary" onclick="saveGame('${editId||''}')">${g ? 'Änderungen speichern' : 'Spiel speichern'}</button>`);
@@ -4756,99 +4709,6 @@ function urlBase64ToUint8Array(b64){const pad='='.repeat((4-b64.length%4)%4);con
 async function notifyAll(title,body,excludeSelf=false,page=''){try{const excludeKey=excludeSelf?(LS('myPushKey')||null):null;await fetch(PUSH_API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,body,excludeKey,page})});}catch(e){}}
 async function notifyAllExceptMePage(title,body,page){return notifyAll(title,body,true,page);}
 async function notifyAllExceptMe(title,body){return notifyAll(title,body,true);}
-
-// ── WETTER-WIDGET mit Nominatim (OpenStreetMap) ──
-async function geocodeLocation(location) {
-  if (!location || location.length < 2) return null;
-  try {
-    const cache = LS(`weather_geo_${location}`);
-    if (cache) return JSON.parse(cache);
-
-    // Nominatim API für bessere Standort-Erkennung (auch Vereinsnamen, Straßen, etc.)
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`, {timeout: 5000});
-    const data = await res.json();
-    if (!data || data.length === 0) return null;
-
-    const result = data[0];
-    const coords = { lat: parseFloat(result.lat), lon: parseFloat(result.lon) };
-    LSset(`weather_geo_${location}`, JSON.stringify(coords));
-    console.log(`✅ Geocoding: "${location}" → ${coords.lat}, ${coords.lon}`);
-    return coords;
-  } catch(e) {
-    console.log('Geocoding Fehler:', e);
-    return null;
-  }
-}
-
-async function getWeather(lat, lon, date) {
-  if (!lat || !lon) return null;
-  try {
-    // Prüfe Cache (täglich)
-    const cacheKey = `weather_${lat}_${lon}_${date}`;
-    const cached = LS(cacheKey);
-    if (cached) {
-      const c = JSON.parse(cached);
-      const now = Date.now();
-      if (now - c.ts < 86400000) return c.data; // 24 Stunden
-    }
-
-    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weather_code,temperature_2m_max,precipitation_sum,precipitation_probability_max&timezone=Europe/Berlin`, {timeout: 5000});
-    const data = await res.json();
-    if (!data.daily) return null;
-
-    const dailyData = data.daily;
-    const idx = dailyData.time.indexOf(date);
-    if (idx === -1) return null;
-
-    const weather = {
-      code: dailyData.weather_code[idx],
-      temp: Math.round(dailyData.temperature_2m_max[idx]),
-      rain: dailyData.precipitation_probability_max[idx] || 0
-    };
-
-    LSset(cacheKey, JSON.stringify({ ts: Date.now(), data: weather }));
-    return weather;
-  } catch(e) {
-    console.log('Weather Fehler:', e);
-    return null;
-  }
-}
-
-function weatherIcon(code, temp, rain) {
-  // WMO Weather Codes
-  if (code === 0) return { icon: '☀️', label: temp + '°' };
-  if (code === 1 || code === 2) return { icon: '🌤️', label: temp + '°' };
-  if (code === 3) return { icon: '☁️', label: temp + '°' };
-  if (code >= 45 && code <= 48) return { icon: '🌫️', label: temp + '°' };
-  if (code >= 51 && code <= 67) return { icon: '🌧️', label: rain + '%' };
-  if (code >= 71 && code <= 77) return { icon: '❄️', label: temp + '°' };
-  if (code >= 80 && code <= 82) return { icon: '🌧️', label: rain + '%' };
-  if (code >= 85 && code <= 86) return { icon: '❄️', label: temp + '°' };
-  if (code === 95 || code === 96 || code === 99) return { icon: '⛈️', label: rain + '%' };
-  return { icon: '🌡️', label: temp + '°' };
-}
-
-// Validierung von Ortsangaben beim Eingeben
-async function validateLocationInput(inputId) {
-  const input = document.getElementById(inputId);
-  const feedback = document.getElementById(inputId + 'Feedback');
-  if (!input || !feedback) return;
-
-  const location = input.value.trim();
-  if (!location || location.length < 2) {
-    feedback.textContent = '';
-    return;
-  }
-
-  feedback.innerHTML = '<span style="color:#9CA3AF">🔍 Validiere...</span>';
-
-  const coords = await geocodeLocation(location);
-  if (!coords) {
-    feedback.innerHTML = '<span style="color:#EF4444">❌ Ort nicht gefunden – bitte prüfen</span>';
-  } else {
-    feedback.innerHTML = '<span style="color:#10B981">✅ Ort gefunden</span>';
-  }
-}
 async function subscribeToPush(){if(!('PushManager'in window)){alert('Push-Benachrichtigungen werden auf diesem Geraet nicht unterstuetzt.');return;}const p=await Notification.requestPermission();if(p!=='granted'){alert('Bitte erlaube Benachrichtigungen in den Einstellungen.');return;}try{const r=await navigator.serviceWorker.ready;const old=await r.pushManager.getSubscription();if(old)await old.unsubscribe();const s=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});const k=btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(-28);await db.ref('/pushSubscriptions/'+k).set(s.toJSON());LSset('pushEnabled','true');LSset('myPushKey',k);alert('✅ Benachrichtigungen aktiviert!');if(document.getElementById('pushBtn')){document.getElementById('pushBtn').textContent='✅ Aktiviert';document.getElementById('pushBtn').style.background='#10B981';document.getElementById('pushBtn').disabled=true;}}catch(e){alert('FEHLER bei Schritt: '+e.message);}}
 async function resubscribePush(){
   try {
