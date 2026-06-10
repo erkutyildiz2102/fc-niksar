@@ -2313,6 +2313,8 @@ function appendNewChatMessages() {
   const newMsgs = allMsgs.slice(_lastRenderedChatCount);
   if (!newMsgs.length) return;
   const isFirstLoad = _lastRenderedChatCount === 0;
+  // Platzhalter ("Schreib die erste Nachricht") entfernen falls noch vorhanden
+  if (isFirstLoad) container.innerHTML = '';
   _lastRenderedChatCount = allMsgs.length;
 
   newMsgs.forEach(m => {
