@@ -2387,7 +2387,16 @@ function appendNewChatMessages() {
   const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
   if (isFirstLoad || nearBottom || chatInputWasFocused) {
     container.scrollTop = container.scrollHeight;
-    setTimeout(() => { container.scrollTop = container.scrollHeight; }, 150);
+    if (isFirstLoad) {
+      // fixChatHeight setzt korrekte Höhe UND scrollt via requestAnimationFrame
+      fixChatHeight();
+      setTimeout(() => {
+        fixChatHeight();
+        container.scrollTop = container.scrollHeight;
+      }, 300);
+    } else {
+      setTimeout(() => { container.scrollTop = container.scrollHeight; }, 150);
+    }
   }
 }
 
