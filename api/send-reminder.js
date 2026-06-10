@@ -65,18 +65,22 @@ module.exports = async function handler(req, res) {
     }
 
     // Alles aus Firebase laden
-    const [trainingsRes, gamesRes, pollsRes, subsRes] = await Promise.all([
+    const [trainingsRes, gamesRes, pollsRes, subsRes, playersRes, trainerDevicesRes] = await Promise.all([
       fetch(`${DB_URL}/trainings.json`),
       fetch(`${DB_URL}/games.json`),
       fetch(`${DB_URL}/polls.json`),
-      fetch(`${DB_URL}/pushSubscriptions.json`)
+      fetch(`${DB_URL}/pushSubscriptions.json`),
+      fetch(`${DB_URL}/players.json`),
+      fetch(`${DB_URL}/trainerDevices.json`)
     ]);
 
-    const [trainingsData, gamesData, pollsData, subs] = await Promise.all([
+    const [trainingsData, gamesData, pollsData, subs, playersData, trainerDevices] = await Promise.all([
       trainingsRes.json(),
       gamesRes.json(),
       pollsRes.json(),
-      subsRes.json()
+      subsRes.json(),
+      playersRes.json(),
+      trainerDevicesRes.json()
     ]);
 
     if (!subs) return res.status(200).json({ sent: 0, message: 'Keine Subscriptions' });
@@ -188,6 +192,45 @@ module.exports = async function handler(req, res) {
 
         sentCount += await pushToAll(subs, toDelete, payload);
         await fbSet(`polls/${id}/reminderSent`, true);
+      }
+    }
+
+    // ──────────────────────────────────────────────
+    // 4. GEBURTSTAG: Täglich um 09:00 Uhr → nur an Trainer
+    // ──────────────────────────────────────────────
+    const hour09 = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin', hour: 'numeric', hour12: false });
+    if (parseInt(hour09) === 9 && playersData && trainerDevices) {
+      const todayMMDD = todayStr.slice(5); // "06-10"
+      const birthdays = [];
+
+      // Alle Spieler durchgehen und Geburtstage heute finden
+      for (const [id, p] of Object.entries(playersData)) {
+        if (p.birthday) {
+          const birthdayMMDD = p.birthday.slice(5); // "06-10" aus "2015-06-10"
+          if (birthdayMMDD === todayMMDD) {
+            birthdays.push(p.name || 'Spieler');
+          }
+        }
+      }
+
+      // Wenn Geburtstage heute, an alle Trainer pushen
+      if (birthdays.length > 0) {
+        const trainerSubs = {};
+        for (const [key, sub] of Object.entries(subs)) {
+          if (trainerDevices[key]) { // Nur wenn das Gerät als Trainer markiert ist
+            trainerSubs[key] = sub;
+          }
+        }
+
+        if (Object.keys(trainerSubs).length > 0) {
+          const payload = {
+            title: '🎂 Heute Geburtstag!',
+            body: birthdays.join(', '),
+            url: BASE_URL + '?page=team'
+          };
+          sentCount += await pushToAll(trainerSubs, toDelete, payload);
+          console.log(`🎂 Geburtstags-Push an ${Object.keys(trainerSubs).length} Trainer: ${birthdays.join(', ')}`);
+        }
       }
     }
 
