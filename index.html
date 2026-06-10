@@ -1239,7 +1239,15 @@ function renderHome() {
 
       if(pid) {
         if(showButtons) {
+          // Wetter-Widget
+          let weatherLine = '';
+          if (ev.location) {
+            weatherLine = `<div id="weather-${ev.id}" data-date="${ev.date}" data-location="${escHtml(ev.location)}" style="display:flex;gap:6px;align-items:center;font-size:12px;font-weight:600;color:#6B7280;margin-bottom:10px;padding:8px 12px;background:#F9FAFB;border-radius:10px">
+              <span>🌡️</span><span style="opacity:.7">Wetter wird geladen...</span>
+            </div>`;
+          }
           rsvpRow = `<div id="trsvp-${ev.id}" style="padding:8px 12px 12px">
+            ${weatherLine}
             <div style="font-size:11px;font-weight:700;color:#F59E0B;margin-bottom:7px">⏳ Noch keine Antwort</div>
             <div style="display:flex;gap:8px">
               <button onclick="setRsvpHome('${ev.id}','${pid}','yes')" style="flex:1;padding:11px 4px;border-radius:12px;border:2px solid #6EE7B7;background:#F0FDF4;color:#065F46;font-size:13px;font-weight:800;cursor:pointer">✅ Zusagen</button>
@@ -1315,14 +1323,6 @@ function renderHome() {
 
     const notesHtml = isT && ev.notes ? `<div style="padding:0 12px 8px;font-size:11px;color:#6B7280;font-style:italic">${linkify(ev.notes)}</div>` : !isT && ev.notes ? `<div style="padding:0 12px 8px;font-size:11px;color:#6B7280">${linkify(ev.notes)}</div>` : '';
 
-    // Wetter für Training (nur wenn isT und location)
-    let weatherHtml = '';
-    if (isT && ev.location) {
-      weatherHtml = `<div id="weather-${ev.id}" data-date="${ev.date}" data-location="${escHtml(ev.location)}" style="display:flex;gap:2px;align-items:center;font-size:12px;font-weight:600">
-        <span style="opacity:.7">⏳</span>
-      </div>`;
-    }
-
     html += `<div id="evcard-${ev.id}" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.07)">
       <div style="background:${headerBg};padding:13px 16px;display:flex;align-items:center;gap:12px">
         <div style="background:rgba(255,255,255,.18);border-radius:10px;padding:6px 10px;text-align:center;min-width:48px">
@@ -1333,9 +1333,8 @@ function renderHome() {
           <div style="font-size:16px;font-weight:800;color:#fff${isCancelled?';text-decoration:line-through;opacity:.7':''}">${isCancelled?'🚨 ':(isT?'🏃 ':'⚽ ')}${isT?'Training':escHtml(ev.opponent||'Spiel')}</div>
           ${ev.location ? `<div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:2px">📍 ${escHtml(ev.location)}</div>` : ''}
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:11px">
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
           ${isNew(ev.createdAt)?'<span style="background:#EF4444;color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700">NEU</span>':''}
-          ${weatherHtml}
           <button onclick="event.stopPropagation();calBtn(this)" data-title="${isT?'FC Niksar Training':'FC Niksar - '+(ev.opponent||'')}" data-date="${ev.date||''}" data-time="${isT?(ev.time||''):(ev.time||'')}" data-loc="${(ev.location||'').replace(/"/g,'')}" data-dur="${isT?90:120}" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.25);border-radius:8px;padding:5px 8px;font-size:11px;color:rgba(255,255,255,.85);cursor:pointer"><i class="fas fa-calendar-plus"></i></button>
         </div>
       </div>
@@ -3749,7 +3748,8 @@ function addTrainingModal() {
       </div>
     </div>
     <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Ort</div>
-    <input id="tLocation" class="input-field" placeholder="z.B. Sportplatz Nord" style="margin-bottom:10px">
+    <input id="tLocation" class="input-field" placeholder="z.B. Sportplatz Nord" oninput="validateLocationInput('tLocation')" style="margin-bottom:4px">
+    <div id="tLocationFeedback" style="font-size:11px;margin-bottom:10px;min-height:18px"></div>
     <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Hinweise (optional)</div>
     <textarea id="tNotes" class="input-field" placeholder="" rows="2" style="margin-bottom:16px;resize:none"></textarea>
     <button class="btn-primary" onclick="saveTraining()">Training speichern</button>`);
@@ -3962,7 +3962,8 @@ function addGameModal(editId) {
     <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Treffpunkt</div>
     <input id="gTime" class="input-field" type="text" placeholder="z.B. 10:00 oder 10:30" value="${g ? escHtml(g.time||'') : ''}" onblur="this.value=formatTreffpunkt(this.value)" style="margin-bottom:10px">
     <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Ort</div>
-    <input id="gLoc" class="input-field" placeholder="z.B. Sportplatz Nord" value="${g ? escHtml(g.location||'') : ''}" style="margin-bottom:10px">
+    <input id="gLoc" class="input-field" placeholder="z.B. Sportplatz Nord" value="${g ? escHtml(g.location||'') : ''}" oninput="validateLocationInput('gLoc')" style="margin-bottom:4px">
+    <div id="gLocFeedback" style="font-size:11px;margin-bottom:10px;min-height:18px"></div>
     <div style="font-size:12px;color:#6B7280;margin-bottom:4px;font-weight:600">Hinweise (optional)</div>
     <textarea id="gNotes" class="input-field" placeholder="" rows="2" style="margin-bottom:16px;resize:none">${g ? escHtml(g.notes||'') : ''}</textarea>
     <button class="btn-primary" onclick="saveGame('${editId||''}')">${g ? 'Änderungen speichern' : 'Spiel speichern'}</button>`);
@@ -4814,6 +4815,28 @@ function weatherIcon(code, temp, rain) {
   if (code >= 85 && code <= 86) return { icon: '❄️', label: temp + '°' };
   if (code === 95 || code === 96 || code === 99) return { icon: '⛈️', label: rain + '%' };
   return { icon: '🌡️', label: temp + '°' };
+}
+
+// Validierung von Ortsangaben beim Eingeben
+async function validateLocationInput(inputId) {
+  const input = document.getElementById(inputId);
+  const feedback = document.getElementById(inputId + 'Feedback');
+  if (!input || !feedback) return;
+
+  const location = input.value.trim();
+  if (!location || location.length < 2) {
+    feedback.textContent = '';
+    return;
+  }
+
+  feedback.innerHTML = '<span style="color:#9CA3AF">🔍 Validiere...</span>';
+
+  const coords = await geocodeLocation(location);
+  if (!coords) {
+    feedback.innerHTML = '<span style="color:#EF4444">❌ Ort nicht gefunden – bitte prüfen</span>';
+  } else {
+    feedback.innerHTML = '<span style="color:#10B981">✅ Ort gefunden</span>';
+  }
 }
 async function subscribeToPush(){if(!('PushManager'in window)){alert('Push-Benachrichtigungen werden auf diesem Geraet nicht unterstuetzt.');return;}const p=await Notification.requestPermission();if(p!=='granted'){alert('Bitte erlaube Benachrichtigungen in den Einstellungen.');return;}try{const r=await navigator.serviceWorker.ready;const old=await r.pushManager.getSubscription();if(old)await old.unsubscribe();const s=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});const k=btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(-28);await db.ref('/pushSubscriptions/'+k).set(s.toJSON());LSset('pushEnabled','true');LSset('myPushKey',k);alert('✅ Benachrichtigungen aktiviert!');if(document.getElementById('pushBtn')){document.getElementById('pushBtn').textContent='✅ Aktiviert';document.getElementById('pushBtn').style.background='#10B981';document.getElementById('pushBtn').disabled=true;}}catch(e){alert('FEHLER bei Schritt: '+e.message);}}
 async function resubscribePush(){
