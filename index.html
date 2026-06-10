@@ -385,6 +385,7 @@ function initListeners() {
     window._knownTrainingIds = new Set(arr.map(t => t.id));
     prevTrainingCount = arr.length;
     STATE.trainings = arr; onDataChange();
+    setTimeout(checkCancellationPopups, 800);
   });
   db.ref('/games').on('value', s => {
     const arr = toArr(s.val()).sort((a,b)=>new Date(a.date)-new Date(b.date));
@@ -396,6 +397,7 @@ function initListeners() {
     window._knownGameIds = new Set(arr.map(g => g.id));
     prevGameCount = arr.length;
     STATE.games = arr; onDataChange();
+    setTimeout(checkCancellationPopups, 800);
   });
   db.ref('/absences').on('value', s => { STATE.absences = toArr(s.val()); onDataChange(); });
   db.ref('/polls').on('value', s => { STATE.polls = toArr(s.val()); onDataChange(); });
@@ -3392,10 +3394,11 @@ function renderTrainingTab(c) {
       const yes  = STATE.players.filter(p => !isAbsent(p.id, t.date) && atts[p.id] === 'yes').length;
       const no   = STATE.players.filter(p => isAbsent(p.id, t.date) || atts[p.id] === 'no').length;
       const open = STATE.players.length - yes - no;
-      return `<div class="card" style="padding:12px">
+      return `<div class="card" style="padding:12px${t.cancelled?';border:1.5px solid #FECACA;background:#FEF2F2':''}">
+        ${t.cancelled?`<div style="font-size:12px;font-weight:700;color:#DC2626;margin-bottom:6px">🚨 ABGESAGT${t.cancelReason?' · '+escHtml(t.cancelReason.slice(0,50)):''}${(t.cancelReason||'').length>50?'…':''}</div>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div style="flex:1;min-width:0;margin-right:8px">
-            <div style="font-weight:700;font-size:15px">${fmt(t.date)}</div>
+            <div style="font-weight:700;font-size:15px;${t.cancelled?'text-decoration:line-through;color:#9CA3AF':''}">${fmt(t.date)}</div>
             <div style="font-size:12px;color:#6B7280">${t.time||'?'}${t.timeTo?' - '+t.timeTo:''} Uhr · ${escHtml(t.location||'?')}</div>
           </div>
           <div style="display:flex;gap:4px;flex-shrink:0">
@@ -3407,6 +3410,7 @@ function renderTrainingTab(c) {
         <div style="display:flex;gap:6px">
           <button class="btn-sm" style="background:#EEF2FF;color:#0A2540;flex:1" onclick="trainingDetailModal('${t.id}')"><i class="fa fa-eye"></i> Details</button>
           <button class="btn-sm" style="background:#EFF6FF;color:#1D4ED8" onclick="editTrainingModal('${t.id}')"><i class="fa fa-pen"></i></button>
+          <button class="btn-sm" style="background:#FEF3C7;color:#92400E" onclick="cancelEventModal('${t.id}','training','${fmt(t.date)}')"><i class="fa fa-ban"></i></button>
           <button class="btn-sm" style="background:#FEE2E2;color:#991B1B" onclick="deleteTraining('${t.id}')"><i class="fa fa-trash"></i></button>
         </div>
       </div>`;
@@ -3713,10 +3717,11 @@ function renderSpieleTab(c) {
       const yes  = squadKeys.filter(id => conf[id] === 'yes').length;
       const no   = squadKeys.filter(id => conf[id] === 'no').length;
       const open = sq - yes - no;
-      return `<div class="card" style="padding:12px">
+      return `<div class="card" style="padding:12px${g.cancelled?';border:1.5px solid #FECACA;background:#FEF2F2':''}">
+        ${g.cancelled?`<div style="font-size:12px;font-weight:700;color:#DC2626;margin-bottom:6px">🚨 ABGESAGT${g.cancelReason?' · '+escHtml(g.cancelReason.slice(0,50)):''}${(g.cancelReason||'').length>50?'…':''}</div>`:''}
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
           <div style="flex:1;min-width:0">
-            <div style="font-weight:700;font-size:15px">${escHtml(g.opponent||'?')}</div>
+            <div style="font-weight:700;font-size:15px;${g.cancelled?'text-decoration:line-through;color:#9CA3AF':''}">${escHtml(g.opponent||'?')}</div>
             <div style="font-size:12px;color:#6B7280">${fmt(g.date)} · ${g.time||'?'} Uhr · ${escHtml(g.location||'?')}</div>
           </div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;margin-left:8px">
@@ -3732,6 +3737,7 @@ function renderSpieleTab(c) {
         <div style="display:flex;gap:6px">
           <button class="btn-sm" style="background:#EEF2FF;color:#0A2540;flex:1" onclick="gameDetailModal('${g.id}')"><i class="fa fa-users"></i> Kader / Ergebnis</button>
           <button class="btn-sm" style="background:#EFF6FF;color:#1D4ED8" onclick="addGameModal('${g.id}')"><i class="fa fa-pen"></i></button>
+          <button class="btn-sm" style="background:#FEF3C7;color:#92400E" onclick="cancelEventModal('${g.id}','game','${escHtml(g.opponent||'?')} · ${fmt(g.date)}')"><i class="fa fa-ban"></i></button>
           <button class="btn-sm" style="background:#FEE2E2;color:#991B1B" onclick="deleteGame('${g.id}')"><i class="fa fa-trash"></i></button>
         </div>
       </div>`;
@@ -4438,6 +4444,62 @@ function uploadLogo(input) {
   };
   reader.readAsDataURL(file);
   input.value = '';
+}
+
+// ── ABSAGE-FEATURE ──
+function cancelEventModal(id, type, label) {
+  showModal(`
+    <div style="padding:4px 0">
+      <div style="font-size:17px;font-weight:800;color:#DC2626;margin-bottom:4px">🚨 ${type==='training'?'Training':'Spiel'} absagen</div>
+      <div style="font-size:13px;color:#6B7280;margin-bottom:14px">${escHtml(label)}</div>
+      <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Absagegrund (wird an alle gesendet)</label>
+      <textarea id="cancelReasonInput" placeholder="z.B. Aufgrund von schlechtem Wetter fällt das Training aus." style="width:100%;border:1.5px solid #e5e7eb;border-radius:10px;padding:10px;font-size:14px;min-height:90px;resize:none;font-family:inherit;outline:none" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button onclick="closeModal()" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid #e5e7eb;background:#fff;font-size:15px;cursor:pointer">Abbrechen</button>
+        <button onclick="confirmCancelEvent('${id}','${type}')" style="flex:1;padding:12px;border-radius:10px;border:none;background:#DC2626;color:#fff;font-size:15px;font-weight:700;cursor:pointer">🚨 Absagen & senden</button>
+      </div>
+    </div>`);
+  setTimeout(() => document.getElementById('cancelReasonInput')?.focus(), 300);
+}
+
+function confirmCancelEvent(id, type) {
+  const reason = document.getElementById('cancelReasonInput')?.value.trim();
+  if(!reason) { alert('Bitte einen Absagegrund eingeben.'); return; }
+  const ref = type === 'training' ? `/trainings/${id}` : `/games/${id}`;
+  db.ref(ref).update({ cancelled: true, cancelReason: reason, cancelledAt: Date.now() });
+  const title = type === 'training' ? '🚨 Training abgesagt' : '🚨 Spiel abgesagt';
+  notifyAll(title, reason, false, 'termine');
+  closeModal();
+  alert('✅ Absage wurde gespeichert und Push-Nachricht gesendet.');
+}
+
+function checkCancellationPopups() {
+  const myName = getChatName() || '';
+  const isTrainer = trainerLoggedIn;
+  if(isTrainer) return; // Trainer sieht kein Popup
+  const allEvents = [
+    ...STATE.trainings.map(t => ({...t, _type:'training'})),
+    ...STATE.games.map(g => ({...g, _type:'game'}))
+  ];
+  const unseen = allEvents.filter(ev =>
+    ev.cancelled &&
+    ev.cancelReason &&
+    !localStorage.getItem('seen_cancel_' + ev.id)
+  );
+  if(!unseen.length) return;
+  const ev = unseen[0];
+  const label = ev._type === 'training'
+    ? `Training · ${fmt(ev.date)}`
+    : `Spiel vs. ${ev.opponent||'?'} · ${fmt(ev.date)}`;
+  showModal(`
+    <div style="text-align:center;padding:8px 0">
+      <div style="font-size:48px;margin-bottom:8px">🚨</div>
+      <div style="font-size:19px;font-weight:800;color:#DC2626;margin-bottom:4px">Wichtige Absage!</div>
+      <div style="font-size:13px;color:#6B7280;margin-bottom:14px">${escHtml(label)}</div>
+      <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:12px;padding:14px 16px;font-size:15px;color:#374151;line-height:1.5;text-align:left;margin-bottom:20px">${escHtml(ev.cancelReason)}</div>
+      <button onclick="localStorage.setItem('seen_cancel_${ev.id}','1');closeModal();setTimeout(checkCancellationPopups,300);"
+        style="width:100%;padding:14px;border-radius:12px;border:none;background:#DC2626;color:#fff;font-size:16px;font-weight:700;cursor:pointer">Verstanden</button>
+    </div>`);
 }
 
 function clearChat() {
