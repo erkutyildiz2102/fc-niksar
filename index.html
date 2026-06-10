@@ -564,6 +564,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // App kommt aus dem Hintergrund (z.B. via Push-Klick auf iOS PWA)
+  // visibilitychange ist zuverlässiger als postMessage in diesem Fall
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && currentPage === 'chat') {
+      // Sicherstellen dass wir ganz unten sind
+      [0, 100, 300, 600].forEach(d =>
+        setTimeout(() => { fixChatHeight(); scrollChatToBottom(); }, d)
+      );
+    }
+  });
 });
 
 function activateSWUpdate() {
