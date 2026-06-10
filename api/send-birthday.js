@@ -34,10 +34,25 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ sent: 0, message: 'Kein Geburtstag heute' });
     }
 
-    // Push-Subscriptions laden
-    const subsRes = await fetch(`${DB_URL}/pushSubscriptions.json`);
-    const subs = await subsRes.json();
-    if (!subs) return res.status(200).json({ sent: 0 });
+    // Push-Subscriptions und Trainer-Devices laden
+    const [subsRes, trainersRes] = await Promise.all([
+      fetch(`${DB_URL}/pushSubscriptions.json`),
+      fetch(`${DB_URL}/trainerDevices.json`)
+    ]);
+    const [subs, trainers] = await Promise.all([
+      subsRes.json(),
+      trainersRes.json()
+    ]);
+    if (!subs || !trainers) return res.status(200).json({ sent: 0, message: 'Keine Trainer registriert' });
+
+    // Nur Trainer-Devices filtern
+    const trainerSubs = {};
+    for (const [key, sub] of Object.entries(subs)) {
+      if (trainers[key]) {
+        trainerSubs[key] = sub;
+      }
+    }
+    if (Object.keys(trainerSubs).length === 0) return res.status(200).json({ sent: 0, message: 'Keine Trainer-Devices' });
 
     const names = birthdayKids.map(p => p.name || '?').join(', ');
     const ages  = birthdayKids.map(p => {
@@ -62,7 +77,7 @@ module.exports = async function handler(req, res) {
 
     let sentCount = 0;
     const toDelete = [];
-    const entries = Object.entries(subs);
+    const entries = Object.entries(trainerSubs);
 
     await Promise.allSettled(entries.map(async ([key, sub]) => {
       try {
@@ -78,7 +93,7 @@ module.exports = async function handler(req, res) {
       fetch(`${DB_URL}/pushSubscriptions/${key}.json`, { method: 'DELETE' })
     ));
 
-    return res.status(200).json({ sent: sentCount, kids: birthdayKids.length, names });
+    return res.status(200).json({ sent: sentCount, kids: birthdayKids.length, names, trainers: entries.length });
   } catch (e) {
     console.error('Birthday-Fehler:', e);
     return res.status(500).json({ error: e.message });
