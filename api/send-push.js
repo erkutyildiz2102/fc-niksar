@@ -27,7 +27,8 @@ module.exports = async function handler(req, res) {
     console.log(`Push an ${entries.length} Abonnenten: "${title}" → Seite: ${page||'home'}`);
 
     const baseUrl = 'https://fc-niksar-f1.github.io/fc-niksar/';
-    const targetUrl = page ? `${baseUrl}?page=${page}` : baseUrl;
+    // Chat-Notifications → direkt in den Chat; alles andere → Startseite
+    const targetUrl = page === 'chat' ? `${baseUrl}?page=chat` : baseUrl;
 
     const payload = JSON.stringify({
       title,
