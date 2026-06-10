@@ -793,11 +793,13 @@ function switchPage(page) {
     updateChatBadge();
     markChatRead();
     renderChat();
-    setTimeout(() => {
+    // Mehrere Versuche – iOS berechnet Layout asynchron
+    function _scrollChatBottom() {
       fixChatHeight();
       const c = document.getElementById('chatMessages');
       if(c) c.scrollTop = c.scrollHeight;
-    }, 50);
+    }
+    [50, 200, 500, 1000].forEach(d => setTimeout(_scrollChatBottom, d));
   }
   else if(page === 'team') renderTeam();
   else if(page === 'galerie') renderGalerie();
@@ -2387,16 +2389,11 @@ function appendNewChatMessages() {
   const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
   if (isFirstLoad || nearBottom || chatInputWasFocused) {
     container.scrollTop = container.scrollHeight;
-    if (isFirstLoad) {
-      // fixChatHeight setzt korrekte Höhe UND scrollt via requestAnimationFrame
+    const delays = isFirstLoad ? [50, 200, 500, 1000] : [150];
+    delays.forEach(d => setTimeout(() => {
       fixChatHeight();
-      setTimeout(() => {
-        fixChatHeight();
-        container.scrollTop = container.scrollHeight;
-      }, 300);
-    } else {
-      setTimeout(() => { container.scrollTop = container.scrollHeight; }, 150);
-    }
+      container.scrollTop = container.scrollHeight;
+    }, d));
   }
 }
 
