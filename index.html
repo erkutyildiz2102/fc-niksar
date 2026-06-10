@@ -3153,13 +3153,27 @@ function renderPinScreen(page) {
   });
 }
 
-function trainerLogout(){ trainerLoggedIn=false; LSset('trainerLoggedIn','false'); updateHeader(); renderTrainer(); }
+function trainerLogout(){
+  trainerLoggedIn=false;
+  LSset('trainerLoggedIn','false');
+  unmarkDeviceAsTrainer(); // Gerät als Trainer entfernen
+  updateHeader();
+  renderTrainer();
+}
 
 // Markiere dieses Gerät als Trainer-Gerät (für Geburtstags-Pushs)
 function markDeviceAsTrainer() {
   const myPushKey = LS('myPushKey');
   if (myPushKey) {
     db.ref('/trainerDevices/' + myPushKey).set({ ts: Date.now() });
+  }
+}
+
+// Entferne Trainer-Markierung von diesem Gerät
+function unmarkDeviceAsTrainer() {
+  const myPushKey = LS('myPushKey');
+  if (myPushKey) {
+    db.ref('/trainerDevices/' + myPushKey).remove();
   }
 }
 
