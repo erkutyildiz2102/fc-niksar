@@ -687,6 +687,15 @@ function showApp() {
   renderHome();
 }
 
+function scrollChatToBottom() {
+  const c = document.getElementById('chatMessages');
+  if (!c) return;
+  // scrollIntoView auf letztes Element ist auf iOS zuverlässiger als scrollTop=scrollHeight
+  const last = c.lastElementChild;
+  if (last) last.scrollIntoView({ block: 'end', behavior: 'instant' });
+  else c.scrollTop = c.scrollHeight;
+}
+
 function fixChatHeight() {
   const chat = document.getElementById('chatPage');
   if (!chat || currentPage !== 'chat') return;
@@ -701,8 +710,7 @@ function fixChatHeight() {
     const keyboardOpen = vv && vv.height < window.innerHeight * 0.75;
     inputBar.style.paddingBottom = keyboardOpen ? '0px' : '';
   }
-  const msgs = document.getElementById('chatMessages');
-  if (msgs) requestAnimationFrame(() => { msgs.scrollTop = msgs.scrollHeight; });
+  requestAnimationFrame(scrollChatToBottom);
 }
 
 function fixChatHeightDelayed() {
@@ -717,9 +725,8 @@ function setupChatKeyboard() {
   inp.addEventListener('focus', () => {
     chatInputWasFocused = true;
     fixChatHeightDelayed();
-    const c = document.getElementById('chatMessages');
-    if (c) c.scrollTop = c.scrollHeight;
-    setTimeout(() => { if (c) c.scrollTop = c.scrollHeight; }, 350);
+    scrollChatToBottom();
+    setTimeout(scrollChatToBottom, 350);
   });
   inp.addEventListener('blur', () => {
     chatInputWasFocused = false;
@@ -794,12 +801,7 @@ function switchPage(page) {
     markChatRead();
     renderChat();
     // Mehrere Versuche – iOS berechnet Layout asynchron
-    function _scrollChatBottom() {
-      fixChatHeight();
-      const c = document.getElementById('chatMessages');
-      if(c) c.scrollTop = c.scrollHeight;
-    }
-    [50, 200, 500, 1000].forEach(d => setTimeout(_scrollChatBottom, d));
+    [50, 200, 500, 1000].forEach(d => setTimeout(() => { fixChatHeight(); scrollChatToBottom(); }, d));
   }
   else if(page === 'team') renderTeam();
   else if(page === 'galerie') renderGalerie();
@@ -2390,12 +2392,9 @@ function appendNewChatMessages() {
   // Beim ersten Laden immer nach unten; sonst nur wenn User schon fast unten war
   const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
   if (isFirstLoad || nearBottom || chatInputWasFocused) {
-    container.scrollTop = container.scrollHeight;
+    scrollChatToBottom();
     const delays = isFirstLoad ? [50, 200, 500, 1000] : [150];
-    delays.forEach(d => setTimeout(() => {
-      fixChatHeight();
-      container.scrollTop = container.scrollHeight;
-    }, d));
+    delays.forEach(d => setTimeout(() => { fixChatHeight(); scrollChatToBottom(); }, d));
   }
 }
 
@@ -2548,7 +2547,7 @@ function renderChat() {
     </div>`;
 
   _lastRenderedChatCount = STATE.chat.length;
-  setTimeout(() => { const c = document.getElementById('chatMessages'); if(c) c.scrollTop = c.scrollHeight; }, 80);
+  [80, 300].forEach(d => setTimeout(scrollChatToBottom, d));
   setTimeout(setupChatKeyboard, 100);
 }
 
@@ -2840,10 +2839,7 @@ function sendChat() {
   db.ref('/chat').push(msgData);
   markChatRead();
   notifyAll('💬 Neue Nachricht', author + ': ' + text, true, 'chat');
-  setTimeout(() => {
-    const c = document.getElementById('chatMessages');
-    if (c) c.scrollTop = c.scrollHeight;
-  }, 80);
+  setTimeout(scrollChatToBottom, 80);
 }
 
 // ---- TEAM ----
