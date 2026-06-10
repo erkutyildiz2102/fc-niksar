@@ -1123,11 +1123,18 @@ function renderHome() {
 
   allEvents.forEach(ev => {
     const isT = ev._type === 'training';
-    const headerBg = isT ? 'linear-gradient(135deg,#0A2540,#1e4d8c)' : 'linear-gradient(135deg,#B45309,#d97706)';
+    const isCancelled = !!ev.cancelled;
+    const headerBg = isCancelled ? 'linear-gradient(135deg,#991B1B,#DC2626)' : (isT ? 'linear-gradient(135deg,#0A2540,#1e4d8c)' : 'linear-gradient(135deg,#B45309,#d97706)');
 
     // ── RSVP-Bereich ──
     let rsvpRow = '';
-    if(isT) {
+    if(isCancelled) {
+      rsvpRow = `<div style="padding:12px 14px;background:#FEF2F2;border-top:1px solid #FECACA">
+        <div style="font-size:13px;font-weight:700;color:#DC2626">🚨 Abgesagt</div>
+        <div style="font-size:13px;color:#374151;margin-top:4px;line-height:1.4">${escHtml(ev.cancelReason||'')}</div>
+      </div>`;
+    } else
+    if(isT && !isCancelled) {
       // Training: nur eigener Status, keine Zahlen
       const localVal = window._localAtt?.[ev.id + '_' + pid];
       const absent = pid ? isAbsent(pid, ev.date) : false;
@@ -1160,7 +1167,7 @@ function renderHome() {
       } else {
         rsvpRow = `<div onclick="editProfile()" style="margin:8px 12px 12px;background:#F9FAFB;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:600;color:#9CA3AF;cursor:pointer;text-align:center">⚠️ Kind zuordnen → Profil bearbeiten</div>`;
       }
-    } else {
+    } else if(!isCancelled) {
       // Spiel: Status-Badge + Avatare der nominierten Spieler
       const squadKeys = Object.keys(ev.squad||{}).filter(k=>ev.squad[k]);
       const inSquad = pid && squadKeys.includes(pid);
@@ -1220,7 +1227,7 @@ function renderHome() {
           <div style="font-size:17px;font-weight:900;color:#fff">${fmtListDate(ev.date)}</div>
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:16px;font-weight:800;color:#fff">${isT ? '🏃 Training' : '⚽ '+escHtml(ev.opponent||'Spiel')}</div>
+          <div style="font-size:16px;font-weight:800;color:#fff${isCancelled?';text-decoration:line-through;opacity:.7':''}">${isCancelled?'🚨 ':(isT?'🏃 ':'⚽ ')}${isT?'Training':escHtml(ev.opponent||'Spiel')}</div>
           ${ev.location ? `<div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:2px">📍 ${escHtml(ev.location)}</div>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
@@ -4473,33 +4480,42 @@ function confirmCancelEvent(id, type) {
   alert('✅ Absage wurde gespeichert und Push-Nachricht gesendet.');
 }
 
+let _cancelPopupTimer = null;
 function checkCancellationPopups() {
-  const myName = getChatName() || '';
-  const isTrainer = trainerLoggedIn;
-  if(isTrainer) return; // Trainer sieht kein Popup
+  if(_cancelPopupTimer) { clearTimeout(_cancelPopupTimer); }
+  _cancelPopupTimer = setTimeout(_showNextCancelPopup, 1200);
+}
+function _showNextCancelPopup() {
+  _cancelPopupTimer = null;
+  if(trainerLoggedIn) return;
+  if(document.querySelector('.modal-overlay')) return; // anderes Modal offen
   const allEvents = [
     ...STATE.trainings.map(t => ({...t, _type:'training'})),
     ...STATE.games.map(g => ({...g, _type:'game'}))
   ];
   const unseen = allEvents.filter(ev =>
-    ev.cancelled &&
-    ev.cancelReason &&
+    ev.cancelled && ev.cancelReason &&
     !localStorage.getItem('seen_cancel_' + ev.id)
   );
   if(!unseen.length) return;
   const ev = unseen[0];
   const label = ev._type === 'training'
     ? `Training · ${fmt(ev.date)}`
-    : `Spiel vs. ${ev.opponent||'?'} · ${fmt(ev.date)}`;
+    : `Spiel vs. ${escHtml(ev.opponent||'?')} · ${fmt(ev.date)}`;
+  const evId = ev.id;
   showModal(`
     <div style="text-align:center;padding:8px 0">
       <div style="font-size:48px;margin-bottom:8px">🚨</div>
       <div style="font-size:19px;font-weight:800;color:#DC2626;margin-bottom:4px">Wichtige Absage!</div>
-      <div style="font-size:13px;color:#6B7280;margin-bottom:14px">${escHtml(label)}</div>
+      <div style="font-size:13px;color:#6B7280;margin-bottom:14px">${label}</div>
       <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:12px;padding:14px 16px;font-size:15px;color:#374151;line-height:1.5;text-align:left;margin-bottom:20px">${escHtml(ev.cancelReason)}</div>
-      <button onclick="localStorage.setItem('seen_cancel_${ev.id}','1');closeModal();setTimeout(checkCancellationPopups,300);"
-        style="width:100%;padding:14px;border-radius:12px;border:none;background:#DC2626;color:#fff;font-size:16px;font-weight:700;cursor:pointer">Verstanden</button>
+      <button id="cancelPopupOkBtn" style="width:100%;padding:14px;border-radius:12px;border:none;background:#DC2626;color:#fff;font-size:16px;font-weight:700;cursor:pointer">Verstanden</button>
     </div>`);
+  document.getElementById('cancelPopupOkBtn')?.addEventListener('click', () => {
+    localStorage.setItem('seen_cancel_' + evId, '1');
+    closeModal();
+    setTimeout(_showNextCancelPopup, 400);
+  });
 }
 
 function clearChat() {
