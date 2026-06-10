@@ -577,7 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && currentPage === 'chat') {
       startChatScrollObserver();
-      [0, 100, 300, 600].forEach(d => setTimeout(scrollChatToBottom, d));
+      [0, 100, 300, 600].forEach(d => scheduleScrollChatToBottom(d));
     }
   });
 });
@@ -703,15 +703,28 @@ function showApp() {
   renderHome();
 }
 
+let _chatScrollTimers = [];
+let _userScrolledChat = false;
+
+function cancelChatScrollTimers() {
+  _chatScrollTimers.forEach(t => clearTimeout(t));
+  _chatScrollTimers = [];
+}
+
+function scheduleScrollChatToBottom(delay) {
+  const t = setTimeout(() => {
+    if (!_userScrolledChat) scrollChatToBottom();
+  }, delay);
+  _chatScrollTimers.push(t);
+}
+
 function scrollChatToBottom() {
-  // fixChatHeight setzt die explizite px-Höhe auf chatPage.
-  // iOS braucht danach einen Layout-Frame bevor scrollTop greift.
+  if (_userScrolledChat) return;
   fixChatHeight();
   requestAnimationFrame(() => {
     const c = document.getElementById('chatMessages');
     if (!c) return;
     c.scrollTop = c.scrollHeight;
-    // Zweiter Frame als Sicherheit (iOS rendert manchmal zweistufig)
     requestAnimationFrame(() => { c.scrollTop = c.scrollHeight; });
   });
 }
@@ -855,11 +868,22 @@ function switchPage(page) {
     LSset('lastChatRead', String(lastChatRead));
     updateChatBadge();
     markChatRead();
-    // Observer VOR renderChat starten – fängt DOM-Änderungen beim Laden ab
+    // Scroll-State zurücksetzen
+    _userScrolledChat = false;
+    cancelChatScrollTimers();
+    // Manuelles Scrollen erkennen → auto-scroll stoppen
+    setTimeout(() => {
+      const c = document.getElementById('chatMessages');
+      if (c) c.addEventListener('scroll', () => {
+        const atBottom = c.scrollHeight - c.scrollTop - c.clientHeight < 60;
+        if (!atBottom) { _userScrolledChat = true; cancelChatScrollTimers(); }
+        else _userScrolledChat = false;
+      }, { passive: true });
+    }, 300);
     startChatScrollObserver();
     renderChat();
     setTimeout(scrollChatToBottomAfterImages, 50);
-    [200, 600, 1200].forEach(d => setTimeout(scrollChatToBottom, d));
+    [200, 600, 1200].forEach(d => scheduleScrollChatToBottom(d));
   }
   else if(page === 'team') renderTeam();
   else if(page === 'galerie') renderGalerie();
@@ -2453,9 +2477,9 @@ function appendNewChatMessages() {
     scrollChatToBottom();
     if (isFirstLoad) {
       setTimeout(scrollChatToBottomAfterImages, 50);
-      [200, 600, 1200].forEach(d => setTimeout(scrollChatToBottom, d));
+      [200, 600, 1200].forEach(d => scheduleScrollChatToBottom(d));
     } else {
-      setTimeout(scrollChatToBottom, 150);
+      scheduleScrollChatToBottom(150);
     }
   }
 }
@@ -2609,7 +2633,7 @@ function renderChat() {
     </div>`;
 
   _lastRenderedChatCount = STATE.chat.length;
-  [80, 300].forEach(d => setTimeout(scrollChatToBottom, d));
+  [80, 300].forEach(d => scheduleScrollChatToBottom(d));
   setTimeout(setupChatKeyboard, 100);
 }
 
