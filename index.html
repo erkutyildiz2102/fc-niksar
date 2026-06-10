@@ -4087,7 +4087,7 @@ function renderStatistikTab(c) {
   if(statsTab === 'training') {
     // Nächste N anstehende Trainings als Spalten, danach vergangene
     const today = new Date().toISOString().slice(0,10);
-    const allSorted = [...STATE.trainings].sort((a,b)=> a.date > b.date ? 1 : -1);
+    const allSorted = [...STATE.trainings].filter(t => !t.cancelled).sort((a,b)=> a.date > b.date ? 1 : -1);
     const upcoming = allSorted.filter(t => t.date >= today).slice(0, statsDateCols);
     const past = allSorted.filter(t => t.date < today).slice(-Math.max(0, statsDateCols - upcoming.length));
     dateCols = [...past, ...upcoming];
@@ -4125,7 +4125,7 @@ function renderStatistikTab(c) {
   } else {
     // Nächste N anstehende Spiele als Spalten, danach vergangene
     const today2 = new Date().toISOString().slice(0,10);
-    const allSortedG = [...STATE.games].sort((a,b)=> a.date > b.date ? 1 : -1);
+    const allSortedG = [...STATE.games].filter(g => !g.cancelled).sort((a,b)=> a.date > b.date ? 1 : -1);
     const upcomingG = allSortedG.filter(g => g.date >= today2).slice(0, statsDateCols);
     const pastG = allSortedG.filter(g => g.date < today2).slice(-Math.max(0, statsDateCols - upcomingG.length));
     dateCols = [...pastG, ...upcomingG];
