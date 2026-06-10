@@ -431,8 +431,19 @@ function initListeners() {
     applyLogo(STATE.config.logo);
     if(currentPage==='trainer') renderTrainer();
   });
+  let _offlineTimer = null;
   db.ref('.info/connected').on('value', s => {
-    document.getElementById('offlineBanner').style.display = s.val() ? 'none' : 'block';
+    const connected = s.val();
+    if (connected) {
+      // Sofort wieder ausblenden wenn verbunden
+      if (_offlineTimer) { clearTimeout(_offlineTimer); _offlineTimer = null; }
+      document.getElementById('offlineBanner').style.display = 'none';
+    } else {
+      // Nur anzeigen wenn länger als 3 Sekunden offline (kurze Schwankungen ignorieren)
+      _offlineTimer = setTimeout(() => {
+        document.getElementById('offlineBanner').style.display = 'block';
+      }, 3000);
+    }
   });
 }
 
