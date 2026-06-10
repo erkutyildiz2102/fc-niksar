@@ -577,9 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && currentPage === 'chat') {
       startChatScrollObserver();
-      [0, 100, 300, 600].forEach(d =>
-        setTimeout(() => { fixChatHeight(); scrollChatToBottom(); }, d)
-      );
+      [0, 100, 300, 600].forEach(d => setTimeout(scrollChatToBottom, d));
     }
   });
 });
@@ -706,35 +704,30 @@ function showApp() {
 }
 
 function scrollChatToBottom() {
-  const c = document.getElementById('chatMessages');
-  if (!c) return;
-  const last = c.lastElementChild;
-  if (last) last.scrollIntoView({ block: 'end', behavior: 'instant' });
-  else c.scrollTop = c.scrollHeight;
+  // fixChatHeight setzt die explizite px-Höhe auf chatPage.
+  // iOS braucht danach einen Layout-Frame bevor scrollTop greift.
+  fixChatHeight();
+  requestAnimationFrame(() => {
+    const c = document.getElementById('chatMessages');
+    if (!c) return;
+    c.scrollTop = c.scrollHeight;
+    // Zweiter Frame als Sicherheit (iOS rendert manchmal zweistufig)
+    requestAnimationFrame(() => { c.scrollTop = c.scrollHeight; });
+  });
 }
 
 function scrollChatToBottomAfterImages() {
   const c = document.getElementById('chatMessages');
   if (!c) return;
-  const imgs = c.querySelectorAll('img');
+  const imgs = Array.from(c.querySelectorAll('img')).filter(i => !i.complete);
   if (!imgs.length) { scrollChatToBottom(); return; }
-  let pending = 0;
-  imgs.forEach(img => { if (!img.complete) pending++; });
-  if (!pending) { scrollChatToBottom(); return; }
-  // Auf alle noch nicht geladenen Bilder warten
-  let done = 0;
-  function imgLoaded() {
-    done++;
-    if (done >= pending) setTimeout(scrollChatToBottom, 30);
-  }
+  let remaining = imgs.length;
+  function onLoad() { if (--remaining <= 0) scrollChatToBottom(); }
   imgs.forEach(img => {
-    if (!img.complete) {
-      img.addEventListener('load',  imgLoaded, { once: true });
-      img.addEventListener('error', imgLoaded, { once: true });
-    }
+    img.addEventListener('load',  onLoad, { once: true });
+    img.addEventListener('error', onLoad, { once: true });
   });
-  // Sicherheits-Fallback: nach 2s auf jeden Fall scrollen
-  setTimeout(scrollChatToBottom, 2000);
+  setTimeout(scrollChatToBottom, 1500); // Fallback
 }
 
 let _chatScrollObserver = null;
@@ -865,9 +858,8 @@ function switchPage(page) {
     // Observer VOR renderChat starten – fängt DOM-Änderungen beim Laden ab
     startChatScrollObserver();
     renderChat();
-    // Sofort + nach Bild-Load + Timeout-Fallbacks
-    setTimeout(() => { fixChatHeight(); scrollChatToBottomAfterImages(); }, 50);
-    [200, 600, 1200].forEach(d => setTimeout(() => { fixChatHeight(); scrollChatToBottom(); }, d));
+    setTimeout(scrollChatToBottomAfterImages, 50);
+    [200, 600, 1200].forEach(d => setTimeout(scrollChatToBottom, d));
   }
   else if(page === 'team') renderTeam();
   else if(page === 'galerie') renderGalerie();
@@ -2460,10 +2452,10 @@ function appendNewChatMessages() {
   if (isFirstLoad || nearBottom || chatInputWasFocused) {
     scrollChatToBottom();
     if (isFirstLoad) {
-      setTimeout(() => { fixChatHeight(); scrollChatToBottomAfterImages(); }, 50);
-      [200, 600, 1200].forEach(d => setTimeout(() => { fixChatHeight(); scrollChatToBottom(); }, d));
+      setTimeout(scrollChatToBottomAfterImages, 50);
+      [200, 600, 1200].forEach(d => setTimeout(scrollChatToBottom, d));
     } else {
-      setTimeout(() => { fixChatHeight(); scrollChatToBottom(); }, 150);
+      setTimeout(scrollChatToBottom, 150);
     }
   }
 }
