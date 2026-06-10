@@ -2313,6 +2313,22 @@ function appendNewChatMessages() {
   _lastRenderedChatCount = allMsgs.length;
 
   newMsgs.forEach(m => {
+    if(m.type === 'announcement') {
+      const timeStr2 = new Date(m.ts||0).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+      const el = document.createElement('div');
+      el.setAttribute('data-msg-id', m.id);
+      el.style.cssText = 'align-self:center;width:100%;max-width:360px;margin:4px 0';
+      el.innerHTML = `<div style="background:linear-gradient(135deg,#7F1D1D,#DC2626);border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(220,38,38,.35)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:20px">🚨</span>
+          <span style="font-size:13px;font-weight:800;color:#fff;letter-spacing:.3px">WICHTIGE ANKÜNDIGUNG</span>
+        </div>
+        <div style="font-size:14px;color:rgba(255,255,255,.95);line-height:1.5;font-weight:500">${escHtml(m.text||'')}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:6px;text-align:right">${escHtml(m.author||'')} · ${timeStr2}</div>
+      </div>`;
+      container.appendChild(el);
+      return;
+    }
     const mine = myName && m.author === myName;
     const timeStr = new Date(m.ts||0).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
     let content = '';
@@ -2400,6 +2416,22 @@ function renderChat() {
       if(dateKey !== lastDate) {
         msgsHtml += `<div class="wa-date-sep"><span>${dateLabel}</span></div>`;
         lastDate = dateKey;
+      }
+
+      // ── Ankündigung (announcement) ──
+      if(m.type === 'announcement') {
+        const timeStr2 = msgDate.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+        msgsHtml += `<div data-msg-id="${m.id}" style="align-self:center;width:100%;max-width:360px;margin:4px 0">
+          <div style="background:linear-gradient(135deg,#7F1D1D,#DC2626);border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(220,38,38,.35)">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <span style="font-size:20px">🚨</span>
+              <span style="font-size:13px;font-weight:800;color:#fff;letter-spacing:.3px">WICHTIGE ANKÜNDIGUNG</span>
+            </div>
+            <div style="font-size:14px;color:rgba(255,255,255,.95);line-height:1.5;font-weight:500">${escHtml(m.text||'')}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:6px;text-align:right">${escHtml(m.author||'')} · ${timeStr2}</div>
+          </div>
+        </div>`;
+        return;
       }
 
       const mine = myName && m.author === myName;
@@ -4478,8 +4510,16 @@ function confirmCancelEvent(id, type) {
   db.ref(ref).update({ cancelled: true, cancelReason: reason, cancelledAt: Date.now() });
   const title = type === 'training' ? '🚨 Training abgesagt' : '🚨 Spiel abgesagt';
   notifyAll(title, reason, false, 'termine');
+  // Automatische Ankündigung im Chat
+  const announcementText = `${title}\n${reason}`;
+  db.ref('/chat').push({
+    author: 'FC Niksar',
+    text: announcementText,
+    type: 'announcement',
+    ts: Date.now()
+  });
   closeModal();
-  alert('✅ Absage wurde gespeichert und Push-Nachricht gesendet.');
+  alert('✅ Absage wurde gespeichert, Push-Nachricht und Chat-Ankündigung gesendet.');
 }
 
 let _cancelPopupTimer = null;
