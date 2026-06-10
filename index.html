@@ -1555,31 +1555,40 @@ function _oldSlider_noop() { if(false) { [].forEach(t => {
     }, {passive: true});
   });
 
-  // Wetter für nächste Trainings laden
-  setTimeout(() => loadWeatherForUpcomingTrainings(), 100);
+  // Wetter für nächste Trainings laden (mit Verzögerung damit DOM vollständig ist)
+  setTimeout(() => loadWeatherForUpcomingTrainings(), 300);
 }
 
 // Wetter für alle angezeigten Trainings laden
 async function loadWeatherForUpcomingTrainings() {
   const weatherEls = document.querySelectorAll('[id^="weather-"]');
+  console.log(`📍 Finde ${weatherEls.length} Wetter-Elemente`);
+
   for (const el of weatherEls) {
     const date = el.dataset.date;
     const location = el.dataset.location;
-    if (!date || !location) continue;
+    if (!date || !location) {
+      console.log('❌ Wetter-Element hat kein date/location:', el);
+      continue;
+    }
 
+    console.log(`🌡️ Lade Wetter für: ${location} am ${date}`);
     const coords = await geocodeLocation(location);
     if (!coords) {
-      el.textContent = '';
+      console.log(`❌ Geocoding fehlgeschlagen für: ${location}`);
+      el.innerHTML = '<span style="color:#9CA3AF">📍 Ort nicht erkannt</span>';
       continue;
     }
 
     const weather = await getWeather(coords.lat, coords.lon, date);
     if (!weather) {
-      el.textContent = '';
+      console.log(`❌ Wetter fehlgeschlagen für: ${location}`);
+      el.innerHTML = '<span style="color:#9CA3AF">🌤️ Wetter nicht verfügbar</span>';
       continue;
     }
 
     const w = weatherIcon(weather.code, weather.temp, weather.rain);
+    console.log(`✅ Wetter: ${location} → ${w.icon} ${w.label}`);
     el.innerHTML = `<span style="font-size:14px">${w.icon}</span><span style="font-size:10px;opacity:.8">${w.label}</span>`;
   }
 }
@@ -4748,20 +4757,22 @@ async function notifyAll(title,body,excludeSelf=false,page=''){try{const exclude
 async function notifyAllExceptMePage(title,body,page){return notifyAll(title,body,true,page);}
 async function notifyAllExceptMe(title,body){return notifyAll(title,body,true);}
 
-// ── WETTER-WIDGET mit Open-Meteo ──
+// ── WETTER-WIDGET mit Nominatim (OpenStreetMap) ──
 async function geocodeLocation(location) {
   if (!location || location.length < 2) return null;
   try {
     const cache = LS(`weather_geo_${location}`);
     if (cache) return JSON.parse(cache);
 
-    const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=de`, {timeout: 5000});
+    // Nominatim API für bessere Standort-Erkennung (auch Vereinsnamen, Straßen, etc.)
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`, {timeout: 5000});
     const data = await res.json();
-    if (!data.results || data.results.length === 0) return null;
+    if (!data || data.length === 0) return null;
 
-    const result = data.results[0];
-    const coords = { lat: result.latitude, lon: result.longitude };
+    const result = data[0];
+    const coords = { lat: parseFloat(result.lat), lon: parseFloat(result.lon) };
     LSset(`weather_geo_${location}`, JSON.stringify(coords));
+    console.log(`✅ Geocoding: "${location}" → ${coords.lat}, ${coords.lon}`);
     return coords;
   } catch(e) {
     console.log('Geocoding Fehler:', e);
