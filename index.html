@@ -971,8 +971,8 @@ function renderHome() {
   // ── PROFILE STRIP ──
   if(profile) {
     const player = STATE.players.find(p => p.id === pid);
-    const yesCount = STATE.trainings.filter(t=>new Date(t.date+'T'+(t.time||'00:00')).getTime()>=now && t.attendances?.[pid]==='yes').length;
-    const noCount  = STATE.trainings.filter(t=>new Date(t.date+'T'+(t.time||'00:00')).getTime()>=now && t.attendances?.[pid]==='no').length;
+    const yesCount = STATE.trainings.filter(t=>!t.cancelled && new Date(t.date+'T'+(t.time||'00:00')).getTime()>=now && t.attendances?.[pid]==='yes').length;
+    const noCount  = STATE.trainings.filter(t=>!t.cancelled && new Date(t.date+'T'+(t.time||'00:00')).getTime()>=now && t.attendances?.[pid]==='no').length;
     html += `<div style="background:linear-gradient(135deg,#0A2540 0%,#1e3a5f 100%);padding:16px;margin-bottom:0">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:${pid?'12':'0'}px">
         <div style="width:64px;height:64px;border-radius:50%;overflow:hidden;border:2.5px solid rgba(255,255,255,.35);flex-shrink:0">
@@ -4040,19 +4040,21 @@ let statsTab = 'training';
 let statsDateCols = 5; // Anzahl der letzten Termine als Spalten
 
 function renderStatistikTab(c) {
-  const totalT = STATE.trainings.length;
-  const totalG = STATE.games.length;
+  const activeTrainings = STATE.trainings.filter(t => !t.cancelled);
+  const activeGames     = STATE.games.filter(g => !g.cancelled);
+  const totalT = activeTrainings.length;
+  const totalG = activeGames.length;
   const totalP = STATE.players.length;
   if(!totalP) { c.innerHTML = `<div style="text-align:center;padding:40px;color:#9CA3AF"><div style="font-size:40px;margin-bottom:8px">📊</div><div>Noch keine Spieler</div></div>`; return; }
 
   const sorted = [...STATE.players].sort((a,b)=>(parseInt(a.number,10)||999)-(parseInt(b.number,10)||999));
 
   const playerStats = sorted.map(p => {
-    const yesCount    = STATE.trainings.filter(t => t.attendances?.[p.id] === 'yes').length;
-    const noCount     = STATE.trainings.filter(t => t.attendances?.[p.id] === 'no').length;
-    const openCount   = STATE.trainings.filter(t => !t.attendances?.[p.id] || t.attendances[p.id] === 'open').length;
-    const gamesInSquad   = STATE.games.filter(g => g.squad?.[p.id] === true);
-    const gamesConfirmed = STATE.games.filter(g => g.squadConfirm?.[p.id] === 'yes');
+    const yesCount    = activeTrainings.filter(t => t.attendances?.[p.id] === 'yes').length;
+    const noCount     = activeTrainings.filter(t => t.attendances?.[p.id] === 'no').length;
+    const openCount   = activeTrainings.filter(t => !t.attendances?.[p.id] || t.attendances[p.id] === 'open').length;
+    const gamesInSquad   = activeGames.filter(g => g.squad?.[p.id] === true);
+    const gamesConfirmed = activeGames.filter(g => g.squadConfirm?.[p.id] === 'yes');
     const trainPct    = totalT ? Math.round(yesCount / totalT * 100) : 0;
     const gamePct     = totalG ? Math.round(gamesConfirmed.length / totalG * 100) : 0;
     return { ...p, yesCount, noCount, openCount, gamesInSquad, gamesConfirmed, trainPct, gamePct };
