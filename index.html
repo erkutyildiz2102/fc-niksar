@@ -951,15 +951,13 @@ function renderHome() {
   const pid = profile?.playerId;
   const todayStr = new Date().toISOString().slice(0,10);
 
-  const _hideCancelled = ev => !ev.cancelled || !localStorage.getItem('seen_cancel_' + ev.id);
-
   const upcomingTrainings = STATE.trainings
-    .filter(t => t.date && t.date >= todayStr && _hideCancelled(t))
+    .filter(t => t.date && t.date >= todayStr && !t.cancelled)
     .map(t => ({...t, sortDate: parseSortDate(t.date, t.time)}))
     .sort((a,b) => a.sortDate - b.sortDate);
 
   const upcomingGames = STATE.games
-    .filter(g => g.date && g.date >= todayStr && _hideCancelled(g))
+    .filter(g => g.date && g.date >= todayStr && !g.cancelled)
     .map(g => ({...g, sortDate: parseSortDate(g.date, g.time)}))
     .sort((a,b) => a.sortDate - b.sortDate);
 
@@ -1475,13 +1473,12 @@ function renderTermine() {
 
   const eventMap = {};
 
-  const _hideCanc = ev => !ev.cancelled || !localStorage.getItem('seen_cancel_' + ev.id);
-  STATE.trainings.filter(_hideCanc).forEach(t => {
+  STATE.trainings.filter(t => !t.cancelled).forEach(t => {
     if(!t.date) return;
     if(!eventMap[t.date]) eventMap[t.date] = [];
     eventMap[t.date].push({...t, _type:'training'});
   });
-  STATE.games.filter(_hideCanc).forEach(g => {
+  STATE.games.filter(g => !g.cancelled).forEach(g => {
     if(!g.date) return;
     if(!eventMap[g.date]) eventMap[g.date] = [];
     eventMap[g.date].push({...g, _type:'game'});
