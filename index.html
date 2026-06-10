@@ -2323,7 +2323,7 @@ function appendNewChatMessages() {
           <span style="font-size:20px">🚨</span>
           <span style="font-size:13px;font-weight:800;color:#fff;letter-spacing:.3px">WICHTIGE ANKÜNDIGUNG</span>
         </div>
-        <div style="font-size:14px;color:rgba(255,255,255,.95);line-height:1.5;font-weight:500">${escHtml(m.text||'')}</div>
+        <div style="font-size:14px;color:rgba(255,255,255,.95);line-height:1.5;font-weight:500">${escHtml(m.text||'').replace(/\n/g,'<br>')}</div>
         <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:6px;text-align:right">${escHtml(m.author||'')} · ${timeStr2}</div>
       </div>`;
       container.appendChild(el);
@@ -2427,7 +2427,7 @@ function renderChat() {
               <span style="font-size:20px">🚨</span>
               <span style="font-size:13px;font-weight:800;color:#fff;letter-spacing:.3px">WICHTIGE ANKÜNDIGUNG</span>
             </div>
-            <div style="font-size:14px;color:rgba(255,255,255,.95);line-height:1.5;font-weight:500">${escHtml(m.text||'')}</div>
+            <div style="font-size:14px;color:rgba(255,255,255,.95);line-height:1.5;font-weight:500">${escHtml(m.text||'').replace(/\n/g,'<br>')}</div>
             <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:6px;text-align:right">${escHtml(m.author||'')} · ${timeStr2}</div>
           </div>
         </div>`;
@@ -4488,7 +4488,9 @@ function uploadLogo(input) {
 }
 
 // ── ABSAGE-FEATURE ──
+let _cancelEventLabel = '';
 function cancelEventModal(id, type, label) {
+  _cancelEventLabel = label;
   showModal(`
     <div style="padding:4px 0">
       <div style="font-size:17px;font-weight:800;color:#DC2626;margin-bottom:4px">🚨 ${type==='training'?'Training':'Spiel'} absagen</div>
@@ -4510,8 +4512,9 @@ function confirmCancelEvent(id, type) {
   db.ref(ref).update({ cancelled: true, cancelReason: reason, cancelledAt: Date.now() });
   const title = type === 'training' ? '🚨 Training abgesagt' : '🚨 Spiel abgesagt';
   notifyAll(title, reason, false, 'termine');
-  // Automatische Ankündigung im Chat
-  const announcementText = `${title}\n${reason}`;
+  // Automatische Ankündigung im Chat – inklusive Event-Label (Datum/Gegner)
+  const eventLine = _cancelEventLabel ? `📅 ${_cancelEventLabel}` : '';
+  const announcementText = [title, eventLine, reason].filter(Boolean).join('\n');
   db.ref('/chat').push({
     author: 'FC Niksar',
     text: announcementText,
@@ -4535,9 +4538,12 @@ function _showNextCancelPopup() {
     ...STATE.trainings.map(t => ({...t, _type:'training'})),
     ...STATE.games.map(g => ({...g, _type:'game'}))
   ];
+  const now = Date.now();
+  const h48 = 48 * 3600 * 1000;
   const unseen = allEvents.filter(ev =>
     ev.cancelled && ev.cancelReason &&
-    !localStorage.getItem('seen_cancel_' + ev.id)
+    !localStorage.getItem('seen_cancel_' + ev.id) &&
+    ev.cancelledAt && (now - ev.cancelledAt) < h48
   );
   if(!unseen.length) return;
   const ev = unseen[0];
