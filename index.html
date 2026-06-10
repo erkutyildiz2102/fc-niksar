@@ -871,14 +871,13 @@ function switchPage(page) {
     // Scroll-State zurücksetzen
     _userScrolledChat = false;
     cancelChatScrollTimers();
-    // touchstart = User berührt Chat → auto-scroll stoppen
-    // (scroll-Event würde auch programmatische Scrolls fangen)
+    // touchstart (mobil) + wheel (Desktop) = User scrollt → auto-scroll stoppen
     setTimeout(() => {
       const c = document.getElementById('chatMessages');
-      if (c) c.addEventListener('touchstart', () => {
-        _userScrolledChat = true;
-        cancelChatScrollTimers();
-      }, { passive: true, once: false });
+      if (!c) return;
+      function onUserScroll() { _userScrolledChat = true; cancelChatScrollTimers(); }
+      c.addEventListener('touchstart', onUserScroll, { passive: true });
+      c.addEventListener('wheel',      onUserScroll, { passive: true });
     }, 300);
     startChatScrollObserver();
     renderChat();
