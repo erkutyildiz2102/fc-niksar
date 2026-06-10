@@ -96,6 +96,8 @@ input[type="date"].input-field,input[type="time"].input-field{display:block;widt
 #chatPage.active{display:flex}
 #chatPageHeader{flex-shrink:0;background:#0A2540;display:flex;align-items:center;gap:12px;padding:max(env(safe-area-inset-top),14px) 16px 12px}
 #chatMessages{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#scrollDownBtn{position:absolute;bottom:72px;right:14px;width:40px;height:40px;border-radius:50%;background:#fff;border:none;box-shadow:0 2px 8px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;color:#555;font-size:18px}
+#scrollDownBtn.visible{opacity:1;pointer-events:auto}
 /* Feste Dimensionen für alle Bilder im Chat → kein Layout-Shift beim Nachladen */
 #chatMessages img{display:block;flex-shrink:0}
 #chatMessages img[width]{width:attr(width px);height:attr(height px)}
@@ -878,6 +880,13 @@ function switchPage(page) {
       function onUserScroll() { _userScrolledChat = true; cancelChatScrollTimers(); }
       c.addEventListener('touchstart', onUserScroll, { passive: true });
       c.addEventListener('wheel',      onUserScroll, { passive: true });
+      // Scroll-Down-Button ein-/ausblenden
+      c.addEventListener('scroll', () => {
+        const btn = document.getElementById('scrollDownBtn');
+        if (!btn) return;
+        const distFromBottom = c.scrollHeight - c.scrollTop - c.clientHeight;
+        btn.classList.toggle('visible', distFromBottom > 400);
+      }, { passive: true });
     }, 300);
     startChatScrollObserver();
     renderChat();
@@ -2603,6 +2612,7 @@ function renderChat() {
     <div id="chatMessages">
       ${msgsHtml}
     </div>
+    <button id="scrollDownBtn" onclick="chatScrollDownClick()"><i class="fas fa-chevron-down"></i></button>
     <div class="wa-emoji-grid ${emojiOpen?'open':''}" id="emojiPicker">
       <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:2px">
         ${CHAT_EMOJIS.map(e=>`<button onclick="insertEmoji('${e}')" style="background:none;border:none;font-size:24px;cursor:pointer;padding:6px;border-radius:8px;line-height:1">${e}</button>`).join('')}
@@ -2705,6 +2715,15 @@ function startReply(id) {
   }
   document.getElementById('chatInput')?.focus();
 }
+function chatScrollDownClick() {
+  // Bewusster Sprung nach unten → Auto-Scroll wieder aktivieren
+  _userScrolledChat = false;
+  const c = document.getElementById('chatMessages');
+  if (c) c.scrollTo({ top: c.scrollHeight, behavior: 'smooth' });
+  const btn = document.getElementById('scrollDownBtn');
+  if (btn) btn.classList.remove('visible');
+}
+
 function cancelReply() {
   replyToMsg = null;
   const bar = document.getElementById('replyBar');
