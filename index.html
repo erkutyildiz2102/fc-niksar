@@ -782,6 +782,7 @@ function fixChatHeight() {
     inputBar.style.paddingBottom = keyboardOpen ? '0px' : '';
   }
   requestAnimationFrame(scrollChatToBottom);
+  positionScrollDownBtn();
 }
 
 function fixChatHeightDelayed() {
