@@ -385,7 +385,6 @@ function initListeners() {
     window._knownTrainingIds = new Set(arr.map(t => t.id));
     prevTrainingCount = arr.length;
     STATE.trainings = arr; onDataChange();
-    setTimeout(checkCancellationPopups, 800);
   });
   db.ref('/games').on('value', s => {
     const arr = toArr(s.val()).sort((a,b)=>new Date(a.date)-new Date(b.date));
@@ -397,7 +396,6 @@ function initListeners() {
     window._knownGameIds = new Set(arr.map(g => g.id));
     prevGameCount = arr.length;
     STATE.games = arr; onDataChange();
-    setTimeout(checkCancellationPopups, 800);
   });
   db.ref('/absences').on('value', s => { STATE.absences = toArr(s.val()); onDataChange(); });
   db.ref('/polls').on('value', s => { STATE.polls = toArr(s.val()); onDataChange(); });
@@ -4525,48 +4523,6 @@ function confirmCancelEvent(id, type) {
   alert('✅ Absage wurde gespeichert, Push-Nachricht und Chat-Ankündigung gesendet.');
 }
 
-let _cancelPopupTimer = null;
-function checkCancellationPopups() {
-  if(_cancelPopupTimer) { clearTimeout(_cancelPopupTimer); }
-  _cancelPopupTimer = setTimeout(_showNextCancelPopup, 1200);
-}
-function _showNextCancelPopup() {
-  _cancelPopupTimer = null;
-  if(trainerLoggedIn) return;
-  if(document.querySelector('.modal-overlay')) return; // anderes Modal offen
-  const allEvents = [
-    ...STATE.trainings.map(t => ({...t, _type:'training'})),
-    ...STATE.games.map(g => ({...g, _type:'game'}))
-  ];
-  const now = Date.now();
-  const h48 = 48 * 3600 * 1000;
-  const unseen = allEvents.filter(ev =>
-    ev.cancelled && ev.cancelReason &&
-    !localStorage.getItem('seen_cancel_' + ev.id) &&
-    ev.cancelledAt && (now - ev.cancelledAt) < h48
-  );
-  if(!unseen.length) return;
-  const ev = unseen[0];
-  const label = ev._type === 'training'
-    ? `Training · ${fmt(ev.date)}`
-    : `Spiel vs. ${escHtml(ev.opponent||'?')} · ${fmt(ev.date)}`;
-  const evId = ev.id;
-  showModal(`
-    <div style="text-align:center;padding:8px 0">
-      <div style="font-size:48px;margin-bottom:8px">🚨</div>
-      <div style="font-size:19px;font-weight:800;color:#DC2626;margin-bottom:4px">Wichtige Absage!</div>
-      <div style="font-size:13px;color:#6B7280;margin-bottom:14px">${label}</div>
-      <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:12px;padding:14px 16px;font-size:15px;color:#374151;line-height:1.5;text-align:left;margin-bottom:20px">${escHtml(ev.cancelReason)}</div>
-      <button id="cancelPopupOkBtn" style="width:100%;padding:14px;border-radius:12px;border:none;background:#DC2626;color:#fff;font-size:16px;font-weight:700;cursor:pointer">Verstanden</button>
-    </div>`);
-  document.getElementById('cancelPopupOkBtn')?.addEventListener('click', () => {
-    localStorage.setItem('seen_cancel_' + evId, '1');
-    closeModal();
-    renderHome();
-    renderTermine();
-    setTimeout(_showNextCancelPopup, 400);
-  });
-}
 
 function clearChat() {
   showModal(`
