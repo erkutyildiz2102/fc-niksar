@@ -1559,6 +1559,7 @@ function renderTermine() {
   if(!page) return;
 
   const todayDate = new Date();
+  const todayStr = todayDate.getFullYear() + '-' + String(todayDate.getMonth()+1).padStart(2,'0') + '-' + String(todayDate.getDate()).padStart(2,'0');
   const firstDay = new Date(calYear, calMonth, 1);
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
   let startDow = firstDay.getDay();
@@ -1578,6 +1579,11 @@ function renderTermine() {
     if(!eventMap[g.date]) eventMap[g.date] = [];
     eventMap[g.date].push({...g, _type:'game'});
   });
+
+  // Wenn selectedDay nicht gesetzt ist und heute Events anstehen → heute automatisch auswählen
+  if (!selectedDay && eventMap[todayStr]) {
+    selectedDay = todayStr;
+  }
 
   let dayCells = '';
   const totalCells = startDow + daysInMonth;
