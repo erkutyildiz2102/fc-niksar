@@ -4770,7 +4770,7 @@ function urlBase64ToUint8Array(b64){const pad='='.repeat((4-b64.length%4)%4);con
 async function notifyAll(title,body,excludeSelf=false,page=''){try{const excludeKey=excludeSelf?(LS('myPushKey')||null):null;await fetch(PUSH_API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,body,excludeKey,page})});}catch(e){}}
 async function notifyAllExceptMePage(title,body,page){return notifyAll(title,body,true,page);}
 async function notifyAllExceptMe(title,body){return notifyAll(title,body,true);}
-async function subscribeToPush(){if(!('PushManager'in window)){alert('Push-Benachrichtigungen werden auf diesem Geraet nicht unterstuetzt.');return;}const p=await Notification.requestPermission();if(p!=='granted'){alert('Bitte erlaube Benachrichtigungen in den Einstellungen.');return;}try{const r=await navigator.serviceWorker.ready;const old=await r.pushManager.getSubscription();if(old)await old.unsubscribe();const s=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});const k=btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(-28);await db.ref('/pushSubscriptions/'+k).set(s.toJSON());LSset('pushEnabled','true');LSset('myPushKey',k);alert('✅ Benachrichtigungen aktiviert!');if(document.getElementById('pushBtn')){document.getElementById('pushBtn').textContent='✅ Aktiviert';document.getElementById('pushBtn').style.background='#10B981';document.getElementById('pushBtn').disabled=true;}}catch(e){alert('FEHLER bei Schritt: '+e.message);}}
+async function subscribeToPush(){if(!('PushManager'in window)){alert('Push-Benachrichtigungen werden auf diesem Geraet nicht unterstuetzt.');return;}const p=await Notification.requestPermission();if(p!=='granted'){alert('Bitte erlaube Benachrichtigungen in den Einstellungen.');return;}try{const r=await navigator.serviceWorker.ready;const old=await r.pushManager.getSubscription();if(old)await old.unsubscribe();const s=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});const k=btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(-28);await db.ref('/pushSubscriptions/'+k).set(s.toJSON());const _pid0=getProfile()?.playerId;if(_pid0)await db.ref('/playerPushKeys/'+_pid0).set(k);LSset('pushEnabled','true');LSset('myPushKey',k);alert('✅ Benachrichtigungen aktiviert!');if(document.getElementById('pushBtn')){document.getElementById('pushBtn').textContent='✅ Aktiviert';document.getElementById('pushBtn').style.background='#10B981';document.getElementById('pushBtn').disabled=true;}}catch(e){alert('FEHLER bei Schritt: '+e.message);}}
 async function resubscribePush(){
   try {
     const r = await navigator.serviceWorker.ready;
@@ -4785,6 +4785,7 @@ async function resubscribePush(){
     const s = await r.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
     const k = btoa(s.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(-28);
     await db.ref('/pushSubscriptions/'+k).set(s.toJSON());
+    const _pid1=getProfile()?.playerId;if(_pid1)await db.ref('/playerPushKeys/'+_pid1).set(k);
     LSset('pushEnabled','true');
     LSset('myPushKey',k);
     showToast('✅ Push-Verbindung erneuert!');
@@ -4826,6 +4827,7 @@ async function autoSetupPush() {
       LSset('pushEnabled', 'true');
       LSset('pushRenewedAt', LS('pushRenewedAt') || String(Date.now()));
       await db.ref('/pushSubscriptions/' + k).set(sub.toJSON());
+      const _pid2=getProfile()?.playerId;if(_pid2)await db.ref('/playerPushKeys/'+_pid2).set(k);
       return;
     }
 
@@ -4835,6 +4837,7 @@ async function autoSetupPush() {
       sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
       const k = btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(-28);
       await db.ref('/pushSubscriptions/' + k).set(sub.toJSON());
+      const _pid3=getProfile()?.playerId;if(_pid3)await db.ref('/playerPushKeys/'+_pid3).set(k);
       LSset('pushEnabled', 'true');
       LSset('myPushKey', k);
       LSset('pushRenewedAt', String(Date.now()));

@@ -65,22 +65,24 @@ module.exports = async function handler(req, res) {
     }
 
     // Alles aus Firebase laden
-    const [trainingsRes, gamesRes, pollsRes, subsRes, playersRes, trainerDevicesRes] = await Promise.all([
+    const [trainingsRes, gamesRes, pollsRes, subsRes, playersRes, trainerDevicesRes, playerPushKeysRes] = await Promise.all([
       fetch(`${DB_URL}/trainings.json`),
       fetch(`${DB_URL}/games.json`),
       fetch(`${DB_URL}/polls.json`),
       fetch(`${DB_URL}/pushSubscriptions.json`),
       fetch(`${DB_URL}/players.json`),
-      fetch(`${DB_URL}/trainerDevices.json`)
+      fetch(`${DB_URL}/trainerDevices.json`),
+      fetch(`${DB_URL}/playerPushKeys.json`)
     ]);
 
-    const [trainingsData, gamesData, pollsData, subs, playersData, trainerDevices] = await Promise.all([
+    const [trainingsData, gamesData, pollsData, subs, playersData, trainerDevices, playerPushKeys] = await Promise.all([
       trainingsRes.json(),
       gamesRes.json(),
       pollsRes.json(),
       subsRes.json(),
       playersRes.json(),
-      trainerDevicesRes.json()
+      trainerDevicesRes.json(),
+      playerPushKeysRes.json()
     ]);
 
     if (!subs) return res.status(200).json({ sent: 0, message: 'Keine Subscriptions' });
@@ -114,14 +116,30 @@ module.exports = async function handler(req, res) {
           continue;
         }
 
-        debugLog.push(`${id.slice(-6)}: SEND – ${open} open, ${ageH}h old, subs=${Object.keys(subs).length}`);
+        // Nur Spieler mit offener Rückmeldung ermitteln
+        const openPlayerIds = Object.entries(attendances)
+          .filter(([, v]) => v === 'open')
+          .map(([pid]) => pid);
+
+        // Push-Keys der betroffenen Spieler suchen
+        const targetSubs = {};
+        if (playerPushKeys) {
+          for (const pid of openPlayerIds) {
+            const pushKey = playerPushKeys[pid];
+            if (pushKey && subs[pushKey]) targetSubs[pushKey] = subs[pushKey];
+          }
+        }
+        // Fallback: kein playerPushKeys-Mapping → alle benachrichtigen
+        const sendTo = Object.keys(targetSubs).length > 0 ? targetSubs : subs;
+
+        debugLog.push(`${id.slice(-6)}: SEND – ${open} open, ${ageH}h old, targets=${Object.keys(sendTo).length}`);
         const payload = {
           title: '⏰ Rückmeldung fürs Training fehlt noch!',
           body: `${fmtDate(t.date)}${t.time ? ' · ' + t.time + ' Uhr' : ''}${t.location ? ' · ' + t.location : ''} – Bitte zu- oder absagen!`,
           url: BASE_URL + '?page=termine'
         };
 
-        const pushed = await pushToAll(subs, toDelete, payload);
+        const pushed = await pushToAll(sendTo, toDelete, payload);
         sentCount += pushed;
         debugLog.push(`${id.slice(-6)}: pushed=${pushed}`);
         if (pushed > 0) await fbSet(`trainings/${id}/reminderSent`, true);
@@ -152,13 +170,24 @@ module.exports = async function handler(req, res) {
           continue;
         }
 
+        // Nur nominierte Spieler ohne Rückmeldung
+        const openSquadIds = nominated.filter(pid => !squadConfirm[pid] || squadConfirm[pid] === 'open');
+        const targetSubsG = {};
+        if (playerPushKeys) {
+          for (const pid of openSquadIds) {
+            const pushKey = playerPushKeys[pid];
+            if (pushKey && subs[pushKey]) targetSubsG[pushKey] = subs[pushKey];
+          }
+        }
+        const sendToG = Object.keys(targetSubsG).length > 0 ? targetSubsG : subs;
+
         const payload = {
           title: '⚽ Rückmeldung fürs Spiel fehlt noch!',
           body: `${g.opponent || 'Spiel'} · ${fmtDate(g.date)}${g.time ? ' · ' + g.time + ' Uhr' : ''} – Bitte zu- oder absagen!`,
           url: BASE_URL + '?page=termine'
         };
 
-        const pushedG = await pushToAll(subs, toDelete, payload);
+        const pushedG = await pushToAll(sendToG, toDelete, payload);
         sentCount += pushedG;
         if (pushedG > 0) await fbSet(`games/${id}/reminderSent`, true);
       }
