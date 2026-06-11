@@ -98,7 +98,8 @@ module.exports = async function handler(req, res) {
         if (t.date < todayStr) continue;        // vergangene Trainings überspringen
 
         const age = now - t.createdAt;
-        if (age < REMIND_AFTER_MS || age > REMIND_AFTER_MS + WINDOW_MS) continue;
+        // Mindestens 5h alt – kein oberes Limit (nachts erstellte Trainings werden am Morgen erinnert)
+        if (age < REMIND_AFTER_MS) continue;
 
         // Wer hat noch nicht geantwortet?
         const attendances = t.attendances || {};
@@ -133,7 +134,7 @@ module.exports = async function handler(req, res) {
         if (g.date < todayStr) continue;
 
         const age = now - g.createdAt;
-        if (age < REMIND_AFTER_MS || age > REMIND_AFTER_MS + WINDOW_MS) continue;
+        if (age < REMIND_AFTER_MS) continue;
 
         // Nominierte Spieler ohne Bestätigung
         const squad        = g.squad || {};
@@ -172,7 +173,7 @@ module.exports = async function handler(req, res) {
         if (p.deadline && p.deadline < todayStr) continue;
 
         const age = now - p.createdAt;
-        if (age < REMIND_AFTER_MS || age > REMIND_AFTER_MS + WINDOW_MS) continue;
+        if (age < REMIND_AFTER_MS) continue;
 
         const votes     = p.votes || {};
         const voteCount = Object.keys(votes).length;
