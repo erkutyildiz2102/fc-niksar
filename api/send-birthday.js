@@ -26,8 +26,15 @@ module.exports = async function handler(req, res) {
     // Spieler mit Geburtstag heute finden
     const birthdayKids = Object.values(playersData).filter(p => {
       if (!p.birthday) return false;
-      // birthday gespeichert als YYYY-MM-DD → slice(5) = MM-DD
-      return p.birthday.slice(5) === todayMMDD;
+      // Format DD.MM.YYYY oder YYYY-MM-DD
+      let mmdd;
+      if (p.birthday.includes('.')) {
+        const parts = p.birthday.split('.');
+        mmdd = `${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+      } else {
+        mmdd = p.birthday.slice(5);
+      }
+      return mmdd === todayMMDD;
     });
 
     if (birthdayKids.length === 0) {
@@ -57,7 +64,9 @@ module.exports = async function handler(req, res) {
     const names = birthdayKids.map(p => p.name || '?').join(', ');
     const ages  = birthdayKids.map(p => {
       if (!p.birthday) return null;
-      const birthYear = parseInt(p.birthday.slice(0, 4), 10);
+      const birthYear = p.birthday.includes('.')
+        ? parseInt(p.birthday.split('.')[2], 10)
+        : parseInt(p.birthday.slice(0, 4), 10);
       return today.getFullYear() - birthYear;
     });
 
