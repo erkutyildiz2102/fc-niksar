@@ -1334,7 +1334,7 @@ function renderHome() {
         </div>
         <div style="flex:1;min-width:0">
           <div style="font-size:16px;font-weight:800;color:#fff${isCancelled?';text-decoration:line-through;opacity:.7':''}">${isCancelled?'🚨 ':(isT?'🏃 ':'⚽ ')}${isT?'Training':escHtml(ev.opponent||'Spiel')}</div>
-          ${ev.location ? `<div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:2px">📍 ${escHtml(ev.location)}</div>` : ''}
+          ${ev.location ? `<div style="font-size:11px;color:rgba(255,255,255,.92);margin-top:2px;font-weight:500">📍 ${escHtml(ev.location)}</div>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
           ${isNew(ev.createdAt)?'<span style="background:#EF4444;color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700">NEU</span>':''}
@@ -1345,19 +1345,19 @@ function renderHome() {
         ${isT ? `
         <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid #F3F4F6">
           <div style="font-size:15px;font-weight:800;color:#1F2937">${ev.time||'-:-'}</div>
-          <div style="font-size:10px;color:#9CA3AF;margin-top:2px;font-weight:600">Beginn</div>
+          <div style="font-size:10px;color:#6B7280;margin-top:2px;font-weight:700">Beginn</div>
         </div>
         <div style="flex:1;padding:10px 6px;text-align:center">
           <div style="font-size:15px;font-weight:800;color:#1F2937">${ev.timeTo||'-:-'}</div>
-          <div style="font-size:10px;color:#9CA3AF;margin-top:2px;font-weight:600">Ende</div>
+          <div style="font-size:10px;color:#6B7280;margin-top:2px;font-weight:700">Ende</div>
         </div>` : `
         <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid #F3F4F6">
           <div style="font-size:15px;font-weight:800;color:#1F2937">${ev.time||'-:-'}</div>
-          <div style="font-size:10px;color:#9CA3AF;margin-top:2px;font-weight:600">Treffpunkt</div>
+          <div style="font-size:10px;color:#6B7280;margin-top:2px;font-weight:700">Treffpunkt</div>
         </div>
         <div style="flex:1;padding:10px 6px;text-align:center">
           <div style="font-size:13px;font-weight:700;color:#6B7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px">${escHtml(ev.location||'-')}</div>
-          <div style="font-size:10px;color:#9CA3AF;margin-top:2px;font-weight:600">Ort</div>
+          <div style="font-size:10px;color:#6B7280;margin-top:2px;font-weight:700">Ort</div>
         </div>`}
       </div>
       ${notesHtml}
@@ -1888,19 +1888,19 @@ function renderTermine() {
           ${isT ? `
           <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid #F3F4F6">
             <div style="font-size:15px;font-weight:800;color:#1F2937">${beginTime}</div>
-            <div style="font-size:10px;color:#9CA3AF;margin-top:2px;font-weight:600">Beginn</div>
+            <div style="font-size:10px;color:#6B7280;margin-top:2px;font-weight:700">Beginn</div>
           </div>
           <div style="flex:1;padding:10px 6px;text-align:center">
             <div style="font-size:15px;font-weight:800;color:#1F2937">${endTime}</div>
-            <div style="font-size:10px;color:#9CA3AF;margin-top:2px;font-weight:600">Ende</div>
+            <div style="font-size:10px;color:#6B7280;margin-top:2px;font-weight:700">Ende</div>
           </div>` : `
           <div style="flex:1;padding:10px 6px;text-align:center;border-right:1px solid #F3F4F6">
             <div style="font-size:15px;font-weight:800;color:#1F2937">${treffTime}</div>
-            <div style="font-size:10px;color:#9CA3AF;margin-top:2px;font-weight:600">Treffpunkt</div>
+            <div style="font-size:10px;color:#6B7280;margin-top:2px;font-weight:700">Treffpunkt</div>
           </div>
           <div style="flex:1;padding:10px 6px;text-align:center">
             <div style="font-size:13px;font-weight:700;color:#6B7280">${escHtml(ev.location||'-')}</div>
-            <div style="font-size:10px;color:#9CA3AF;margin-top:2px;font-weight:600">Ort</div>
+            <div style="font-size:10px;color:#6B7280;margin-top:2px;font-weight:700">Ort</div>
           </div>`}
         </div>
         ${expiredBanner}
