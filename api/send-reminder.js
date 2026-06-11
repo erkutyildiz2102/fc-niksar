@@ -87,32 +87,34 @@ module.exports = async function handler(req, res) {
 
     const toDelete = [];
     let sentCount  = 0;
+    const debugLog = [];
 
     // ──────────────────────────────────────────────
     // 1. TRAINING: 5h nach Erstellung, noch offene Stimmen
     // ──────────────────────────────────────────────
     if (trainingsData) {
       for (const [id, t] of Object.entries(trainingsData)) {
-        if (t.reminderSent) continue;           // schon erinnert
-        if (!t.createdAt) continue;
-        if (t.date < todayStr) continue;        // vergangene Trainings überspringen
-
         const age = now - t.createdAt;
-        // Mindestens 5h alt – kein oberes Limit (nachts erstellte Trainings werden am Morgen erinnert)
-        if (age < REMIND_AFTER_MS) continue;
+        const ageH = Math.round(age / 3600000 * 10) / 10;
 
-        // Wer hat noch nicht geantwortet?
+        if (t.reminderSent) { debugLog.push(`${id.slice(-6)}: skip – reminderSent`); continue; }
+        if (!t.createdAt)   { debugLog.push(`${id.slice(-6)}: skip – no createdAt`); continue; }
+        if (t.date < todayStr) { debugLog.push(`${id.slice(-6)}: skip – past (${t.date})`); continue; }
+        if (t.cancelled)    { debugLog.push(`${id.slice(-6)}: skip – cancelled`); continue; }
+        if (age < REMIND_AFTER_MS) { debugLog.push(`${id.slice(-6)}: skip – too young (${ageH}h)`); continue; }
+
         const attendances = t.attendances || {};
         const total    = Object.keys(attendances).length;
         const answered = Object.values(attendances).filter(v => v === 'yes' || v === 'no').length;
         const open     = total - answered;
 
         if (open === 0) {
-          // Alle haben geantwortet → nur als erinnert markieren
+          debugLog.push(`${id.slice(-6)}: skip – all answered`);
           await fbSet(`trainings/${id}/reminderSent`, true);
           continue;
         }
 
+        debugLog.push(`${id.slice(-6)}: SEND – ${open} open, ${ageH}h old`);
         const payload = {
           title: '⏰ Rückmeldung fürs Training fehlt noch!',
           body: `${fmtDate(t.date)}${t.time ? ' · ' + t.time + ' Uhr' : ''}${t.location ? ' · ' + t.location : ''} – Bitte zu- oder absagen!`,
@@ -241,7 +243,7 @@ module.exports = async function handler(req, res) {
     ));
 
     console.log(`Reminder: ${sentCount} Pushes gesendet, ${toDelete.length} Subs gelöscht`);
-    return res.status(200).json({ sent: sentCount, deleted: toDelete.length });
+    return res.status(200).json({ sent: sentCount, deleted: toDelete.length, debug: debugLog });
 
   } catch (e) {
     console.error('Reminder-Fehler:', e);
