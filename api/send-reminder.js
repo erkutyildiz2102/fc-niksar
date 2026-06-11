@@ -114,15 +114,17 @@ module.exports = async function handler(req, res) {
           continue;
         }
 
-        debugLog.push(`${id.slice(-6)}: SEND – ${open} open, ${ageH}h old`);
+        debugLog.push(`${id.slice(-6)}: SEND – ${open} open, ${ageH}h old, subs=${Object.keys(subs).length}`);
         const payload = {
           title: '⏰ Rückmeldung fürs Training fehlt noch!',
           body: `${fmtDate(t.date)}${t.time ? ' · ' + t.time + ' Uhr' : ''}${t.location ? ' · ' + t.location : ''} – Bitte zu- oder absagen!`,
           url: BASE_URL + '?page=termine'
         };
 
-        sentCount += await pushToAll(subs, toDelete, payload);
-        await fbSet(`trainings/${id}/reminderSent`, true);
+        const pushed = await pushToAll(subs, toDelete, payload);
+        sentCount += pushed;
+        debugLog.push(`${id.slice(-6)}: pushed=${pushed}`);
+        if (pushed > 0) await fbSet(`trainings/${id}/reminderSent`, true);
       }
     }
 
@@ -156,8 +158,9 @@ module.exports = async function handler(req, res) {
           url: BASE_URL + '?page=termine'
         };
 
-        sentCount += await pushToAll(subs, toDelete, payload);
-        await fbSet(`games/${id}/reminderSent`, true);
+        const pushedG = await pushToAll(subs, toDelete, payload);
+        sentCount += pushedG;
+        if (pushedG > 0) await fbSet(`games/${id}/reminderSent`, true);
       }
     }
 
@@ -193,8 +196,9 @@ module.exports = async function handler(req, res) {
           url: BASE_URL + '?page=home'
         };
 
-        sentCount += await pushToAll(subs, toDelete, payload);
-        await fbSet(`polls/${id}/reminderSent`, true);
+        const pushedP = await pushToAll(subs, toDelete, payload);
+        sentCount += pushedP;
+        if (pushedP > 0) await fbSet(`polls/${id}/reminderSent`, true);
       }
     }
 
@@ -209,7 +213,14 @@ module.exports = async function handler(req, res) {
       // Alle Spieler durchgehen und Geburtstage heute finden
       for (const [id, p] of Object.entries(playersData)) {
         if (p.birthday) {
-          const birthdayMMDD = p.birthday.slice(5); // "06-10" aus "2015-06-10"
+          // Format kann DD.MM.YYYY oder YYYY-MM-DD sein
+          let birthdayMMDD;
+          if (p.birthday.includes('.')) {
+            const parts = p.birthday.split('.');
+            birthdayMMDD = `${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+          } else {
+            birthdayMMDD = p.birthday.slice(5);
+          }
           if (birthdayMMDD === todayMMDD) {
             birthdays.push(p.name || 'Spieler');
           }
